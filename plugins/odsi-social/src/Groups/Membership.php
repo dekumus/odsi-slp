@@ -388,6 +388,59 @@ final class Membership {
 	}
 
 	/**
+	 * System-level activation with no acting member: the caller is a process
+	 * (a cohort sync, the bridge), not a person, so no visibility check applies.
+	 * Bans are still honoured. Idempotent on an active row.
+	 *
+	 * @param int    $group_id Group.
+	 * @param int    $user_id  Member.
+	 * @param string $via      Reason string passed to `odsi_social_group_member_joined`.
+	 */
+	public function add( int $group_id, int $user_id, string $via = 'system' ): bool {
+		if ( ! $this->service->exists( $group_id ) || $user_id <= 0 || ! get_userdata( $user_id ) ) {
+			return false;
+		}
+
+		$existing = $this->members->find_for( $group_id, $user_id );
+
+		if ( $existing && Members::STATUS_BANNED === $existing->status ) {
+			return false;
+		}
+
+		if ( $existing && Members::STATUS_ACTIVE === $existing->status ) {
+			return true;
+		}
+
+		$this->activate( $group_id, $user_id, Members::ROLE_MEMBER, $via, $existing ? (int) $existing->inviter_id : 0 );
+
+		return true;
+	}
+
+	/**
+	 * System-level removal of a plain member. Organisers and moderators are left
+	 * alone: a process may not strip a role a person granted.
+	 *
+	 * @param int $group_id Group.
+	 * @param int $user_id  Member.
+	 *
+	 * @return bool True when an active membership was removed.
+	 */
+	public function remove_member( int $group_id, int $user_id ): bool {
+		$row = $this->members->find_for( $group_id, $user_id );
+
+		if ( ! $row || Members::STATUS_ACTIVE !== $row->status || Members::ROLE_MEMBER !== $row->role ) {
+			return false;
+		}
+
+		$this->members->remove( $group_id, $user_id );
+		$this->groups->adjust( $group_id, 'member_count', -1 );
+
+		do_action( 'odsi_social_group_member_left', $group_id, $user_id, 'remove' );
+
+		return true;
+	}
+
+	/**
 	 * Group ids a member is active in.
 	 *
 	 * @param int $user_id Member.

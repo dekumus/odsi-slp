@@ -9,7 +9,7 @@ when you change what it describes.
 | --- | --- |
 | `odsi-lms` | Kernel, data layer, content model, services and REST proven by 30 unit and 79 integration tests against WordPress 7.1 on MariaDB. PHPCS and PHPStan level 6 clean. Not yet exercised in a browser. |
 | `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens. 113 integration tests including the full privacy decision table through both PHP and SQL. PHPCS and PHPStan level 6 clean. Not yet exercised in a browser. |
-| `odsi-bridge` | Empty directory. Nothing written. |
+| `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 8 integration tests. |
 
 Verification so far: the integration suite boots WordPress core with the
 plugin as a must-use plugin, runs activation, and exercises enrollment, outline
@@ -17,6 +17,31 @@ derivation, progress, access, the quiz lifecycle and every REST route against a
 real database. What has **not** happened: nobody has clicked through the
 front end in a browser, and the E2E flow is written but cannot pass until the
 quiz player exists. **Treat the LMS as a tested engine with an unproven UI.**
+
+## `odsi-bridge` — what exists
+
+The contract is `docs/specs/30-integration-contract.md`. The bridge depends on
+both plugins and neither depends on it; a test scans both for `ODSI\Bridge`.
+
+- `odsi-bridge.php` — boots at `plugins_loaded` priority 10 (after both
+  dependencies at 5); `dependency_errors()` checks each namespace constant and
+  minimum version; on failure it shows a notice and deactivates itself.
+- `Modules\CourseActivity` — `learning/enrolled`, `learning/completed`,
+  `learning/passed_quiz` posted through `Activity::post()` with idempotency
+  keys, into the linked group when there is one; registers its own renderer.
+- `Modules\GroupLinkage` — the `odsi_bridge_course_groups` table; link/unlink;
+  enrollment adds to the group via `Membership::add()`, unenrollment removes
+  plain members via `Membership::remove_member()`; either side's deletion
+  removes the link; course-edit meta box.
+- `Modules\ProgressVisibility` — `GET /odsi-bridge/v1/groups/{id}/progress`
+  and `[odsi_group_progress]`, members only, 404 otherwise.
+- `Admin\SettingsScreen` — three switches under the Learning menu; the
+  `odsi_bridge_modules` filter does the same in code.
+
+Known gaps: no front-end control for organisers to link their own group to a
+course (admins only, via the course meta box); the enrollment sync on link is
+capped at 200 learners and does not yet defer larger cohorts to cron; no
+lesson-level activity (deliberately, see the contract).
 
 ## `odsi-social` — what exists
 
@@ -212,6 +237,7 @@ Struck-through items are closed.
 | `SOC-MSG-*` | integration `social/MessagesTest` | 5 |
 | `SOC-MEM-*` | integration `social/MembersTest` | 6 |
 | Social REST, ADR-011 | integration `social/RestTest` | 6 |
+| Integration contract end to end | integration `bridge/BridgeTest` | 8 |
 
 ## Open questions
 

@@ -7,7 +7,7 @@ independent GPL plugins plus an optional bridge.
 | --- | --- | --- |
 | [`odsi-lms`](plugins/odsi-lms) | Courses, lessons, topics, quizzes, enrollment, progress | Engine tested (109 tests); UI unproven |
 | [`odsi-social`](plugins/odsi-social) | Profiles, activity, groups, connections, notifications, messaging | Engine tested (113 tests); UI unproven |
-| [`odsi-bridge`](plugins/odsi-bridge) | Course activity in the feed, groups linked to courses | Not started |
+| [`odsi-bridge`](plugins/odsi-bridge) | Course activity in the feed, groups linked to courses, shared progress | Built and tested (8 tests) |
 
 Each plugin installs and works alone. The bridge activates only when both are
 present.
@@ -17,9 +17,10 @@ present.
 Both engines exist and are proven by integration tests against WordPress on
 MariaDB: the LMS (enrollment, outlines, progress, access, quizzes, REST) and the
 community plugin (privacy, feeds, groups, connections, notifications, messages,
-REST). PHPCS and PHPStan level 6 are clean across both. What has not happened
-yet: nobody has clicked through either front end in a browser, and the bridge
-between them is not built. Read
+REST), and the bridge between them (course events in the feed, groups linked
+to courses, shared progress). PHPCS and PHPStan level 6 are clean across all
+three. What has not happened yet: nobody has clicked through a front end in a
+browser. Read
 [`docs/03-current-state.md`](docs/03-current-state.md) for the honest inventory.
 
 ## Start here

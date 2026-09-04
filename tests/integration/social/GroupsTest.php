@@ -187,4 +187,31 @@ final class GroupsTest extends TestCase {
 
 		self::assertContains( 'joined_group', $posted, 'SOC-GRP-008' );
 	}
+
+	public function test_system_add_and_remove_bypass_visibility_but_not_bans_or_roles(): void {
+		$owner = $this->social->member();
+		$u     = $this->social->member();
+		$g     = $this->social->group( $owner, 'hidden' );
+
+		$joined = array();
+		add_action(
+			'odsi_social_group_member_joined',
+			static function ( int $gid, int $uid, string $via ) use ( &$joined ): void {
+				$joined[] = $via;
+			},
+			10,
+			3
+		);
+
+		self::assertTrue( $this->membership->add( $g, $u, 'course_enrollment' ) );
+		self::assertTrue( $this->membership->add( $g, $u, 'course_enrollment' ), 'Idempotent.' );
+		self::assertSame( array( 'course_enrollment' ), $joined );
+		self::assertSame( 'active', $this->rows->find_for( $g, $u )->status );
+
+		self::assertTrue( $this->membership->remove_member( $g, $u ) );
+		self::assertFalse( $this->membership->remove_member( $g, $owner ), 'Organisers are not removed by a process.' );
+
+		$this->membership->ban( $owner, $g, $u );
+		self::assertFalse( $this->membership->add( $g, $u ), 'Bans hold.' );
+	}
 }

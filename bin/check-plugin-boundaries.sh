@@ -29,6 +29,8 @@ check() {
 
 check "$ROOT/plugins/odsi-lms"    'ODSI\\+Social|odsi_social_|odsi-social/v1' 'odsi-lms references the social plugin'
 check "$ROOT/plugins/odsi-social" 'ODSI\\+LMS|odsi_lms_|odsi-lms/v1'          'odsi-social references the LMS plugin'
+check "$ROOT/plugins/odsi-lms"    'ODSI\\+Bridge|odsi_bridge_'                  'odsi-lms references the bridge'
+check "$ROOT/plugins/odsi-social" 'ODSI\\+Bridge|odsi_bridge_'                  'odsi-social references the bridge'
 
 if [ "$STATUS" -eq 0 ]; then
 	echo "Plugin boundaries intact."
