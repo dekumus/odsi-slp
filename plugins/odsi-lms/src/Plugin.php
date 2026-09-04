@@ -14,7 +14,9 @@ use ODSI\LMS\Admin\AssignmentMetaBox;
 use ODSI\LMS\Admin\CohortMetaBox;
 use ODSI\LMS\Admin\CourseBuilder;
 use ODSI\LMS\Admin\GradingScreen;
+use ODSI\LMS\Admin\QuestionMetaBox;
 use ODSI\LMS\Admin\ReportsScreen;
+use ODSI\LMS\Admin\SettingsMetaBoxes;
 use ODSI\LMS\Admin\SettingsScreen;
 use ODSI\LMS\Assignments\Assignments;
 use ODSI\LMS\Blocks\Blocks;
@@ -45,6 +47,7 @@ use ODSI\LMS\Rest\CoreGuards;
 use ODSI\LMS\Rest\RestServiceProvider;
 use ODSI\LMS\Support\ObjectCache;
 use ODSI\LMS\Support\Assets;
+use ODSI\LMS\Support\Lifecycle;
 use ODSI\LMS\Support\Meta;
 use ODSI\LMS\Support\Settings;
 
@@ -166,7 +169,8 @@ final class Plugin {
 			static fn ( Container $c ): object => new Access(
 				$c->get( EnrollmentRepository::class ),
 				$c->get( ProgressRepository::class ),
-				$c->get( Structure::class )
+				$c->get( Structure::class ),
+				$c->get( Enrollment::class )
 			)
 		);
 		$c->set(
@@ -194,7 +198,7 @@ final class Plugin {
 		$c->set( Blocks::class, static fn ( Container $c ): object => new Blocks( $c->get( Shortcodes::class ) ) );
 		$c->set( CertificateRepository::class, static fn (): object => new CertificateRepository() );
 		$c->set( EnrollmentReport::class, static fn ( Container $c ): object => new EnrollmentReport( $c->get( Progress::class ) ) );
-		$c->set( Certificates::class, static fn ( Container $c ): object => new Certificates( $c->get( CertificateRepository::class ), $c->get( Templates::class ) ) );
+		$c->set( Certificates::class, static fn ( Container $c ): object => new Certificates( $c->get( CertificateRepository::class ), $c->get( Templates::class ), $c->get( Settings::class ) ) );
 		$c->set( Cohorts::class, static fn ( Container $c ): object => new Cohorts( $c->get( Enrollment::class ) ) );
 		$c->set( Emails::class, static fn ( Container $c ): object => new Emails( $c->get( Settings::class ), $c->get( CertificateRepository::class ), $c->get( Certificates::class ) ) );
 		$c->set( SettingsScreen::class, static fn ( Container $c ): object => new SettingsScreen( $c->get( Settings::class ) ) );
@@ -202,6 +206,18 @@ final class Plugin {
 		$c->set( ReportsScreen::class, static fn ( Container $c ): object => new ReportsScreen( $c->get( EnrollmentReport::class ), $c->get( Enrollment::class ) ) );
 		$c->set( GradingScreen::class, static fn ( Container $c ): object => new GradingScreen( $c->get( EnrollmentReport::class ), $c->get( QuizService::class ), $c->get( Assignments::class ) ) );
 		$c->set( AssignmentMetaBox::class, static fn (): object => new AssignmentMetaBox() );
+		$c->set( SettingsMetaBoxes::class, static fn ( Container $c ): object => new SettingsMetaBoxes( $c->get( Settings::class ) ) );
+		$c->set( QuestionMetaBox::class, static fn (): object => new QuestionMetaBox() );
+		$c->set(
+			Lifecycle::class,
+			static fn ( Container $c ): object => new Lifecycle(
+				$c->get( EnrollmentRepository::class ),
+				$c->get( ProgressRepository::class ),
+				$c->get( QuizAttemptRepository::class ),
+				$c->get( SubmissionRepository::class ),
+				$c->get( CertificateRepository::class )
+			)
+		);
 		$c->set( CohortMetaBox::class, static fn ( Container $c ): object => new CohortMetaBox( $c->get( Cohorts::class ) ) );
 		$c->set(
 			ContentDecorator::class,
@@ -255,6 +271,7 @@ final class Plugin {
 			ContentDecorator::class,
 			RestServiceProvider::class,
 			CoreGuards::class,
+			Lifecycle::class,
 		);
 
 		if ( is_admin() ) {
@@ -265,6 +282,8 @@ final class Plugin {
 			$services[] = CohortMetaBox::class;
 			$services[] = AssignmentMetaBox::class;
 			$services[] = SettingsScreen::class;
+			$services[] = SettingsMetaBoxes::class;
+			$services[] = QuestionMetaBox::class;
 		}
 
 		/**

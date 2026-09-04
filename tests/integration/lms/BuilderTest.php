@@ -165,7 +165,7 @@ final class BuilderTest extends TestCase {
 		$detached = $call( 'DELETE', "/{$c['lesson2']}" )->get_data();
 		self::assertNotContains( $c['lesson2'], array_column( $detached['lessons'], 'id' ) );
 		self::assertSame( 'publish', get_post_status( $c['lesson2'] ) );
-		self::assertSame( '', (string) get_post_meta( $c['topic21'], Meta::COURSE_ID, true ) );
+		self::assertSame( 0, (int) get_post_meta( $c['topic21'], Meta::COURSE_ID, true ), 'Registered meta falls back to its default once detached.' );
 		self::assertSame( 404, $call( 'DELETE', "/{$foreign}" )->get_status() );
 	}
 }

@@ -5,6 +5,7 @@
  * @var int                                                        $course_id   Course post id.
  * @var int                                                        $user_id     Current user id.
  * @var bool                                                       $is_enrolled Whether the user is enrolled.
+ * @var string                                                     $access_mode open, free, paid or closed.
  * @var array{id:int,type:string,parent:int,depth:int}|null        $next_step   First step of the course.
  *
  * @package ODSI\LMS
@@ -21,6 +22,19 @@ defined( 'ABSPATH' ) || exit;
 		<a class="odsi-lms-button" href="<?php echo esc_url( $next_step ? (string) get_permalink( $next_step['id'] ) : (string) get_permalink( $course_id ) ); ?>">
 			<?php esc_html_e( 'Continue course', 'odsi-lms' ); ?>
 		</a>
+	<?php elseif ( 'paid' === $access_mode ) : ?>
+		<?php
+		/**
+		 * Filters the markup shown in place of the enroll button on a paid
+		 * course; a commerce integration renders its buy button here.
+		 *
+		 * @param string $html      Markup.
+		 * @param int    $course_id Course.
+		 */
+		echo wp_kses_post( (string) apply_filters( 'odsi_lms_paid_enroll_markup', '<p class="odsi-lms-enroll__notice">' . esc_html__( 'This course requires a purchase.', 'odsi-lms' ) . '</p>', $course_id ) );
+		?>
+	<?php elseif ( 'closed' === $access_mode ) : ?>
+		<p class="odsi-lms-enroll__notice"><?php esc_html_e( 'Enrollment on this course is by invitation.', 'odsi-lms' ); ?></p>
 	<?php else : ?>
 		<button type="button" class="odsi-lms-button odsi-lms-enroll__button"
 			data-course-id="<?php echo esc_attr( (string) $course_id ); ?>">

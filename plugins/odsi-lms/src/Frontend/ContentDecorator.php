@@ -98,6 +98,10 @@ final class ContentDecorator implements Bootable {
 	 * @param int    $course_id Course.
 	 */
 	private function course( string $content, int $course_id ): string {
+		if ( get_current_user_id() > 0 ) {
+			$this->progress->reconcile( get_current_user_id(), $course_id );
+		}
+
 		$progress = get_current_user_id() > 0 ? $this->shortcodes->render_progress( array( 'course_id' => (string) $course_id ) ) : '';
 		$enroll   = $this->shortcodes->render_enroll_button( array( 'course_id' => (string) $course_id ) );
 		$outline  = $this->shortcodes->render_outline( array( 'course_id' => (string) $course_id ) );
@@ -117,6 +121,7 @@ final class ContentDecorator implements Bootable {
 		$controls  = '';
 
 		if ( $user_id > 0 && $course_id > 0 && $this->access->can_access_step( $user_id, $step_id ) && ! $this->structure->is_section( $step_id ) ) {
+			$this->progress->touch_step( $user_id, $step_id );
 			$done     = $this->progress->repository()->is_completed( $user_id, $step_id );
 			$controls = '<footer class="odsi-lms-lesson__footer">';
 

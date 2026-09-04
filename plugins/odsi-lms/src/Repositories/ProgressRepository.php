@@ -89,6 +89,7 @@ final class ProgressRepository extends AbstractRepository {
 		string $object_type,
 		array $args = array()
 	): int {
+		$this->forget();
 		$existing = $this->find_for( $user_id, $object_id );
 		$now      = $this->now();
 		$status   = (string) ( $args['status'] ?? self::STATUS_IN_PROGRESS );
@@ -145,6 +146,12 @@ final class ProgressRepository extends AbstractRepository {
 	 * @return int[]
 	 */
 	public function completed_ids( int $user_id, int $course_id ): array {
+		$key = "{$user_id}:{$course_id}";
+
+		if ( isset( $this->completed_memo[ $key ] ) ) {
+			return $this->completed_memo[ $key ];
+		}
+
 		$table = $this->table();
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -159,7 +166,24 @@ final class ProgressRepository extends AbstractRepository {
 			)
 		);
 
-		return array_map( 'intval', (array) $ids );
+		$this->completed_memo[ $key ] = array_map( 'intval', (array) $ids );
+
+		return $this->completed_memo[ $key ];
+	}
+
+	/**
+	 * Per-request memo of completed ids per user and course, so an outline
+	 * render asks once rather than once per node.
+	 *
+	 * @var array<string, int[]>
+	 */
+	private array $completed_memo = array();
+
+	/**
+	 * Forget memoised rows after a write.
+	 */
+	private function forget(): void {
+		$this->completed_memo = array();
 	}
 
 	/**
@@ -208,6 +232,7 @@ final class ProgressRepository extends AbstractRepository {
 	 * @return int Rows removed.
 	 */
 	public function reset_course( int $user_id, int $course_id ): int {
+		$this->forget();
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$rows = $this->db->delete(
 			$this->table(),
@@ -219,5 +244,19 @@ final class ProgressRepository extends AbstractRepository {
 		);
 
 		return (int) $rows;
+	}
+
+	/**
+	 * Delete every row belonging to a user; runs when the account is erased.
+	 *
+	 * @param int $user_id User id.
+	 * @return int Rows removed.
+	 */
+	public function delete_for_user( int $user_id ): int {
+		$this->forget();
+		$table = $this->table();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (int) $this->db->query( $this->db->prepare( "DELETE FROM {$table} WHERE user_id = %d", $user_id ) );
 	}
 }

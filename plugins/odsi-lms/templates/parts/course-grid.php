@@ -37,3 +37,18 @@ if ( ! $query->have_posts() ) {
 	wp_reset_postdata();
 	?>
 </div>
+<?php if ( (int) $query->max_num_pages > 1 ) : ?>
+	<nav class="odsi-lms-grid__pagination" aria-label="<?php esc_attr_e( 'Course pages', 'odsi-lms' ); ?>">
+		<?php
+		echo wp_kses_post(
+			(string) paginate_links(
+				array(
+					'total'   => (int) $query->max_num_pages,
+					'current' => max( 1, (int) get_query_var( 'paged' ) ),
+					'type'    => 'plain',
+				)
+			)
+		);
+		?>
+	</nav>
+<?php endif; ?>

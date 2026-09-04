@@ -77,7 +77,8 @@
 				.then( function( attempt ) {
 					state.attemptId = attempt.attempt_id;
 					if ( attempt.time_limit > 0 ) {
-						state.deadline = Date.now() + ( attempt.time_limit * 60000 );
+						const seconds = typeof attempt.seconds_remaining === 'number' ? attempt.seconds_remaining : attempt.time_limit * 60;
+						state.deadline = Date.now() + ( seconds * 1000 );
 					}
 					renderQuestions();
 				} )

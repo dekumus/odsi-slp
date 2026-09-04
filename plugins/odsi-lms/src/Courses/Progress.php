@@ -152,7 +152,17 @@ final class Progress {
 
 		$course_id = $this->structure->course_id_for( $object_id );
 
-		if ( $course_id <= 0 || ! $this->enrollments->has_access( $user_id, $course_id ) ) {
+		if ( $course_id <= 0 ) {
+			return false;
+		}
+
+		// Authors and managers preview without an enrollment; when they act,
+		// their progress is recorded like anyone's (spec § 9, edge cases).
+		$may_act = $this->enrollments->has_access( $user_id, $course_id )
+			|| user_can( $user_id, \ODSI\LMS\Support\Capabilities::MANAGE )
+			|| (int) get_post_field( 'post_author', $course_id ) === $user_id;
+
+		if ( ! $may_act ) {
 			return false;
 		}
 
@@ -347,6 +357,36 @@ final class Progress {
 		 * @param int   $course_id Course post id.
 		 */
 		return array_map( 'intval', (array) apply_filters( 'odsi_lms_required_step_ids', $this->structure->step_ids( $course_id ), $course_id ) );
+	}
+
+	/**
+	 * Close an enrollment whose remaining steps were removed from the outline
+	 * (LMS-PRG-009). Cheap: one completed-ids query, so callers run it
+	 * whenever a learner looks at the course.
+	 *
+	 * @param int $user_id   User id.
+	 * @param int $course_id Course post id.
+	 *
+	 * @return bool Whether the course was completed by this call.
+	 */
+	public function reconcile( int $user_id, int $course_id ): bool {
+		$enrollment = $this->enrollments->find_for( $user_id, $course_id );
+
+		if ( ! $enrollment || EnrollmentRepository::STATUS_ACTIVE !== $enrollment->status ) {
+			return false;
+		}
+
+		// A section whose remaining child was removed completes now, as it
+		// would have when that child was finished.
+		$this->maybe_complete_sections( $user_id, 0, $course_id );
+
+		if ( ! $this->has_completed_course( $user_id, $course_id ) ) {
+			return false;
+		}
+
+		$this->maybe_complete_course( $user_id, $course_id );
+
+		return true;
 	}
 
 	/**

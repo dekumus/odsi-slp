@@ -43,6 +43,7 @@ final class Installer {
 		// here before flushing or the new permalinks will 404.
 		( new Taxonomies() )->register();
 		( new PostTypes() )->register();
+		\ODSI\LMS\Certificates\Certificates::register_rewrite();
 		flush_rewrite_rules();
 
 		if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {

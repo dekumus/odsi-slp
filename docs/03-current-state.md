@@ -7,9 +7,9 @@ when you change what it describes.
 
 | Plugin | State |
 | --- | --- |
-| `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 107 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
-| `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens, blocks, profile and group settings pages, notification emails. 123 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
-| `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules plus an uninstall data switch (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 8 integration tests. |
+| `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 125 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
+| `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens, blocks, profile and group settings pages, notification emails. 132 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
+| `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules plus an uninstall data switch (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 15 integration tests. |
 
 Verification so far: the integration suite boots WordPress core with the
 plugin as a must-use plugin, runs activation, and exercises enrollment, outline
@@ -322,6 +322,47 @@ Not changed, by design: self-enrolling on a free or open course linked to a
 private or hidden group joins that group (documented on the meta box); open
 courses record an enrollment on first read (published courses only now).
 
+## Correctness review (this branch)
+
+A second review pass, one per plugin, looked for behaviour that disagreed
+with the spec or with itself. LMS findings fixed, each with a regression in
+`CorrectnessTest`:
+
+- Course, step, quiz and question settings could not be authored without
+  the block editor's meta sidebar. `Admin\SettingsMetaBoxes` and
+  `Admin\QuestionMetaBox` cover every runtime-read key; meta
+  `auth_callback` is now `edit_post` so instructors can write their own
+  (LMS-AUT-011).
+- Re-enrolling reopened a `completed` row (LMS-ENR-013); LMS-PRG-009 had no
+  implementation (`Progress::reconcile()`, called from the course page and
+  the outline route, LMS-PRG-014); a second submit of the same attempt
+  rewrote the score (LMS-QZ-024); the quiz timer started from page load
+  (LMS-QZ-025); submit did not re-check access.
+- Deleting a user left every custom-table row behind (`Support\Lifecycle`,
+  LMS-ENR-014).
+- `Access` decisions are memoised per request and invalidated on enrollment
+  hooks; open-mode access goes through `odsi_lms_can_access_course` like the
+  other modes and records the enrollment through the service so hooks fire;
+  date drips resolve in the site timezone; outline reads prime post and meta
+  caches and memoise completed ids.
+- Smaller: `orderby=percentage` in reports sorts the whole set before
+  paging; the certificate rewrite is registered at activation; the
+  `enable_certificates` setting is honoured; `paid` and `closed` courses show
+  a message instead of an enroll button (filter
+  `odsi_lms_paid_enroll_markup`), "Continue" resumes at the right step;
+  course grid and grading queue paginate; grading feedback keeps the
+  assignment's allowed HTML; rows whose question was deleted are skipped;
+  the quiz "Lesson or topic" picker lists topics; detaching a lesson also
+  detaches quizzes under it and its topics; moving a topic re-aligns its
+  course (LMS-AUT-012); trashing a cohort cancels like deleting; topics use
+  the lesson template on classic themes; status labels are translated; the
+  progress bar carries `role="progressbar"`.
+
+Harness: the core test framework unregisters every meta key between tests,
+so `tests/integration/TestCase` re-registers both plugins' meta in `set_up`.
+Before this, only the first test in a process saw registered meta, which
+hid the instructor `auth_callback` behaviour.
+
 ## Test coverage map
 
 Counts are PHPUnit test cases as the runner reports them (data-provider rows
@@ -343,6 +384,7 @@ count individually), which is why they can exceed the number of methods.
 | `LMS-ASN-*` service, uploads, REST, grading scope | integration `AssignmentsTest` | 9 |
 | `LMS-IF-004` block registration and rendering | integration `BlocksTest` | 3 |
 | `LMS-ACC-008`, `LMS-AUT-008`, `LMS-ASN-010` regressions | integration `SecurityTest` | 8 |
+| `LMS-AUT-011/012`, `LMS-ENR-013/014`, `LMS-PRG-014`, `LMS-QZ-024/025`, certificates switch, timezone drips | integration `CorrectnessTest` | 10 |
 | Learner flow in a browser | e2e `lms-learner-flow` | 1, passing |
 | Course builder in the editor | e2e `lms-course-builder` | 1, passing |
 | Assignment hand-in and approval in a browser | e2e `lms-assignment` | 1, passing |

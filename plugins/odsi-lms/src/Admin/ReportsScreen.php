@@ -187,7 +187,8 @@ final class ReportsScreen implements Bootable {
 		wp_nonce_field( self::NONCE );
 		echo '<input type="hidden" name="action" value="odsi_lms_report_action" /><input type="hidden" name="do" value="enroll" />';
 		echo '<input type="hidden" name="course_id" value="' . esc_attr( (string) $course_id ) . '" />';
-		echo '<input type="text" name="user" required placeholder="' . esc_attr__( 'Username or email', 'odsi-lms' ) . '" /> ';
+		echo '<label for="odsi-lms-enroll-user" class="screen-reader-text">' . esc_html__( 'Username or email', 'odsi-lms' ) . '</label>';
+		echo '<input type="text" id="odsi-lms-enroll-user" name="user" required placeholder="' . esc_attr__( 'Username or email', 'odsi-lms' ) . '" /> ';
 		submit_button( __( 'Enroll', 'odsi-lms' ), 'secondary', 'submit', false );
 		echo '</form>';
 	}

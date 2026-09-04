@@ -67,7 +67,10 @@ final class EnrollmentRepository extends AbstractRepository {
 		$existing = $this->find_for( $user_id, $course_id );
 		$now      = $this->now();
 
-		if ( $existing && self::STATUS_ACTIVE === $existing->status ) {
+		// Active rows are left alone; so are completed ones, which only a
+		// progress reset may reopen (LMS-ENR-002/012). Everything else
+		// (expired, cancelled, pending) reactivates with a fresh window.
+		if ( $existing && in_array( $existing->status, array( self::STATUS_ACTIVE, self::STATUS_COMPLETED ), true ) ) {
 			return (int) $existing->id;
 		}
 
@@ -346,5 +349,18 @@ final class EnrollmentRepository extends AbstractRepository {
 		);
 
 		return (int) $rows;
+	}
+
+	/**
+	 * Delete every row belonging to a user; runs when the account is erased.
+	 *
+	 * @param int $user_id User id.
+	 * @return int Rows removed.
+	 */
+	public function delete_for_user( int $user_id ): int {
+		$table = $this->table();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (int) $this->db->query( $this->db->prepare( "DELETE FROM {$table} WHERE user_id = %d", $user_id ) );
 	}
 }

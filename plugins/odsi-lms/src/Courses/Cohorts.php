@@ -41,6 +41,7 @@ final class Cohorts implements Bootable {
 	 */
 	public function boot(): void {
 		add_action( 'before_delete_post', array( $this, 'on_delete' ), 10, 2 );
+		add_action( 'trashed_post', array( $this, 'on_delete' ), 10, 1 );
 		add_action( 'deleted_user', array( $this, 'on_deleted_user' ) );
 	}
 

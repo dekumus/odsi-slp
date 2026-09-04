@@ -94,9 +94,22 @@ final class Structure implements Bootable {
 	 * @param string    $meta_key Meta key.
 	 */
 	public function on_meta_change( int|array $meta_id, int $post_id, string $meta_key ): void {
-		if ( in_array( $meta_key, array( Meta::COURSE_ID, Meta::LESSON_ID ), true ) ) {
-			$this->flush();
+		if ( ! in_array( $meta_key, array( Meta::COURSE_ID, Meta::LESSON_ID ), true ) ) {
+			return;
 		}
+
+		// A topic or quiz always belongs to its lesson's course, whichever
+		// path wrote the lesson id (LMS-AUT-002).
+		if ( Meta::LESSON_ID === $meta_key && in_array( get_post_type( $post_id ), array( PostTypes::TOPIC, PostTypes::QUIZ ), true ) ) {
+			$lesson_id = (int) get_post_meta( $post_id, Meta::LESSON_ID, true );
+			$course_id = $lesson_id > 0 ? (int) get_post_meta( $lesson_id, Meta::COURSE_ID, true ) : 0;
+
+			if ( $course_id > 0 && (int) get_post_meta( $post_id, Meta::COURSE_ID, true ) !== $course_id ) {
+				update_post_meta( $post_id, Meta::COURSE_ID, $course_id );
+			}
+		}
+
+		$this->flush();
 	}
 
 	/**
@@ -449,6 +462,15 @@ final class Structure implements Bootable {
 			)
 		);
 
-		return array_map( 'intval', $query->posts );
+		$ids = array_map( 'intval', $query->posts );
+
+		// Titles, links and drip meta are read for every node; one query now
+		// beats one per node later.
+		if ( array() !== $ids ) {
+			_prime_post_caches( $ids, false, false );
+			update_meta_cache( 'post', $ids );
+		}
+
+		return $ids;
 	}
 }

@@ -100,9 +100,11 @@ final class Meta {
 			'default' => false,
 		);
 
+		$settings = new Settings();
+
 		return array(
 			PostTypes::COURSE   => array(
-				self::ACCESS_MODE        => $string + array( 'default' => 'free' ),
+				self::ACCESS_MODE        => $string + array( 'default' => in_array( $settings->get( 'default_access_mode' ), array( 'open', 'free', 'paid', 'closed' ), true ) ? (string) $settings->get( 'default_access_mode' ) : 'free' ),
 				self::PRICE              => array(
 					'type'    => 'number',
 					'default' => 0,
@@ -136,7 +138,7 @@ final class Meta {
 				self::LESSON_ID    => $int,
 				self::PASS_MARK    => array(
 					'type'    => 'number',
-					'default' => 80,
+					'default' => max( 0, min( 100, (int) $settings->get( 'default_pass_mark' ) ) ),
 				),
 				self::MAX_ATTEMPTS => $int,
 				self::TIME_LIMIT   => $int,
@@ -162,7 +164,8 @@ final class Meta {
 						array(
 							'single'        => true,
 							'show_in_rest'  => true,
-							'auth_callback' => static fn (): bool => current_user_can( Capabilities::MANAGE ),
+							// The post's editor writes its settings (LMS-AUT-008).
+							'auth_callback' => static fn ( bool $allowed, string $key, int $post_id ): bool => current_user_can( 'edit_post', $post_id ),
 						),
 						$schema
 					)
@@ -180,7 +183,7 @@ final class Meta {
 				'type'          => 'array',
 				'show_in_rest'  => false,
 				'default'       => array(),
-				'auth_callback' => static fn (): bool => current_user_can( Capabilities::MANAGE ),
+				'auth_callback' => static fn ( bool $allowed, string $key, int $post_id ): bool => current_user_can( 'edit_post', $post_id ),
 			)
 		);
 	}

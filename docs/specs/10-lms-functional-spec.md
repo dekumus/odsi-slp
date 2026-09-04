@@ -73,6 +73,18 @@ reattached.
 **LMS-AUT-010** Course access mode is one of `open`, `free`, `paid`, `closed`.
 Any other stored value behaves as `closed`.
 
+**LMS-AUT-011** Every setting the runtime reads from post meta (access mode,
+price, access days, linear progression, duration, certificate; drip type and
+value; pass mark, max attempts, time limit; question type, points and answers)
+can be authored in the classic editor through a meta box and in the block
+editor through registered meta. The meta `auth_callback` is `edit_post` on
+that post, so an instructor writes settings on their own content only.
+Defaults for pass mark and access mode come from the plugin settings.
+
+**LMS-AUT-012** Changing a topic's or quiz's `_odsi_lesson_id` by any path
+re-aligns its `_odsi_course_id` with the lesson's course. Trashing a cohort
+behaves like deleting it.
+
 ---
 
 ## 2. Outline — `LMS-OUT`
@@ -183,6 +195,14 @@ The maintenance job then persists the state.
 **LMS-ENR-011** The daily maintenance job transitions every `active` row with a
 past `expires_at` to `expired` and fires `odsi_lms_enrollment_expired` once per
 row.
+
+**LMS-ENR-013** Enrolling a user whose row is `completed` returns that row
+unchanged: finishing a course is not undone by re-enrolling.
+
+**LMS-ENR-014** Deleting a WordPress user removes their enrollments, progress,
+attempts and answers, submissions and certificates (`deleted_user`), after
+firing `odsi_lms_before_erase_user`. Authored content follows WordPress's own
+reassignment.
 
 **LMS-ENR-012** Cohorts: adding a user to a cohort enrolls them on each of the
 cohort's courses with `source = cohort`, `source_id = cohort id`, without
@@ -308,6 +328,12 @@ evaluated.
 **LMS-PRG-013** Time spent on a node accumulates in seconds across visits and is
 never decremented. It is informational; no rule depends on it.
 
+**LMS-PRG-014** `Progress::reconcile()` implements LMS-PRG-009: it runs when a
+learner views the course page or asks for the outline, completes any section
+whose remaining children were removed, and closes the enrollment when every
+required node is done. Viewing a step records a visit (LMS-PRG-013) without
+completing it.
+
 ---
 
 ## 6. Assessment — `LMS-QZ`
@@ -402,6 +428,16 @@ defaults to on. *(Setting is v1; it is a single boolean.)*
 implement a new question type by handling its type string there; the built-in
 grader returns 0 points and `needs_grading = false` for an unknown type, so an
 unhandled custom type fails closed rather than passing.
+
+**LMS-QZ-024** Closing an attempt is conditional on it still being
+`in_progress`; a second submit of the same attempt is rejected with
+`odsi_lms_attempt_closed` and never rewrites the score. Hand grading re-totals
+a closed attempt without touching `completed_at`.
+
+**LMS-QZ-025** Starting or resuming an attempt returns `seconds_remaining`
+(null without a time limit), computed from the stored UTC start time; the
+player counts down from it rather than from the page load. Submitting checks
+step access again and returns 403 `odsi_lms_quiz_locked` if it was lost.
 
 ---
 

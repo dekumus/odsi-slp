@@ -114,8 +114,8 @@ final class EnrollmentListTable extends \WP_List_Table {
 		echo '<div class="alignleft actions"><select name="status">';
 		printf( '<option value="">%s</option>', esc_html__( 'All statuses', 'odsi-lms' ) );
 
-		foreach ( array( 'active', 'completed', 'expired', 'cancelled', 'pending' ) as $status ) {
-			printf( '<option value="%1$s" %2$s>%3$s</option>', esc_attr( $status ), selected( $current, $status, false ), esc_html( ucfirst( $status ) ) );
+		foreach ( self::status_labels() as $status => $label ) {
+			printf( '<option value="%1$s" %2$s>%3$s</option>', esc_attr( $status ), selected( $current, $status, false ), esc_html( $label ) );
 		}
 
 		echo '</select>';
@@ -131,12 +131,27 @@ final class EnrollmentListTable extends \WP_List_Table {
 	 */
 	protected function column_default( $item, $column_name ): string {
 		return match ( $column_name ) {
-			'status'       => esc_html( ucfirst( (string) $item['status'] ) ),
+			'status'       => esc_html( self::status_labels()[ (string) $item['status'] ] ?? (string) $item['status'] ),
 			'percentage'   => esc_html( (string) $item['percentage'] ) . '%',
 			'enrolled_at'  => esc_html( (string) $item['enrolled_at'] ),
 			'completed_at' => esc_html( (string) $item['completed_at'] ?: '—' ),
 			default        => '',
 		};
+	}
+
+	/**
+	 * Translated status labels.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function status_labels(): array {
+		return array(
+			'active'    => __( 'Active', 'odsi-lms' ),
+			'completed' => __( 'Completed', 'odsi-lms' ),
+			'expired'   => __( 'Expired', 'odsi-lms' ),
+			'cancelled' => __( 'Cancelled', 'odsi-lms' ),
+			'pending'   => __( 'Pending', 'odsi-lms' ),
+		);
 	}
 
 	/**

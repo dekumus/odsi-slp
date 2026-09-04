@@ -89,17 +89,47 @@ final class QuizAttemptRepository extends AbstractRepository {
 	 */
 	public function complete( int $attempt_id, float $earned, float $possible, bool $passed ): bool {
 		$percentage = $possible > 0 ? round( ( $earned / $possible ) * 100, 2 ) : 0.0;
-		$existing   = $this->find( $attempt_id );
+		$table      = $this->table();
+
+		// Conditional on the row still being open, so two concurrent submits
+		// cannot both close it (spec edge case: the second is rejected).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$updated = $this->db->query(
+			$this->db->prepare( // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"UPDATE {$table} SET status = %s, points_earned = %f, points_possible = %f, percentage = %f, passed = %d, completed_at = %s WHERE id = %d AND status = %s",
+				self::STATUS_COMPLETED,
+				$earned,
+				$possible,
+				$percentage,
+				$passed ? 1 : 0,
+				$this->now(),
+				$attempt_id,
+				self::STATUS_IN_PROGRESS
+			)
+		);
+
+		return 1 === (int) $updated;
+	}
+
+	/**
+	 * Re-total a closed attempt after an answer was graded by hand. The
+	 * original completion time is kept.
+	 *
+	 * @param int   $attempt_id Attempt.
+	 * @param float $earned     Points earned.
+	 * @param float $possible   Points possible.
+	 * @param bool  $passed     Whether it now passes.
+	 */
+	public function rescore( int $attempt_id, float $earned, float $possible, bool $passed ): bool {
+		$percentage = $possible > 0 ? round( ( $earned / $possible ) * 100, 2 ) : 0.0;
 
 		return $this->update_row(
 			$attempt_id,
 			array(
-				'status'          => self::STATUS_COMPLETED,
 				'points_earned'   => $earned,
 				'points_possible' => $possible,
 				'percentage'      => $percentage,
 				'passed'          => $passed ? 1 : 0,
-				'completed_at'    => $existing && ! empty( $existing->completed_at ) ? $existing->completed_at : $this->now(),
 			)
 		);
 	}
@@ -332,5 +362,22 @@ final class QuizAttemptRepository extends AbstractRepository {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$this->db->prepare( "SELECT * FROM {$table} WHERE attempt_id = %d ORDER BY id ASC", $attempt_id )
 		);
+	}
+
+	/**
+	 * Delete every attempt (and its answers) a user has anywhere.
+	 *
+	 * @param int $user_id User id.
+	 * @return int Attempts removed.
+	 */
+	public function delete_for_user( int $user_id ): int {
+		$table   = $this->table();
+		$answers = Schema::table( 'quiz_answers' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$this->db->query( $this->db->prepare( "DELETE a FROM {$answers} a INNER JOIN {$table} t ON t.id = a.attempt_id WHERE t.user_id = %d", $user_id ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (int) $this->db->query( $this->db->prepare( "DELETE FROM {$table} WHERE user_id = %d", $user_id ) );
 	}
 }

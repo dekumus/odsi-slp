@@ -24,7 +24,7 @@ if ( empty( $course_ids ) ) {
 			<a class="odsi-lms-my-courses__link" href="<?php echo esc_url( (string) get_permalink( $course_id ) ); ?>">
 				<?php echo esc_html( get_the_title( $course_id ) ); ?>
 			</a>
-			<div class="odsi-lms-progress__track">
+			<div class="odsi-lms-progress__track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?php echo esc_attr( (string) $percentage ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: course title. */ __( 'Progress on %s', 'odsi-lms' ), get_the_title( $course_id ) ) ); ?>">
 				<div class="odsi-lms-progress__fill" style="width: <?php echo esc_attr( (string) $percentage ); ?>%"></div>
 			</div>
 			<span class="odsi-lms-my-courses__percentage">

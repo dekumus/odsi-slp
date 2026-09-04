@@ -213,4 +213,17 @@ final class SubmissionRepository extends AbstractRepository {
 
 		return false === $deleted ? 0 : (int) $deleted;
 	}
+
+	/**
+	 * Delete every row belonging to a user; runs when the account is erased.
+	 *
+	 * @param int $user_id User id.
+	 * @return int Rows removed.
+	 */
+	public function delete_for_user( int $user_id ): int {
+		$table = $this->table();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (int) $this->db->query( $this->db->prepare( "DELETE FROM {$table} WHERE user_id = %d", $user_id ) );
+	}
 }

@@ -84,12 +84,18 @@ final class GradingScreen implements Bootable {
 		foreach ( $queue['rows'] as $row ) {
 			$learner  = get_userdata( (int) $row->user_id );
 			$question = get_post( (int) $row->question_id );
-			$points   = (float) get_post_meta( (int) $row->question_id, Meta::QUESTION_POINTS, true ) ?: 1.0;
-			$answer   = json_decode( (string) $row->answer, true );
+
+			if ( ! $question ) {
+				continue;
+				// The question was deleted; nothing sensible to grade.
+			}
+
+			$points = (float) get_post_meta( (int) $row->question_id, Meta::QUESTION_POINTS, true ) ?: 1.0;
+			$answer = json_decode( (string) $row->answer, true );
 
 			echo '<div class="card" style="max-width:none;margin-bottom:1em">';
 			printf( '<h2>%s — %s</h2>', esc_html( $learner ? $learner->display_name : '#' . (int) $row->user_id ), esc_html( (string) get_the_title( (int) $row->quiz_id ) ) );
-			printf( '<p><strong>%s</strong></p>', esc_html( $question ? $question->post_title : '' ) );
+			printf( '<p><strong>%s</strong></p>', esc_html( $question->post_title ) );
 			printf( '<blockquote>%s</blockquote>', wp_kses_post( wpautop( is_string( $answer ) ? $answer : (string) wp_json_encode( $answer ) ) ) );
 			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 			wp_nonce_field( self::NONCE );
@@ -97,9 +103,39 @@ final class GradingScreen implements Bootable {
 			printf( '<label>%s <input type="number" name="points" min="0" max="%s" step="0.5" value="0" /> / %s</label> ', esc_html__( 'Points', 'odsi-lms' ), esc_attr( (string) $points ), esc_html( (string) $points ) );
 			submit_button( __( 'Save grade', 'odsi-lms' ), 'primary', 'submit', false );
 			echo '</form></div>';
-		}
+		}//end foreach
+
+		$this->pagination( (int) $queue['total'], $offset );
 
 		echo '</div>';
+	}
+
+	/**
+	 * Previous / next links for a queue.
+	 *
+	 * @param int $total  Rows.
+	 * @param int $offset Current offset.
+	 */
+	private function pagination( int $total, int $offset ): void {
+		$pages   = (int) ceil( $total / 20 );
+		$current = (int) floor( $offset / 20 ) + 1;
+
+		if ( $pages <= 1 ) {
+			return;
+		}
+
+		echo '<div class="tablenav"><div class="tablenav-pages">';
+		echo wp_kses_post(
+			(string) paginate_links(
+				array(
+					'base'    => add_query_arg( 'paged', '%#%', admin_url( 'admin.php?page=' . self::SLUG ) ),
+					'format'  => '',
+					'total'   => $pages,
+					'current' => $current,
+				)
+			)
+		);
+		echo '</div></div>';
 	}
 
 	/**
@@ -159,7 +195,7 @@ final class GradingScreen implements Bootable {
 
 		$id       = absint( $_POST['submission_id'] ?? 0 );
 		$points   = (float) sanitize_text_field( wp_unslash( (string) ( $_POST['points'] ?? '0' ) ) );
-		$feedback = sanitize_textarea_field( wp_unslash( (string) ( $_POST['feedback'] ?? '' ) ) );
+		$feedback = wp_kses( wp_unslash( (string) ( $_POST['feedback'] ?? '' ) ), Assignments::allowed_html() ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- wp_kses is the sanitiser.
 		$row      = $this->assignments->repository()->find( $id );
 
 		if ( ! $row || ! $this->assignments->can_grade( get_current_user_id(), $row ) ) {

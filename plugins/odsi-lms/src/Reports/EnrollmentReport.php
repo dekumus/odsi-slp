@@ -134,8 +134,17 @@ final class EnrollmentReport {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$total = (int) $this->db->get_var( $this->db->prepare( "SELECT COUNT(*) {$sql}", $params ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-		$params[] = $per_page;
-		$params[] = $offset;
+		$by_percentage = 'percentage' === (string) $args['orderby'];
+
+		if ( $by_percentage ) {
+			// Percentages are derived, so the sort has to see the whole roster
+			// (bounded, then sliced) rather than one page of it.
+			$params[] = 5000;
+			$params[] = 0;
+		} else {
+			$params[] = $per_page;
+			$params[] = $offset;
+		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = (array) $this->db->get_results( $this->db->prepare( "SELECT e.*, u.display_name, u.user_email {$sql} ORDER BY {$orderby} {$order}, e.id DESC LIMIT %d OFFSET %d", $params ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -157,9 +166,10 @@ final class EnrollmentReport {
 			);
 		}
 
-		if ( 'percentage' === (string) $args['orderby'] ) {
+		if ( $by_percentage ) {
 			$percentages = array_column( $out, 'percentage' );
 			array_multisort( $percentages, 'ASC' === $order ? SORT_ASC : SORT_DESC, SORT_NUMERIC, $out );
+			$out = array_slice( $out, $offset, $per_page );
 		}
 
 		return array(

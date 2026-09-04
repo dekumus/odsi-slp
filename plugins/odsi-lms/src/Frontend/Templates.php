@@ -128,7 +128,7 @@ final class Templates implements Bootable {
 			return 'single-course';
 		}
 
-		if ( is_singular( \ODSI\LMS\PostTypes\PostTypes::LESSON ) ) {
+		if ( is_singular( array( \ODSI\LMS\PostTypes\PostTypes::LESSON, \ODSI\LMS\PostTypes\PostTypes::TOPIC ) ) ) {
 			return 'single-lesson';
 		}
 

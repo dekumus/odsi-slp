@@ -222,7 +222,9 @@ final class QuizService implements Bootable {
 		$percentage = $possible > 0 ? round( ( $earned / $possible ) * 100, 2 ) : 0.0;
 		$passed     = $percentage >= $pass_mark && ! $needs_grading;
 
-		$this->attempts->complete( $attempt_id, $earned, $possible, $passed );
+		if ( ! $this->attempts->complete( $attempt_id, $earned, $possible, $passed ) ) {
+			return new WP_Error( 'odsi_lms_attempt_closed', __( 'That quiz attempt has already been submitted.', 'odsi-lms' ) );
+		}
 
 		if ( $passed ) {
 			$this->progress->complete_quiz( (int) $attempt->user_id, $quiz_id );
@@ -288,7 +290,7 @@ final class QuizService implements Bootable {
 		$percentage = $possible > 0 ? round( ( $earned / $possible ) * 100, 2 ) : 0.0;
 		$passed     = $percentage >= $pass_mark && ! $needs_grading;
 
-		$this->attempts->complete( $attempt_id, $earned, $possible, $passed );
+		$this->attempts->rescore( $attempt_id, $earned, $possible, $passed );
 
 		if ( $passed ) {
 			$this->progress->complete_quiz( (int) $attempt->user_id, (int) $attempt->quiz_id );

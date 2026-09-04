@@ -15,6 +15,7 @@ use ODSI\LMS\Courses\Enrollment;
 use ODSI\LMS\Courses\Progress;
 use ODSI\LMS\Courses\Structure;
 use ODSI\LMS\PostTypes\PostTypes;
+use ODSI\LMS\Support\Meta;
 use WP_Query;
 
 defined( 'ABSPATH' ) || exit;
@@ -123,13 +124,17 @@ final class Shortcodes implements Bootable {
 
 		$user_id = get_current_user_id();
 
+		$is_enrolled = $user_id > 0 && $this->enrollment->is_enrolled( $user_id, $course_id );
+		$resume_id   = $is_enrolled ? $this->progress->resume_step( $user_id, $course_id ) : 0;
+
 		return $this->templates->render(
 			'parts/enroll-button',
 			array(
 				'course_id'   => $course_id,
 				'user_id'     => $user_id,
-				'is_enrolled' => $user_id > 0 && $this->enrollment->is_enrolled( $user_id, $course_id ),
-				'next_step'   => $this->structure->outline( $course_id )[0] ?? null,
+				'is_enrolled' => $is_enrolled,
+				'access_mode' => (string) get_post_meta( $course_id, Meta::ACCESS_MODE, true ) ?: 'free',
+				'next_step'   => $resume_id > 0 ? array( 'id' => $resume_id ) : ( $this->structure->outline( $course_id )[0] ?? null ),
 			)
 		);
 	}

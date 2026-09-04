@@ -99,6 +99,10 @@ final class CourseController {
 		$course_id = (int) $request['id'];
 		$user_id   = get_current_user_id();
 
+		if ( $user_id > 0 ) {
+			$this->progress->reconcile( $user_id, $course_id );
+		}
+
 		if ( \ODSI\LMS\PostTypes\PostTypes::COURSE !== get_post_type( $course_id ) || 'publish' !== get_post_status( $course_id ) ) {
 			return new WP_Error( 'odsi_lms_course_not_found', __( 'That course does not exist.', 'odsi-lms' ), array( 'status' => 404 ) );
 		}

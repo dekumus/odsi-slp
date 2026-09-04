@@ -37,6 +37,16 @@ abstract class TestCase extends WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 
+		// The core framework unregisters every meta key in tear_down (its
+		// `unregister_all_meta_keys`), but plugins register at `init`, which
+		// fires once per process. Re-register so REST meta writes and
+		// auth_callbacks behave in every test, not only the first.
+		foreach ( array( '\\ODSI\\LMS\\Support\\Meta', '\\ODSI\\Social\\Support\\Meta' ) as $meta ) {
+			if ( class_exists( $meta ) && method_exists( $meta, 'register' ) ) {
+				$meta::register();
+			}
+		}
+
 		$this->lms    = new LmsFactory( $this->factory() );
 		$this->social = new SocialFactory( $this->factory() );
 	}

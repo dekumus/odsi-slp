@@ -139,11 +139,21 @@ final class QuizController {
 			return $attempt_id;
 		}
 
+		$time_limit = (int) get_post_meta( $quiz_id, \ODSI\LMS\Support\Meta::TIME_LIMIT, true );
+		$attempt    = $this->quizzes->repository()->find( $attempt_id );
+		$remaining  = null;
+
+		if ( $time_limit > 0 && $attempt ) {
+			// A resumed attempt keeps its original deadline (LMS-QZ-001/006).
+			$remaining = max( 0, (int) strtotime( (string) $attempt->started_at . ' UTC' ) + $time_limit * MINUTE_IN_SECONDS - time() );
+		}
+
 		return new WP_REST_Response(
 			array(
-				'attempt_id' => $attempt_id,
-				'resumed'    => $resumed,
-				'time_limit' => (int) get_post_meta( $quiz_id, \ODSI\LMS\Support\Meta::TIME_LIMIT, true ),
+				'attempt_id'        => $attempt_id,
+				'resumed'           => $resumed,
+				'time_limit'        => $time_limit,
+				'seconds_remaining' => $remaining,
 			),
 			201
 		);
@@ -218,6 +228,15 @@ final class QuizController {
 				'odsi_lms_attempt_not_found',
 				__( 'That quiz attempt does not belong to you.', 'odsi-lms' ),
 				array( 'status' => 404 )
+			);
+		}
+
+		// Access can lapse between start and submit (LMS-ACC-007).
+		if ( ! $this->access->can_access_step( get_current_user_id(), (int) $attempt->quiz_id ) ) {
+			return new WP_Error(
+				'odsi_lms_quiz_locked',
+				__( 'This quiz is no longer available to you.', 'odsi-lms' ),
+				array( 'status' => 403 )
 			);
 		}
 

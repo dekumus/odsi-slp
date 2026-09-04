@@ -33,7 +33,8 @@ final class Certificates implements Bootable {
 	 */
 	public function __construct(
 		private CertificateRepository $certificates,
-		private Templates $templates
+		private Templates $templates,
+		private \ODSI\LMS\Support\Settings $settings
 	) {
 	}
 
@@ -56,6 +57,10 @@ final class Certificates implements Bootable {
 	 * @param int $course_id Course.
 	 */
 	public function on_course_completed( int $user_id, int $course_id ): void {
+		if ( ! $this->settings->bool( 'enable_certificates' ) ) {
+			return;
+		}
+
 		$this->issue( $user_id, $course_id );
 	}
 
@@ -184,6 +189,13 @@ final class Certificates implements Bootable {
 	 * `/certificate/{code}/`.
 	 */
 	public function rewrites(): void {
+		self::register_rewrite();
+	}
+
+	/**
+	 * The one rewrite rule, callable from activation before the service exists.
+	 */
+	public static function register_rewrite(): void {
 		if ( isset( $GLOBALS['wp_rewrite'] ) ) {
 			add_rewrite_rule( '^certificate/([A-Za-z0-9\-]+)/?$', 'index.php?' . self::QUERY_VAR . '=$matches[1]', 'top' );
 		}

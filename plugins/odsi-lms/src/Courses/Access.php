@@ -36,9 +36,17 @@ final class Access implements Bootable {
 	public function __construct(
 		private EnrollmentRepository $enrollments,
 		private ProgressRepository $progress,
-		private Structure $structure
+		private Structure $structure,
+		private Enrollment $enrollment
 	) {
 	}
+
+	/**
+	 * Per-request memo of course access decisions, keyed "user:course".
+	 *
+	 * @var array<string, bool>
+	 */
+	private array $course_access = array();
 
 	/**
 	 * Register hooks.
@@ -48,6 +56,11 @@ final class Access implements Bootable {
 		add_filter( 'get_the_excerpt', array( $this, 'filter_excerpt' ), 20, 2 );
 		add_filter( 'the_excerpt_rss', array( $this, 'filter_excerpt_rss' ), 20 );
 		add_filter( 'odsi_lms_resume_can_open', array( $this, 'filter_resume_can_open' ), 10, 3 );
+
+		// The per-request memo must not outlive an enrollment change.
+		foreach ( array( 'odsi_lms_user_enrolled', 'odsi_lms_user_unenrolled', 'odsi_lms_enrollment_expired', 'odsi_lms_cohort_enrollment_cancelled', 'odsi_lms_course_completed', 'odsi_lms_progress_reset', 'odsi_lms_before_erase_user' ) as $hook ) {
+			add_action( $hook, array( $this, 'forget' ), 1, 0 );
+		}
 	}
 
 	/**
@@ -79,13 +92,17 @@ final class Access implements Bootable {
 
 		$mode = (string) get_post_meta( $course_id, Meta::ACCESS_MODE, true );
 
-		if ( 'open' === $mode ) {
-			$this->record_open_enrollment( $user_id, $course_id );
+		$key = "{$user_id}:{$course_id}";
 
-			return true;
+		if ( isset( $this->course_access[ $key ] ) ) {
+			return $this->course_access[ $key ];
 		}
 
-		$allowed = $user_id > 0 && $this->enrollments->has_access( $user_id, $course_id );
+		if ( 'open' === $mode ) {
+			$this->record_open_enrollment( $user_id, $course_id );
+		}
+
+		$allowed = 'open' === $mode || ( $user_id > 0 && $this->enrollments->has_access( $user_id, $course_id ) );
 
 		/**
 		 * Filters whether a user may access a course.
@@ -94,7 +111,16 @@ final class Access implements Bootable {
 		 * @param int  $user_id   User id.
 		 * @param int  $course_id Course post id.
 		 */
-		return (bool) apply_filters( 'odsi_lms_can_access_course', $allowed, $user_id, $course_id );
+		$this->course_access[ $key ] = (bool) apply_filters( 'odsi_lms_can_access_course', $allowed, $user_id, $course_id );
+
+		return $this->course_access[ $key ];
+	}
+
+	/**
+	 * Forget memoised decisions (after an enrollment change in this request).
+	 */
+	public function forget(): void {
+		$this->course_access = array();
 	}
 
 	/**
@@ -112,11 +138,10 @@ final class Access implements Bootable {
 
 		// Drafts are the author's; a learner cannot open, complete or attempt
 		// them before they are published, even with a sequential id in hand.
-		if ( 'publish' !== get_post_status( $object_id ) || ! $this->can_access_course( $user_id, $course_id ) ) {
-			return false;
-		}
-
-		$allowed = $this->is_dripped( $user_id, $object_id, $course_id )
+		// The filter still runs so an add-on may grant (LMS-ACC-008).
+		$allowed = 'publish' === get_post_status( $object_id )
+			&& $this->can_access_course( $user_id, $course_id )
+			&& $this->is_dripped( $user_id, $object_id, $course_id )
 			&& $this->passes_linear_progression( $user_id, $object_id, $course_id );
 
 		/**
@@ -255,7 +280,9 @@ final class Access implements Bootable {
 			return;
 		}
 
-		$this->enrollments->enroll( $user_id, $course_id, array( 'source' => 'open' ) );
+		// Through the service, so `odsi_lms_pre_enroll` and `_user_enrolled`
+		// fire for open-course learners like for everyone else (LMS-ENR-004/005).
+		$this->enrollment->enroll( $user_id, $course_id, array( 'source' => 'open' ) );
 	}
 
 	/**
@@ -275,7 +302,7 @@ final class Access implements Bootable {
 		$value = (string) get_post_meta( $object_id, Meta::DRIP_VALUE, true );
 
 		if ( 'date' === $type ) {
-			return '' === $value || strtotime( $value ) <= time();
+			return '' === $value || self::date_release_timestamp( $value ) <= time();
 		}
 
 		if ( 'days_after_enrollment' === $type ) {
@@ -291,6 +318,20 @@ final class Access implements Bootable {
 		}
 
 		return true;
+	}
+
+	/**
+	 * A drip date means midnight at the start of that day in the site's
+	 * timezone, not UTC (LMS-ACC-004).
+	 *
+	 * @param string $date `Y-m-d`.
+	 */
+	public static function date_release_timestamp( string $date ): int {
+		try {
+			return ( new \DateTimeImmutable( $date . ' 00:00:00', wp_timezone() ) )->getTimestamp();
+		} catch ( \Exception ) {
+			return (int) strtotime( $date );
+		}
 	}
 
 	/**
@@ -352,7 +393,7 @@ final class Access implements Bootable {
 					$message = sprintf(
 						/* translators: %s: formatted date. */
 						__( 'This lesson will be available on %s.', 'odsi-lms' ),
-						wp_date( (string) get_option( 'date_format' ), (int) strtotime( $value ) )
+						wp_date( (string) get_option( 'date_format' ), self::date_release_timestamp( $value ) )
 					);
 				}
 				break;

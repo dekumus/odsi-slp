@@ -241,12 +241,20 @@ final class BuilderController {
 			return new WP_Error( 'odsi_lms_not_in_course', __( 'That item is not part of this course.', 'odsi-lms' ), array( 'status' => 404 ) );
 		}
 
+		$descendants = array_merge( $this->structure->quizzes_for( $node ), $this->structure->topics( $node ) );
+
+		foreach ( $this->structure->topics( $node ) as $topic ) {
+			$descendants = array_merge( $descendants, $this->structure->quizzes_for( $topic ) );
+		}
+
 		delete_post_meta( $node, Meta::COURSE_ID );
 		delete_post_meta( $node, Meta::LESSON_ID );
 
-		foreach ( $this->structure->topics( $node ) as $topic ) {
-			delete_post_meta( $topic, Meta::COURSE_ID );
-			delete_post_meta( $topic, Meta::LESSON_ID );
+		// Whatever hung below it leaves the course too, or it would linger as
+		// an invisible member that reappears on re-attachment.
+		foreach ( $descendants as $child ) {
+			delete_post_meta( $child, Meta::COURSE_ID );
+			delete_post_meta( $child, Meta::LESSON_ID );
 		}
 
 		$this->structure->flush();

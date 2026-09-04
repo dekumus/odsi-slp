@@ -91,11 +91,19 @@ final class CourseBuilder implements Bootable {
 			(int) get_post_meta( $post->ID, Meta::COURSE_ID, true )
 		);
 
-		if ( in_array( $type, array( PostTypes::TOPIC, PostTypes::QUIZ ), true ) ) {
+		if ( PostTypes::TOPIC === $type ) {
 			$this->render_select(
 				Meta::LESSON_ID,
 				__( 'Lesson', 'odsi-lms' ),
 				PostTypes::LESSON,
+				(int) get_post_meta( $post->ID, Meta::LESSON_ID, true )
+			);
+		} elseif ( PostTypes::QUIZ === $type ) {
+			// A quiz may sit under a lesson or a topic (LMS-AUT-003).
+			$this->render_select(
+				Meta::LESSON_ID,
+				__( 'Lesson or topic', 'odsi-lms' ),
+				array( PostTypes::LESSON, PostTypes::TOPIC ),
 				(int) get_post_meta( $post->ID, Meta::LESSON_ID, true )
 			);
 		}
@@ -138,7 +146,8 @@ final class CourseBuilder implements Bootable {
 				continue;
 			}
 
-			$target = absint( wp_unslash( $_POST[ $key ] ) );
+			$target  = absint( wp_unslash( $_POST[ $key ] ) );
+			$current = (int) get_post_meta( $post_id, $key, true );
 
 			// Placing a node inside someone else's course would let an
 			// instructor rewrite that course's outline (LMS-AUT-008).
@@ -146,8 +155,14 @@ final class CourseBuilder implements Bootable {
 				continue;
 			}
 
+			// "None" submitted only because the current placement was not in
+			// this user's list (another author's course) is not a change.
+			if ( 0 === $target && $current > 0 && ! current_user_can( 'edit_post', $current ) ) {
+				continue;
+			}
+
 			update_post_meta( $post_id, $key, $target );
-		}
+		}//end foreach
 
 		// A topic or quiz always inherits its course from the lesson it sits under,
 		// so the two can never drift apart.
@@ -163,12 +178,12 @@ final class CourseBuilder implements Bootable {
 	/**
 	 * Render a single post-picker select.
 	 *
-	 * @param string $name      Field name and meta key.
-	 * @param string $label     Field label.
-	 * @param string $post_type Post type to list.
-	 * @param int    $selected  Currently selected post id.
+	 * @param string          $name      Field name and meta key.
+	 * @param string          $label     Field label.
+	 * @param string|string[] $post_type Post type(s) to list.
+	 * @param int             $selected  Currently selected post id.
 	 */
-	private function render_select( string $name, string $label, string $post_type, int $selected ): void {
+	private function render_select( string $name, string $label, string|array $post_type, int $selected ): void {
 		$args = array(
 			'post_type'              => $post_type,
 			'post_status'            => array( 'publish', 'draft', 'private' ),
