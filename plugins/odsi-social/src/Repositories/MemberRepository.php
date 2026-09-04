@@ -267,7 +267,7 @@ final class MemberRepository extends AbstractRepository {
 	 * Directory query. Only members who have been active at least once are
 	 * listed (SOC-MEM-008); an index row alone is not enough.
 	 *
-	 * @param array<string, mixed> $args `search`, `orderby` (newest|active|alphabetical), `per_page`, `page`, `include` ids.
+	 * @param array<string, mixed> $args `search`, `orderby` (newest|active|alphabetical), `per_page`, `page`, `include` ids, `exclude` ids.
 	 *
 	 * @return array{ids: int[], total: int}
 	 */
@@ -289,6 +289,12 @@ final class MemberRepository extends AbstractRepository {
 		if ( ! empty( $args['include'] ) ) {
 			$ids     = array_map( 'intval', (array) $args['include'] );
 			$where[] = 'u.ID IN (' . implode( ',', array_fill( 0, count( $ids ), '%d' ) ) . ')';
+			$params  = array_merge( $params, $ids );
+		}
+
+		if ( ! empty( $args['exclude'] ) ) {
+			$ids     = array_map( 'intval', (array) $args['exclude'] );
+			$where[] = 'u.ID NOT IN (' . implode( ',', array_fill( 0, count( $ids ), '%d' ) ) . ')';
 			$params  = array_merge( $params, $ids );
 		}
 

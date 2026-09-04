@@ -41,10 +41,12 @@
 }
 
 .odsi-social-button:disabled { cursor: progress; opacity: 0.6; }
+.odsi-social-button--quiet { background: transparent; border: 1px solid var(--odsi-social-border, #d9dce1); color: var(--odsi-social-muted, #5b6470); }
 
 .odsi-social-post-form,
 .odsi-social-comment-form,
 .odsi-social-message-form,
+.odsi-social-report-form,
 .odsi-social-create-group {
 	background: var(--odsi-social-surface, #f5f6f8);
 	border-radius: var(--odsi-social-radius, 8px);
@@ -56,7 +58,8 @@
 
 .odsi-social-post-form textarea,
 .odsi-social-comment-form textarea,
-.odsi-social-message-form textarea {
+.odsi-social-message-form textarea,
+.odsi-social-report-form textarea {
 	border: 1px solid var(--odsi-social-border, #d9dce1);
 	border-radius: var(--odsi-social-radius, 8px);
 	font: inherit;
@@ -217,6 +220,10 @@
 .odsi-social-inline-form {
 	display: inline;
 }
+
+.odsi-social-report-form { margin: 0.75rem 0; }
+.odsi-social-report-form label { display: grid; gap: 0.25rem; }
+.odsi-social-report--comment { background: none; border: 0; color: var(--odsi-social-muted, #5b6470); cursor: pointer; font: inherit; font-size: 0.8125rem; margin-left: 0.5rem; padding: 0; }
 
 .odsi-social-button--small {
 	padding: 0.25rem 0.6rem;

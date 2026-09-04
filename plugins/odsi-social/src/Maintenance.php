@@ -11,6 +11,7 @@ namespace ODSI\Social;
 
 use ODSI\Social\Contracts\Bootable;
 use ODSI\Social\Messages\Messages;
+use ODSI\Social\Moderation\Reports;
 use ODSI\Social\Notifications\Notifications;
 use ODSI\Social\Repositories\ActivityRepository;
 use ODSI\Social\Repositories\GroupRepository;
@@ -20,8 +21,9 @@ use ODSI\Social\Support\Settings;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Daily housekeeping: notification retention, fully deleted threads, and a
- * recount of every denormalised counter from its source table.
+ * Daily housekeeping: notification and resolved-report retention, fully
+ * deleted threads, and a recount of every denormalised counter from its
+ * source table.
  */
 final class Maintenance implements Bootable {
 
@@ -34,6 +36,7 @@ final class Maintenance implements Bootable {
 	 * @param ActivityRepository $activity      Activity rows (comment and reaction counts).
 	 * @param GroupRepository    $groups        Group index (member counts).
 	 * @param MemberRepository   $members       Member index (activity, connection and follow counts).
+	 * @param Reports            $reports       Reports (resolved-report retention, SOC-MOD-016).
 	 */
 	public function __construct(
 		private Notifications $notifications,
@@ -41,7 +44,8 @@ final class Maintenance implements Bootable {
 		private Settings $settings,
 		private ActivityRepository $activity,
 		private GroupRepository $groups,
-		private MemberRepository $members
+		private MemberRepository $members,
+		private Reports $reports
 	) {
 	}
 
@@ -56,7 +60,10 @@ final class Maintenance implements Bootable {
 	 * Run every task.
 	 */
 	public function run(): void {
-		$this->notifications->purge_read_older_than( max( 1, $this->settings->int( 'notification_retention_days' ) ) );
+		$retention = max( 1, $this->settings->int( 'notification_retention_days' ) );
+
+		$this->notifications->purge_read_older_than( $retention );
+		$this->reports->purge_resolved_older_than( $retention );
 		$this->messages->purge_fully_deleted();
 		$this->recount();
 	}

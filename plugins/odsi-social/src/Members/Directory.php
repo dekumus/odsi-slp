@@ -9,7 +9,9 @@ declare( strict_types = 1 );
 
 namespace ODSI\Social\Members;
 
+use ODSI\Social\Repositories\BlockRepository;
 use ODSI\Social\Repositories\MemberRepository;
+use ODSI\Social\Support\Capabilities;
 use ODSI\Social\Support\Settings;
 
 defined( 'ABSPATH' ) || exit;
@@ -25,11 +27,13 @@ final class Directory {
 	 * @param MemberRepository $members  Member index.
 	 * @param Profiles         $profiles Profiles, for cards.
 	 * @param Settings         $settings Settings.
+	 * @param BlockRepository  $blocks   Blocks: a blocked pair never lists each other (SOC-MOD-005).
 	 */
 	public function __construct(
 		private MemberRepository $members,
 		private Profiles $profiles,
-		private Settings $settings
+		private Settings $settings,
+		private BlockRepository $blocks
 	) {
 	}
 
@@ -63,6 +67,10 @@ final class Directory {
 
 		$args['search']  = sanitize_text_field( (string) $args['search'] );
 		$args['orderby'] = in_array( $args['orderby'], array( 'newest', 'active', 'alphabetical' ), true ) ? (string) $args['orderby'] : 'newest';
+
+		if ( $viewer_id > 0 && ! Capabilities::is_admin( $viewer_id ) ) {
+			$args['exclude'] = array_keys( $this->blocks->ids_for( $viewer_id ) );
+		}
 
 		/**
 		 * Filters the directory query arguments.

@@ -9,6 +9,7 @@
  * @var array<string, string>                     $visibilities    Visibility key => label.
  * @var string                                    $accept          Accepted image extensions.
  * @var array{type: string, text: string}|null    $notice          Feedback after a save.
+ * @var array<int, array<string, mixed>>          $blocked         Members this member has blocked (SOC-MOD-001).
  *
  * @package ODSI\Social
  */
@@ -16,6 +17,7 @@
 defined( 'ABSPATH' ) || exit;
 
 $odsi_uid = (int) $profile['id'];
+$blocked  = isset( $blocked ) && is_array( $blocked ) ? $blocked : array();
 ?>
 <div class="odsi-social-settings" data-user-id="<?php echo esc_attr( (string) $odsi_uid ); ?>">
 	<h2><?php esc_html_e( 'Edit profile', 'odsi-social' ); ?></h2>
@@ -142,4 +144,28 @@ $odsi_uid = (int) $profile['id'];
 
 		<p><button type="submit" class="odsi-social-button"><?php esc_html_e( 'Save changes', 'odsi-social' ); ?></button></p>
 	</form>
+
+	<section class="odsi-social-settings__section odsi-social-settings__blocked">
+		<h3><?php esc_html_e( 'Blocked members', 'odsi-social' ); ?></h3>
+		<?php if ( array() === $blocked ) : ?>
+			<p class="odsi-social-feed__empty"><?php esc_html_e( 'You have not blocked anyone.', 'odsi-social' ); ?></p>
+		<?php else : ?>
+			<ul class="odsi-social-member-list">
+				<?php foreach ( $blocked as $odsi_member ) : ?>
+					<li class="odsi-social-member-list__item">
+						<img class="odsi-social-avatar odsi-social-avatar--small" src="<?php echo esc_url( (string) $odsi_member['avatar'] ); ?>" alt="" width="32" height="32" />
+						<span class="odsi-social-member-list__name"><?php echo esc_html( (string) $odsi_member['name'] ); ?></span>
+						<span class="odsi-social-member-list__role"><?php echo esc_html( sprintf( /* translators: %s: human time difference. */ __( 'blocked %s ago', 'odsi-social' ), human_time_diff( (int) strtotime( (string) $odsi_member['since'] ) ) ) ); ?></span>
+						<form class="odsi-social-inline-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+							<?php wp_nonce_field( \ODSI\Social\Frontend\Forms::NONCE_UNBLOCK ); ?>
+							<input type="hidden" name="action" value="odsi_social_unblock" />
+							<input type="hidden" name="user_id" value="<?php echo esc_attr( (string) $odsi_uid ); ?>" />
+							<input type="hidden" name="member_id" value="<?php echo esc_attr( (string) $odsi_member['id'] ); ?>" />
+							<button type="submit" class="odsi-social-button odsi-social-button--quiet"><?php esc_html_e( 'Unblock', 'odsi-social' ); ?></button>
+						</form>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		<?php endif; ?>
+	</section>
 </div>

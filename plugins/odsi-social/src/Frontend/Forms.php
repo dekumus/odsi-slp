@@ -12,6 +12,7 @@ namespace ODSI\Social\Frontend;
 use ODSI\Social\Contracts\Bootable;
 use ODSI\Social\Groups\Groups;
 use ODSI\Social\Groups\Membership;
+use ODSI\Social\Members\Blocks;
 use ODSI\Social\Members\Profiles;
 use ODSI\Social\Members\Uploads;
 use ODSI\Social\Repositories\GroupMemberRepository;
@@ -31,6 +32,7 @@ final class Forms implements Bootable {
 	public const NONCE_PROFILE = 'odsi_social_profile_save';
 	public const NONCE_GROUP   = 'odsi_social_group_save';
 	public const NONCE_MEMBER  = 'odsi_social_group_member';
+	public const NONCE_UNBLOCK = 'odsi_social_unblock';
 
 	/**
 	 * Constructor.
@@ -42,6 +44,7 @@ final class Forms implements Bootable {
 	 * @param GroupMemberRepository $members    Membership rows.
 	 * @param Router                $router     URLs.
 	 * @param MemberRepository      $index      Member index, for avatars.
+	 * @param Blocks                $blocks     Blocks, for the settings page's unblock control.
 	 */
 	public function __construct(
 		private Profiles $profiles,
@@ -50,7 +53,8 @@ final class Forms implements Bootable {
 		private Membership $membership,
 		private GroupMemberRepository $members,
 		private Router $router,
-		private MemberRepository $index
+		private MemberRepository $index,
+		private Blocks $blocks
 	) {
 	}
 
@@ -61,6 +65,39 @@ final class Forms implements Bootable {
 		add_action( 'admin_post_odsi_social_profile_save', array( $this, 'handle_profile' ) );
 		add_action( 'admin_post_odsi_social_group_save', array( $this, 'handle_group' ) );
 		add_action( 'admin_post_odsi_social_group_member', array( $this, 'handle_group_member' ) );
+		add_action( 'admin_post_odsi_social_unblock', array( $this, 'handle_unblock' ) );
+	}
+
+	/**
+	 * Unblock from the settings page (SOC-MOD-001).
+	 */
+	public function handle_unblock(): void {
+		check_admin_referer( self::NONCE_UNBLOCK );
+
+		$user_id = absint( $_POST['user_id'] ?? 0 );
+		$result  = $this->process_unblock( get_current_user_id(), $user_id, absint( $_POST['member_id'] ?? 0 ) );
+		$user    = get_userdata( $user_id );
+
+		$this->finish( $user ? $this->router->url( 'members', $user->user_nicename, 'edit' ) : home_url( '/' ), $result );
+	}
+
+	/**
+	 * Lift one of a member's blocks: their own, or an admin on their behalf.
+	 *
+	 * @param int $actor_id  Who submits.
+	 * @param int $user_id   Whose block list.
+	 * @param int $member_id Member to unblock.
+	 *
+	 * @return true|WP_Error
+	 */
+	public function process_unblock( int $actor_id, int $user_id, int $member_id ): bool|WP_Error {
+		if ( ! $this->profiles->can_edit( $actor_id, $user_id ) ) {
+			return new WP_Error( 'odsi_social_forbidden', __( 'You cannot edit this profile.', 'odsi-social' ), array( 'status' => 403 ) );
+		}
+
+		$this->blocks->unblock( $user_id, $member_id );
+
+		return true;
 	}
 
 	/**

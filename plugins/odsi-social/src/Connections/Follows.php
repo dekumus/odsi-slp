@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace ODSI\Social\Connections;
 
+use ODSI\Social\Repositories\BlockRepository;
 use ODSI\Social\Repositories\FollowRepository;
 use ODSI\Social\Repositories\MemberRepository;
 use WP_Error;
@@ -25,10 +26,12 @@ final class Follows {
 	 *
 	 * @param FollowRepository $follows Storage.
 	 * @param MemberRepository $members Member index, for counts.
+	 * @param BlockRepository  $blocks  Blocks: a blocked pair cannot follow (SOC-MOD-003).
 	 */
 	public function __construct(
 		private FollowRepository $follows,
-		private MemberRepository $members
+		private MemberRepository $members,
+		private BlockRepository $blocks
 	) {
 	}
 
@@ -53,6 +56,10 @@ final class Follows {
 	public function follow( int $actor_id, int $target_id ): bool|WP_Error {
 		if ( $actor_id <= 0 || $target_id <= 0 || $actor_id === $target_id || ! get_userdata( $target_id ) ) {
 			return new WP_Error( 'odsi_social_invalid_target', __( 'You cannot follow that member.', 'odsi-social' ) );
+		}
+
+		if ( $this->blocks->is_blocked( $actor_id, $target_id ) ) {
+			return new WP_Error( 'odsi_social_blocked', __( 'You cannot follow that member.', 'odsi-social' ), array( 'status' => 403 ) );
 		}
 
 		if ( ! $this->follows->add( $actor_id, $target_id ) ) {

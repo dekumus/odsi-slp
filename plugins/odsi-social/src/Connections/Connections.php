@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace ODSI\Social\Connections;
 
+use ODSI\Social\Repositories\BlockRepository;
 use ODSI\Social\Repositories\ConnectionRepository;
 use ODSI\Social\Repositories\MemberRepository;
 use WP_Error;
@@ -31,10 +32,12 @@ final class Connections {
 	 *
 	 * @param ConnectionRepository $connections Storage.
 	 * @param MemberRepository     $members     Member index, for counts.
+	 * @param BlockRepository      $blocks      Blocks: a blocked pair cannot connect (SOC-MOD-003).
 	 */
 	public function __construct(
 		private ConnectionRepository $connections,
-		private MemberRepository $members
+		private MemberRepository $members,
+		private BlockRepository $blocks
 	) {
 	}
 
@@ -103,6 +106,10 @@ final class Connections {
 			return new WP_Error( 'odsi_social_invalid_target', __( 'You cannot connect with that member.', 'odsi-social' ) );
 		}
 
+		if ( $this->blocks->is_blocked( $actor_id, $target_id ) ) {
+			return new WP_Error( 'odsi_social_blocked', __( 'You cannot connect with that member.', 'odsi-social' ), array( 'status' => 403 ) );
+		}
+
 		if ( $this->connections->find_pair( $actor_id, $target_id ) ) {
 			return new WP_Error( 'odsi_social_connection_exists', __( 'A connection or request already exists.', 'odsi-social' ) );
 		}
@@ -139,6 +146,10 @@ final class Connections {
 
 		if ( ! $row || ConnectionRepository::STATUS_PENDING !== $row->status || (int) $row->initiator_id !== $initiator_id || $actor_id === $initiator_id ) {
 			return new WP_Error( 'odsi_social_no_request', __( 'There is no request to accept.', 'odsi-social' ) );
+		}
+
+		if ( $this->blocks->is_blocked( $actor_id, $initiator_id ) ) {
+			return new WP_Error( 'odsi_social_blocked', __( 'You cannot connect with that member.', 'odsi-social' ), array( 'status' => 403 ) );
 		}
 
 		$this->connections->accept( (int) $row->id );

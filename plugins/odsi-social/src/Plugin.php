@@ -16,6 +16,7 @@ use ODSI\Social\Activity\Privacy;
 use ODSI\Social\Activity\Reactions;
 use ODSI\Social\Activity\Renderers as ActivityRenderers;
 use ODSI\Social\Admin\AdminMenu;
+use ODSI\Social\Admin\ModerationScreen;
 use ODSI\Social\Connections\Connections;
 use ODSI\Social\Connections\Follows;
 use ODSI\Social\Contracts\Bootable;
@@ -28,6 +29,7 @@ use ODSI\Social\Frontend\Templates;
 use ODSI\Social\Groups\GroupActivity;
 use ODSI\Social\Groups\Groups;
 use ODSI\Social\Groups\Membership;
+use ODSI\Social\Members\Blocks as MemberBlocks;
 use ODSI\Social\Members\Directory;
 use ODSI\Social\Members\Lifecycle;
 use ODSI\Social\Members\Presence;
@@ -35,6 +37,7 @@ use ODSI\Social\Members\ProfileFields;
 use ODSI\Social\Members\Profiles;
 use ODSI\Social\Members\Uploads;
 use ODSI\Social\Messages\Messages;
+use ODSI\Social\Moderation\Reports;
 use ODSI\Social\Notifications\Emails;
 use ODSI\Social\Notifications\Listeners;
 use ODSI\Social\Notifications\Notifications;
@@ -42,6 +45,7 @@ use ODSI\Social\Notifications\Renderers as NotificationRenderers;
 use ODSI\Social\PostTypes\GroupPostType;
 use ODSI\Social\Repositories\ActivityMetaRepository;
 use ODSI\Social\Repositories\ActivityRepository;
+use ODSI\Social\Repositories\BlockRepository;
 use ODSI\Social\Repositories\ConnectionRepository;
 use ODSI\Social\Repositories\FollowRepository;
 use ODSI\Social\Repositories\GroupMemberRepository;
@@ -52,6 +56,7 @@ use ODSI\Social\Repositories\NotificationRepository;
 use ODSI\Social\Repositories\ProfileDataRepository;
 use ODSI\Social\Repositories\ProfileFieldRepository;
 use ODSI\Social\Repositories\ReactionRepository;
+use ODSI\Social\Repositories\ReportRepository;
 use ODSI\Social\Repositories\ThreadRepository;
 use ODSI\Social\Rest\RestServiceProvider;
 use ODSI\Social\Support\Assets;
@@ -149,6 +154,8 @@ final class Plugin {
 				NotificationRepository::class,
 				ThreadRepository::class,
 				MessageRepository::class,
+				BlockRepository::class,
+				ReportRepository::class,
 			) as $repository
 		) {
 			$c->set( $repository, static fn (): object => new $repository() );
@@ -169,7 +176,8 @@ final class Plugin {
 				$c->get( ConnectionRepository::class ),
 				$c->get( GroupMemberRepository::class ),
 				$c->get( GroupRepository::class ),
-				$c->get( ActivityRepository::class )
+				$c->get( ActivityRepository::class ),
+				$c->get( BlockRepository::class )
 			)
 		);
 		$c->set(
@@ -208,8 +216,8 @@ final class Plugin {
 		$c->set( Mentions::class, static fn ( Container $c ): object => new Mentions( $c->get( Privacy::class ) ) );
 
 		// Connections.
-		$c->set( Connections::class, static fn ( Container $c ): object => new Connections( $c->get( ConnectionRepository::class ), $c->get( MemberRepository::class ) ) );
-		$c->set( Follows::class, static fn ( Container $c ): object => new Follows( $c->get( FollowRepository::class ), $c->get( MemberRepository::class ) ) );
+		$c->set( Connections::class, static fn ( Container $c ): object => new Connections( $c->get( ConnectionRepository::class ), $c->get( MemberRepository::class ), $c->get( BlockRepository::class ) ) );
+		$c->set( Follows::class, static fn ( Container $c ): object => new Follows( $c->get( FollowRepository::class ), $c->get( MemberRepository::class ), $c->get( BlockRepository::class ) ) );
 
 		// Groups.
 		$c->set(
@@ -234,7 +242,7 @@ final class Plugin {
 
 		// Notifications.
 		$c->set( NotificationRenderers::class, static fn (): object => new NotificationRenderers() );
-		$c->set( Notifications::class, static fn ( Container $c ): object => new Notifications( $c->get( NotificationRepository::class ), $c->get( NotificationRenderers::class ), $c->get( MemberRepository::class ) ) );
+		$c->set( Notifications::class, static fn ( Container $c ): object => new Notifications( $c->get( NotificationRepository::class ), $c->get( NotificationRenderers::class ), $c->get( MemberRepository::class ), $c->get( BlockRepository::class ) ) );
 		$c->set(
 			Listeners::class,
 			static fn ( Container $c ): object => new Listeners(
@@ -254,7 +262,36 @@ final class Plugin {
 				$c->get( MessageRepository::class ),
 				$c->get( MemberRepository::class ),
 				$c->get( Connections::class ),
-				$c->get( Settings::class )
+				$c->get( Settings::class ),
+				$c->get( BlockRepository::class )
+			)
+		);
+
+		// Moderation.
+		$c->set(
+			MemberBlocks::class,
+			static fn ( Container $c ): object => new MemberBlocks(
+				$c->get( BlockRepository::class ),
+				$c->get( Connections::class ),
+				$c->get( Follows::class ),
+				$c->get( MemberRepository::class )
+			)
+		);
+		$c->set(
+			Reports::class,
+			static fn ( Container $c ): object => new Reports(
+				$c->get( ReportRepository::class ),
+				$c->get( ActivityRepository::class ),
+				$c->get( Activity::class ),
+				$c->get( Privacy::class ),
+				$c->get( Profiles::class ),
+				$c->get( Groups::class ),
+				$c->get( Membership::class ),
+				$c->get( Messages::class ),
+				$c->get( MessageRepository::class ),
+				$c->get( Notifications::class ),
+				$c->get( NotificationRenderers::class ),
+				$c->get( MemberRepository::class )
 			)
 		);
 
@@ -267,10 +304,11 @@ final class Plugin {
 				$c->get( MemberRepository::class ),
 				$c->get( ProfileDataRepository::class ),
 				$c->get( ProfileFields::class ),
-				$c->get( Connections::class )
+				$c->get( Connections::class ),
+				$c->get( BlockRepository::class )
 			)
 		);
-		$c->set( Directory::class, static fn ( Container $c ): object => new Directory( $c->get( MemberRepository::class ), $c->get( Profiles::class ), $c->get( Settings::class ) ) );
+		$c->set( Directory::class, static fn ( Container $c ): object => new Directory( $c->get( MemberRepository::class ), $c->get( Profiles::class ), $c->get( Settings::class ), $c->get( BlockRepository::class ) ) );
 		$c->set(
 			Lifecycle::class,
 			static fn ( Container $c ): object => new Lifecycle(
@@ -282,7 +320,8 @@ final class Plugin {
 				$c->get( ReactionRepository::class ),
 				$c->get( ActivityRepository::class ),
 				$c->get( Activity::class ),
-				$c->get( Settings::class )
+				$c->get( Settings::class ),
+				$c->get( MemberBlocks::class )
 			)
 		);
 
@@ -298,12 +337,14 @@ final class Plugin {
 				$c->get( Membership::class ),
 				$c->get( GroupMemberRepository::class ),
 				$c->get( Router::class ),
-				$c->get( MemberRepository::class )
+				$c->get( MemberRepository::class ),
+				$c->get( MemberBlocks::class )
 			)
 		);
 		$c->set( Blocks::class, static fn ( Container $c ): object => new Blocks( $c->get( Shortcodes::class ) ) );
 		$c->set( RestServiceProvider::class, static fn ( Container $c ): object => new RestServiceProvider( $c ) );
 		$c->set( AdminMenu::class, static fn ( Container $c ): object => new AdminMenu( $c->get( Settings::class ), $c->get( ProfileFields::class ) ) );
+		$c->set( ModerationScreen::class, static fn ( Container $c ): object => new ModerationScreen( $c->get( Reports::class ) ) );
 		$c->set(
 			Maintenance::class,
 			static fn ( Container $c ): object => new Maintenance(
@@ -312,7 +353,8 @@ final class Plugin {
 				$c->get( Settings::class ),
 				$c->get( ActivityRepository::class ),
 				$c->get( GroupRepository::class ),
-				$c->get( MemberRepository::class )
+				$c->get( MemberRepository::class ),
+				$c->get( Reports::class )
 			)
 		);
 
@@ -340,6 +382,7 @@ final class Plugin {
 			Mentions::class,
 			Listeners::class,
 			Emails::class,
+			Reports::class,
 			Presence::class,
 			Profiles::class,
 			Lifecycle::class,
@@ -352,6 +395,7 @@ final class Plugin {
 
 		if ( is_admin() ) {
 			$services[] = AdminMenu::class;
+			$services[] = ModerationScreen::class;
 		}
 
 		/**

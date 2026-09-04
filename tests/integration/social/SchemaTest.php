@@ -20,7 +20,7 @@ final class SchemaTest extends TestCase {
 	public function test_every_table_exists_after_activation(): void {
 		global $wpdb;
 
-		self::assertCount( 15, Schema::all_tables() );
+		self::assertCount( 17, Schema::all_tables() );
 
 		foreach ( Schema::all_tables() as $table ) {
 			self::assertSame( $table, $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ), "Missing table {$table}" );
@@ -67,6 +67,10 @@ final class SchemaTest extends TestCase {
 			array( 'thread_participants', 'thread_user', true ),
 			array( 'messages', 'thread_date', false ),
 			array( 'profile_data', 'field_user', true ),
+			array( 'blocks', 'pair', true ),
+			array( 'blocks', 'blocked_id', false ),
+			array( 'reports', 'status_created', false ),
+			array( 'reports', 'reporter_object', false ),
 		);
 	}
 

@@ -65,4 +65,8 @@ $default_privacy = isset( $default_privacy ) ? (string) $default_privacy : '';
 	<?php if ( '' !== $next_cursor ) : ?>
 		<button type="button" class="odsi-social-button odsi-social-load-more"><?php esc_html_e( 'Load more', 'odsi-social' ); ?></button>
 	<?php endif; ?>
+
+	<?php if ( $viewer_id > 0 ) : ?>
+		<?php echo $odsi_templates->render( 'parts/report-form', array( 'viewer_id' => $viewer_id ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- template output. ?>
+	<?php endif; ?>
 </div>

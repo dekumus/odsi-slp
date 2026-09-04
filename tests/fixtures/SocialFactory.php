@@ -35,6 +35,7 @@ final class SocialFactory {
 			\ODSI\Social\Repositories\GroupMemberRepository::class,
 			\ODSI\Social\Repositories\ConnectionRepository::class,
 			\ODSI\Social\Repositories\ProfileDataRepository::class,
+			\ODSI\Social\Repositories\BlockRepository::class,
 			\ODSI\Social\Members\ProfileFields::class,
 		) as $id ) {
 			$this->service( $id )->flush();
@@ -136,6 +137,30 @@ final class SocialFactory {
 		if ( $result instanceof \WP_Error ) {
 			throw new \RuntimeException( $result->get_error_message() );
 		}
+	}
+
+	/**
+	 * One member blocks another.
+	 */
+	public function block( int $blocker, int $blocked ): void {
+		$result = $this->service( \ODSI\Social\Members\Blocks::class )->block( $blocker, $blocked );
+
+		if ( $result instanceof \WP_Error ) {
+			throw new \RuntimeException( $result->get_error_message() );
+		}
+	}
+
+	/**
+	 * File a report and return its id.
+	 */
+	public function report( int $reporter, string $type, int $object_id, string $reason = 'spam', string $details = '' ): int {
+		$result = $this->service( \ODSI\Social\Moderation\Reports::class )->report( $reporter, $type, $object_id, $reason, $details );
+
+		if ( $result instanceof \WP_Error ) {
+			throw new \RuntimeException( $result->get_error_message() );
+		}
+
+		return $result;
 	}
 
 	/**

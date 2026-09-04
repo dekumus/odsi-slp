@@ -23,6 +23,9 @@ $odsi_templates = \ODSI\Social\Plugin::instance()->container()->get( \ODSI\Socia
 		)
 	); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	?>
+	<?php if ( $viewer_id > 0 ) : ?>
+		<?php echo $odsi_templates->render( 'parts/report-form', array( 'viewer_id' => $viewer_id ) ); ?>
+	<?php endif; ?>
 	<?php if ( ! empty( $item['reactors'] ) ) : ?>
 		<section class="odsi-social-reactors">
 			<h3><?php esc_html_e( 'Liked by', 'odsi-social' ); ?></h3>

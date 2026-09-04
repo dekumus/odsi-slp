@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace ODSI\Social\Rest;
 
+use ODSI\Social\Members\Blocks;
 use ODSI\Social\Members\Directory;
 use ODSI\Social\Members\Profiles;
 use ODSI\Social\Members\Uploads;
@@ -20,7 +21,7 @@ use WP_REST_Server;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Directory and profiles.
+ * Directory, profiles and blocks.
  */
 final class MembersController {
 
@@ -30,11 +31,13 @@ final class MembersController {
 	 * @param Directory $directory Directory.
 	 * @param Profiles  $profiles  Profiles.
 	 * @param Uploads   $uploads   Image uploads.
+	 * @param Blocks    $blocks    Blocks.
 	 */
 	public function __construct(
 		private Directory $directory,
 		private Profiles $profiles,
-		private Uploads $uploads
+		private Uploads $uploads,
+		private Blocks $blocks
 	) {
 	}
 
@@ -81,6 +84,35 @@ final class MembersController {
 				'methods'             => 'PATCH',
 				'callback'            => array( $this, 'update_me' ),
 				'permission_callback' => array( RestServiceProvider::class, 'logged_in' ),
+			)
+		);
+
+		register_rest_route(
+			$ns,
+			'/members/me/blocks',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'blocks' ),
+				'permission_callback' => array( RestServiceProvider::class, 'logged_in' ),
+			)
+		);
+
+		register_rest_route(
+			$ns,
+			'/members/(?P<id>\d+)/block',
+			array(
+				array(
+					'methods'             => 'PUT',
+					'callback'            => array( $this, 'block' ),
+					'permission_callback' => array( RestServiceProvider::class, 'logged_in' ),
+					'args'                => array( 'id' => RestServiceProvider::int_arg() ),
+				),
+				array(
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => array( $this, 'unblock' ),
+					'permission_callback' => array( RestServiceProvider::class, 'logged_in' ),
+					'args'                => array( 'id' => RestServiceProvider::int_arg() ),
+				),
 			)
 		);
 
@@ -133,6 +165,35 @@ final class MembersController {
 		'avatar' === (string) $request['kind'] ? $this->profiles->set_avatar( $user_id, 0 ) : $this->profiles->set_cover( $user_id, 0 );
 
 		return new WP_REST_Response( $this->profiles->view( $user_id, $user_id ) );
+	}
+
+	/**
+	 * `PUT /members/{id}/block` (SOC-MOD-001).
+	 *
+	 * @param WP_REST_Request $request Request.
+	 */
+	public function block( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$result = $this->blocks->block( get_current_user_id(), (int) $request['id'] );
+
+		return RestServiceProvider::respond( true === $result ? array( 'blocked' => true ) : $result );
+	}
+
+	/**
+	 * `DELETE /members/{id}/block`
+	 *
+	 * @param WP_REST_Request $request Request.
+	 */
+	public function unblock( WP_REST_Request $request ): WP_REST_Response {
+		$this->blocks->unblock( get_current_user_id(), (int) $request['id'] );
+
+		return new WP_REST_Response( array( 'blocked' => false ) );
+	}
+
+	/**
+	 * `GET /members/me/blocks` — who the caller has blocked.
+	 */
+	public function blocks(): WP_REST_Response {
+		return new WP_REST_Response( array( 'members' => $this->blocks->blocking( get_current_user_id() ) ) );
 	}
 
 	/**

@@ -8,7 +8,7 @@ when you change what it describes.
 | Plugin | State |
 | --- | --- |
 | `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 140 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
-| `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens, blocks, profile and group settings pages, notification emails. 164 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
+| `odsi-social` | Built: kernel, 17 custom tables (schema 1.1.0), 15 repositories, every v1 domain service plus blocking, reporting and a moderation queue, REST namespace (seven controllers), virtual-page router, templates, admin screens, blocks, profile and group settings pages, notification emails. 188 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules plus an uninstall data switch (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 15 integration tests. |
 
 Verification so far: the integration suite boots WordPress core with the
@@ -397,6 +397,14 @@ Community findings fixed by a delegated pass, each with a regression
   can be promoted and demoted; opening a thread marks its notifications
   read; the daily job recounts denormalised counters (`SOC-OPS-001/002`).
 
+Former v2 community items now built: member blocking (`Members\Blocks`,
+`odsi_social_blocks`, enforced in every owning service and in the feed SQL
+at constant query cost), content and member reporting (`Moderation\Reports`,
+`odsi_social_reports`, `POST /reports`), and a Community → Moderation queue
+with dismiss, delete-content and ban-from-group actions that notify the
+reporter; resolved reports are pruned with the notification retention
+(`SOC-MOD-001..016`).
+
 Harness: the core test framework unregisters every meta key between tests,
 so `tests/integration/TestCase` re-registers both plugins' meta in `set_up`.
 Before this, only the first test in a process saw registered meta, which
@@ -436,7 +444,7 @@ count individually), which is why they can exceed the number of methods.
 | Blocks on a page and in the editor | e2e `blocks` | 1, passing |
 | Profile edit and group manage forms in a browser | e2e `social-settings` | 1, passing |
 | Member flow in a browser | e2e `social-member-flow` | 1, passing |
-| Social schema, ADR-005 scan | integration `social/SchemaTest` | 20 (5 methods with providers) |
+| Social schema, ADR-005 scan | integration `social/SchemaTest` | 24 (5 methods with providers) |
 | Privacy decision table, both representations | integration `social/PrivacyTest` | 41 (3 methods, 19-row table twice) |
 | `SOC-ACT-*` | integration `social/ActivityTest` | 19 |
 | `SOC-CON-*` | integration `social/ConnectionsTest` | 5 |
@@ -449,6 +457,7 @@ count individually), which is why they can exceed the number of methods.
 | Uploads, profile and group forms, image REST routes | integration `social/SettingsFormsTest` | 6 |
 | `SOC-IF-004` blocks | integration `social/BlocksTest` | 2 |
 | ADR-018, `SOC-ABUSE-*`, `SOC-MEM-004b`, `SOC-NOT-009` | integration `social/SecurityTest` | 9 |
+| `SOC-MOD-*` blocking effects, reporting rules, admin resolution, retention | integration `social/ModerationTest` | 20 |
 | Post-form privacy, page URLs, 404 decisions, my groups, query budgets, settings sanitiser, uninstall purge, counter recount (`SOC-OPS-*`) | integration `social/CorrectnessTest` | 14 |
 | Integration contract end to end, unpublished courses, queued link sync, expiry, cohorts, trash, relink, essay passes, banned members | integration `bridge/BridgeTest` | 15 |
 

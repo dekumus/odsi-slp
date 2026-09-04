@@ -6,7 +6,7 @@ independent GPL plugins plus an optional bridge.
 | Plugin | Role | Status |
 | --- | --- | --- |
 | [`odsi-lms`](plugins/odsi-lms) | Courses, lessons, topics, quizzes, assignments, enrollment, progress, reports, certificates, cohorts, course builder, learner emails | 170 tests + browser E2E passing |
-| [`odsi-social`](plugins/odsi-social) | Profiles, activity, groups, connections, notifications, emails, messaging, blocks | 164 tests + browser E2E passing |
+| [`odsi-social`](plugins/odsi-social) | Profiles, activity, groups, connections, notifications, emails, messaging, blocking, reporting and moderation, blocks | 188 tests + browser E2E passing |
 | [`odsi-bridge`](plugins/odsi-bridge) | Course activity in the feed, groups linked to courses, shared progress | Built and tested (15 tests) |
 
 Each plugin installs and works alone. The bridge activates only when both are

@@ -39,6 +39,9 @@ defined( 'ABSPATH' ) || exit;
 			<?php if ( ! empty( $item['can_delete'] ) ) : ?>
 				<button type="button" class="odsi-social-delete" data-activity-id="<?php echo esc_attr( (string) $item['id'] ); ?>"><?php esc_html_e( 'Delete', 'odsi-social' ); ?></button>
 			<?php endif; ?>
+			<?php if ( (int) $item['author']['id'] !== $viewer_id ) : ?>
+				<button type="button" class="odsi-social-report" data-object-type="activity" data-object-id="<?php echo esc_attr( (string) $item['id'] ); ?>"><?php esc_html_e( 'Report', 'odsi-social' ); ?></button>
+			<?php endif; ?>
 		<?php else : ?>
 			<span class="odsi-social-count"><?php echo esc_html( sprintf( /* translators: %d: likes. */ _n( '%d like', '%d likes', (int) $item['reaction_count'], 'odsi-social' ), (int) $item['reaction_count'] ) ); ?></span>
 		<?php endif; ?>
@@ -53,6 +56,9 @@ defined( 'ABSPATH' ) || exit;
 						<strong><?php echo esc_html( (string) $odsi_comment['author']['name'] ); ?></strong>
 						<div class="odsi-social-comment__content"><?php echo wp_kses_post( (string) $odsi_comment['content'] ); ?></div>
 						<span class="odsi-social-item__time"><?php echo esc_html( (string) $odsi_comment['date_relative'] ); ?></span>
+						<?php if ( $viewer_id > 0 && (int) $odsi_comment['author']['id'] !== $viewer_id ) : ?>
+							<button type="button" class="odsi-social-report odsi-social-report--comment" data-object-type="comment" data-object-id="<?php echo esc_attr( (string) $odsi_comment['id'] ); ?>"><?php esc_html_e( 'Report', 'odsi-social' ); ?></button>
+						<?php endif; ?>
 					</div>
 				</div>
 			<?php endforeach; ?>

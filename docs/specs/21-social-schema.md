@@ -1,6 +1,6 @@
 # `odsi-social` — schema
 
-Fifteen custom tables plus one post type. For each table: what it holds, the
+Seventeen custom tables plus one post type. For each table: what it holds, the
 columns, the access patterns it must serve, and an index justified by each
 pattern. Growth notes say which tables need a retention answer.
 
@@ -320,6 +320,61 @@ days) are deleted by the daily job (`SOC-NOT-008`).
 
 Growth: messages unbounded. Retention: threads deleted by every participant
 are removed by the daily job; otherwise kept.
+
+---
+
+## `blocks`
+
+Directed blocker → blocked edges (`SOC-MOD-001`). Every read path asks "is
+this pair blocked in either direction?" for the viewer against each author on
+a page, so `BlockRepository::ids_for()` loads a member's whole block set
+(both directions) once per request and every later check is a memory lookup.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `blocker_id` | bigint | |
+| `blocked_id` | bigint | |
+| `created_at` | datetime | |
+
+| Access pattern | Index |
+| --- | --- |
+| Has A blocked B? Block / unblock. | unique `(blocker_id, blocked_id)` |
+| Who has A blocked? (settings page, half of the block set) | same index, prefix |
+| Who has blocked A? (other half of the block set; the feed predicate's `UNION`) | `(blocked_id)` |
+
+Growth: bounded by members². No retention.
+
+---
+
+## `reports`
+
+One row per (reporter, object) complaint and its resolution (`SOC-MOD-010`).
+`object_type` is one of `activity`, `comment`, `member`, `group`, `message`;
+`object_id` is the row id in that type's table (a post id for groups).
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `reporter_id` | bigint | |
+| `object_type` | varchar(16) | |
+| `object_id` | bigint | |
+| `reason` | varchar(16) | `spam` / `harassment` / `inappropriate` / `other` |
+| `details` | text NULL | plain text, ≤ 2,000 characters |
+| `status` | varchar(16) | `open` / `dismissed` / `actioned` |
+| `created_at` | datetime | |
+| `resolved_at` | datetime NULL | |
+| `resolved_by` | bigint | admin, 0 for a system close |
+| `resolution` | varchar(32) | `dismissed` / `delete_content` / `ban_from_group` / `content_deleted` |
+
+| Access pattern | Index |
+| --- | --- |
+| The queue: reports in a status, newest first, paginated; the badge count | `(status, created_at, id)` |
+| One open report per member per object (`SOC-MOD-012`) | `(reporter_id, object_type, object_id, status)` |
+| Close open reports about deleted content (`SOC-MOD-014a`) | `(object_type, object_id, status)` |
+| Retention sweep of resolved rows | `(status, created_at, id)` with `resolved_at` filtered; the resolved set is small |
+
+Growth: proportional to complaints. Retention: resolved rows older than the
+notification retention setting are deleted daily (`SOC-MOD-016`); open rows
+are kept until resolved.
 
 ---
 

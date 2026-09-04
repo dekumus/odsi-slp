@@ -22,7 +22,7 @@ final class Schema {
 	/**
 	 * Bumped whenever any definition below changes.
 	 */
-	public const DB_VERSION = '1.0.0';
+	public const DB_VERSION = '1.1.0';
 
 	/**
 	 * Option holding the installed schema version.
@@ -50,6 +50,8 @@ final class Schema {
 		'threads'             => 'odsi_social_threads',
 		'thread_participants' => 'odsi_social_thread_participants',
 		'messages'            => 'odsi_social_messages',
+		'blocks'              => 'odsi_social_blocks',
+		'reports'             => 'odsi_social_reports',
 	);
 
 	/**
@@ -306,6 +308,36 @@ final class Schema {
 			date_sent datetime NOT NULL DEFAULT {$zero},
 			PRIMARY KEY  (id),
 			KEY thread_date (thread_id,date_sent,id)
+		) {$collate};";
+
+		$t   = self::table( 'blocks' );
+		$s[] = "CREATE TABLE {$t} (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			blocker_id bigint(20) unsigned NOT NULL,
+			blocked_id bigint(20) unsigned NOT NULL,
+			created_at datetime NOT NULL DEFAULT {$zero},
+			PRIMARY KEY  (id),
+			UNIQUE KEY pair (blocker_id,blocked_id),
+			KEY blocked_id (blocked_id)
+		) {$collate};";
+
+		$t   = self::table( 'reports' );
+		$s[] = "CREATE TABLE {$t} (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			reporter_id bigint(20) unsigned NOT NULL,
+			object_type varchar(16) NOT NULL DEFAULT 'activity',
+			object_id bigint(20) unsigned NOT NULL,
+			reason varchar(16) NOT NULL DEFAULT 'other',
+			details text NULL,
+			status varchar(16) NOT NULL DEFAULT 'open',
+			created_at datetime NOT NULL DEFAULT {$zero},
+			resolved_at datetime NULL,
+			resolved_by bigint(20) unsigned NOT NULL DEFAULT 0,
+			resolution varchar(32) NOT NULL DEFAULT '',
+			PRIMARY KEY  (id),
+			KEY status_created (status,created_at,id),
+			KEY reporter_object (reporter_id,object_type,object_id,status),
+			KEY object (object_type,object_id,status)
 		) {$collate};";
 
 		return $s;

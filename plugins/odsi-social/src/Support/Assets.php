@@ -63,6 +63,7 @@ final class Assets implements Bootable {
 			'odsiSocial',
 			array(
 				'restUrl' => esc_url_raw( rest_url( 'odsi-social/v1' ) ),
+				'homeUrl' => esc_url_raw( home_url( '/' ) ),
 				'nonce'   => wp_create_nonce( 'wp_rest' ),
 				'userId'  => get_current_user_id(),
 				'i18n'    => array(

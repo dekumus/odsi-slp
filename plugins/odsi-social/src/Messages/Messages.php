@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace ODSI\Social\Messages;
 
 use ODSI\Social\Connections\Connections;
+use ODSI\Social\Repositories\BlockRepository;
 use ODSI\Social\Repositories\MemberRepository;
 use ODSI\Social\Repositories\MessageRepository;
 use ODSI\Social\Repositories\ThreadRepository;
@@ -34,13 +35,15 @@ final class Messages {
 	 * @param MemberRepository  $members     Member index, for the message setting.
 	 * @param Connections       $connections Connections, for `connections` setting.
 	 * @param Settings          $settings    Settings.
+	 * @param BlockRepository   $blocks      Blocks: a blocked pair cannot message (SOC-MOD-003).
 	 */
 	public function __construct(
 		private ThreadRepository $threads,
 		private MessageRepository $messages,
 		private MemberRepository $members,
 		private Connections $connections,
-		private Settings $settings
+		private Settings $settings,
+		private BlockRepository $blocks
 	) {
 	}
 
@@ -52,6 +55,12 @@ final class Messages {
 	 */
 	public function can_message( int $sender_id, int $recipient_id ): bool {
 		if ( $sender_id <= 0 || $recipient_id <= 0 || $sender_id === $recipient_id || ! get_userdata( $recipient_id ) ) {
+			return false;
+		}
+
+		// A block wins over every setting, the admin override included: the
+		// pair cannot start a thread or reply in one (SOC-MOD-003).
+		if ( $this->blocks->is_blocked( $sender_id, $recipient_id ) ) {
 			return false;
 		}
 

@@ -2,7 +2,8 @@
  * ODSI Social front-end behaviour.
  *
  * Progressive enhancement over server-rendered pages: posting, commenting,
- * reacting, membership and connection actions, and cursor-based load-more.
+ * reacting, membership, connection, block and report actions, and
+ * cursor-based load-more.
  */
 ( function() {
 	'use strict';
@@ -85,7 +86,40 @@
 				} )
 				.catch( fail );
 		}
+
+		if ( form.classList.contains( 'odsi-social-report-form' ) ) {
+			event.preventDefault();
+			request( 'POST', '/reports', {
+				object_type: form.object_type.value,
+				object_id: parseInt( form.object_id.value, 10 ),
+				reason: form.reason.value,
+				details: form.details.value,
+			} )
+				.then( function() {
+					form.hidden = true;
+					form.details.value = '';
+					window.alert( config.i18n.reported );
+				} )
+				.catch( fail );
+		}
 	} );
+
+	/**
+	 * Show the page's single report form next to the control that asked for it.
+	 *
+	 * @param {HTMLElement} control The clicked "Report" button.
+	 */
+	function openReportForm( control ) {
+		const form = document.querySelector( '.odsi-social-report-form' );
+		if ( ! form ) {
+			return;
+		}
+		form.object_type.value = control.getAttribute( 'data-object-type' ) || '';
+		form.object_id.value = control.getAttribute( 'data-object-id' ) || '';
+		control.insertAdjacentElement( 'afterend', form );
+		form.hidden = false;
+		form.reason.focus();
+	}
 
 	document.addEventListener( 'click', function( event ) {
 		const target = event.target;
@@ -215,6 +249,32 @@
 					window.location.reload();
 				} )
 				.catch( fail );
+			return;
+		}
+
+		const block = closest( target, '.odsi-social-block' );
+		if ( block && window.confirm( config.i18n.block ) ) {
+			request( 'PUT', '/members/' + block.getAttribute( 'data-user-id' ) + '/block' )
+				.then( function() {
+					// The profile no longer exists for the viewer; go home.
+					window.location.href = config.homeUrl || '/';
+				} )
+				.catch( fail );
+			return;
+		}
+
+		const report = closest( target, '.odsi-social-report' );
+		if ( report ) {
+			openReportForm( report );
+			return;
+		}
+
+		const cancel = closest( target, '.odsi-social-report-cancel' );
+		if ( cancel ) {
+			const form = closest( cancel, '.odsi-social-report-form' );
+			if ( form ) {
+				form.hidden = true;
+			}
 		}
 	} );
 }() );

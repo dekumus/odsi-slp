@@ -14,6 +14,7 @@ use ODSI\Social\Activity\Feed;
 use ODSI\Social\Container;
 use ODSI\Social\Contracts\Bootable;
 use ODSI\Social\Groups\Groups;
+use ODSI\Social\Members\Blocks;
 use ODSI\Social\Members\Directory;
 use ODSI\Social\Members\Profiles;
 use ODSI\Social\Members\Uploads;
@@ -69,14 +70,16 @@ final class Shortcodes implements Bootable {
 
 		switch ( $section ) {
 			case 'members':
-				$user = get_user_by( 'slug', $object_slug );
+				$user     = get_user_by( 'slug', $object_slug );
+				$profiles = $this->container->get( Profiles::class );
 
-				if ( ! $user ) {
+				// A blocked pair's profiles do not exist for each other (SOC-MOD-005).
+				if ( ! $user || ! $profiles->is_visible( $viewer, (int) $user->ID ) ) {
 					return false;
 				}
 
 				// A visitor who may not browse members is asked to log in, not told "no such page".
-				return 'edit' !== $action || $viewer <= 0 || $this->container->get( Profiles::class )->can_edit( $viewer, (int) $user->ID );
+				return 'edit' !== $action || $viewer <= 0 || $profiles->can_edit( $viewer, (int) $user->ID );
 
 			case 'groups':
 				$row    = $this->container->get( GroupRepository::class )->find_by_slug( $object_slug );
@@ -269,6 +272,7 @@ final class Shortcodes implements Bootable {
 					)
 				),
 				'is_following' => $viewer > 0 && $this->container->get( \ODSI\Social\Connections\Follows::class )->is_following( $viewer, (int) $user->ID ),
+				'can_moderate' => $viewer > 0 && ! \ODSI\Social\Support\Capabilities::is_admin( (int) $user->ID ),
 			)
 		);
 	}
@@ -311,6 +315,7 @@ final class Shortcodes implements Bootable {
 				),
 				'accept'              => $this->image_accept(),
 				'notice'              => $this->notice(),
+				'blocked'             => $this->container->get( Blocks::class )->blocking( (int) $user->ID ),
 			)
 		);
 	}

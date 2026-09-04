@@ -11,6 +11,7 @@ namespace ODSI\Social\Activity;
 
 use ODSI\Social\Database\Schema;
 use ODSI\Social\Repositories\ActivityRepository;
+use ODSI\Social\Repositories\BlockRepository;
 use ODSI\Social\Repositories\ConnectionRepository;
 use ODSI\Social\Repositories\GroupMemberRepository;
 use ODSI\Social\Repositories\GroupRepository;
@@ -24,6 +25,10 @@ defined( 'ABSPATH' ) || exit;
  * `can_view()` answers for a single item; `where_clause()` produces the same
  * rule as a SQL predicate for feed queries. A single test table asserts both.
  * No other class reads an item's `privacy` or a group's visibility.
+ *
+ * A block between the viewer and an author hides the author's items and
+ * comments from that viewer before the privacy table is consulted
+ * (SOC-MOD-004); admins, who cannot be blocked, still see everything.
  */
 final class Privacy {
 
@@ -40,12 +45,14 @@ final class Privacy {
 	 * @param GroupMemberRepository $members     Group memberships.
 	 * @param GroupRepository       $groups      Group index.
 	 * @param ActivityRepository    $activity    Activity, for resolving a comment's parent.
+	 * @param BlockRepository       $blocks      Blocks, hiding a blocked pair from each other.
 	 */
 	public function __construct(
 		private ConnectionRepository $connections,
 		private GroupMemberRepository $members,
 		private GroupRepository $groups,
-		private ActivityRepository $activity
+		private ActivityRepository $activity,
+		private BlockRepository $blocks
 	) {
 	}
 
@@ -84,7 +91,22 @@ final class Privacy {
 		if ( $viewer_id > 0 && ! Capabilities::is_admin( $viewer_id ) ) {
 			$this->members->prime_for_user( $viewer_id, $group_ids );
 			$this->connections->prime_pairs( $viewer_id, $author_ids );
+			$this->blocks->ids_for( $viewer_id );
 		}
+	}
+
+	/**
+	 * Whether a block hides an author from the viewer (SOC-MOD-004): either
+	 * side blocked the other, and the viewer is not an admin.
+	 *
+	 * @param int $viewer_id Viewer, 0 for a visitor.
+	 * @param int $author_id Author.
+	 */
+	public function hides_author( int $viewer_id, int $author_id ): bool {
+		return $viewer_id > 0
+			&& $viewer_id !== $author_id
+			&& $this->blocks->is_blocked( $viewer_id, $author_id )
+			&& ! Capabilities::is_admin( $viewer_id );
 	}
 
 	/**
@@ -94,6 +116,12 @@ final class Privacy {
 	 * @param object $item      Activity row.
 	 */
 	public function can_view( int $viewer_id, object $item ): bool {
+		// A blocked pair never sees each other's items or comments, whatever
+		// the item's own privacy or its parent's says.
+		if ( $this->hides_author( $viewer_id, (int) $item->user_id ) ) {
+			return false;
+		}
+
 		// Comments inherit their parent's visibility.
 		if ( (int) $item->parent_id > 0 ) {
 			$parent = $this->activity->find( (int) $item->parent_id );
@@ -197,8 +225,9 @@ final class Privacy {
 
 		$connections = Schema::table( 'connections' );
 		$memberships = Schema::table( 'group_members' );
+		$blocked     = $this->blocks->exclusion_clause( $viewer_id );
 
-		$sql = "(
+		$sql = "({$blocked['sql']} AND (
 			a.user_id = %d
 			OR (a.group_id = 0 AND a.privacy IN (%s, %s))
 			OR (a.group_id = 0 AND a.privacy = %s AND a.user_id IN (
@@ -209,21 +238,24 @@ final class Privacy {
 			OR (a.group_id > 0 AND a.group_id IN (
 				SELECT gm.group_id FROM {$memberships} gm WHERE gm.user_id = %d AND gm.status = %s
 			))
-		)";
+		))";
 
 		return array(
 			'sql'    => $sql,
-			'params' => array(
-				$viewer_id,
-				self::PUBLIC,
-				self::MEMBERS,
-				self::CONNECTIONS,
-				$viewer_id,
-				$viewer_id,
-				$viewer_id,
-				ConnectionRepository::STATUS_ACCEPTED,
-				$viewer_id,
-				GroupMemberRepository::STATUS_ACTIVE,
+			'params' => array_merge(
+				$blocked['params'],
+				array(
+					$viewer_id,
+					self::PUBLIC,
+					self::MEMBERS,
+					self::CONNECTIONS,
+					$viewer_id,
+					$viewer_id,
+					$viewer_id,
+					ConnectionRepository::STATUS_ACCEPTED,
+					$viewer_id,
+					GroupMemberRepository::STATUS_ACTIVE,
+				)
 			),
 		);
 	}

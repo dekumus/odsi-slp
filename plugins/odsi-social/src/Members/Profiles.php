@@ -11,6 +11,7 @@ namespace ODSI\Social\Members;
 
 use ODSI\Social\Connections\Connections;
 use ODSI\Social\Contracts\Bootable;
+use ODSI\Social\Repositories\BlockRepository;
 use ODSI\Social\Repositories\MemberRepository;
 use ODSI\Social\Repositories\ProfileDataRepository;
 use ODSI\Social\Support\Capabilities;
@@ -30,12 +31,14 @@ final class Profiles implements Bootable {
 	 * @param ProfileDataRepository $data        Field values.
 	 * @param ProfileFields         $fields      Field definitions.
 	 * @param Connections           $connections Connections, for `connections` visibility.
+	 * @param BlockRepository       $blocks      Blocks: a blocked pair's profiles do not exist for each other.
 	 */
 	public function __construct(
 		private MemberRepository $members,
 		private ProfileDataRepository $data,
 		private ProfileFields $fields,
-		private Connections $connections
+		private Connections $connections,
+		private BlockRepository $blocks
 	) {
 	}
 
@@ -99,7 +102,26 @@ final class Profiles implements Bootable {
 
 		if ( $viewer_id > 0 ) {
 			$this->connections->prime_pairs( $viewer_id, $user_ids );
+			$this->blocks->ids_for( $viewer_id );
 		}
+	}
+
+	/**
+	 * Whether a member's profile exists for a viewer (SOC-MOD-005): it does
+	 * not when either has blocked the other, unless the viewer is an admin.
+	 *
+	 * @param int $viewer_id Viewer, 0 for a visitor.
+	 * @param int $user_id   Member.
+	 */
+	public function is_visible( int $viewer_id, int $user_id ): bool {
+		if ( ! get_userdata( $user_id ) ) {
+			return false;
+		}
+
+		return $viewer_id <= 0
+			|| $viewer_id === $user_id
+			|| ! $this->blocks->is_blocked( $viewer_id, $user_id )
+			|| Capabilities::is_admin( $viewer_id );
 	}
 
 	/**
@@ -116,7 +138,7 @@ final class Profiles implements Bootable {
 	public function view( int $viewer_id, int $user_id ): ?array {
 		$user = get_userdata( $user_id );
 
-		if ( ! $user ) {
+		if ( ! $user || ! $this->is_visible( $viewer_id, $user_id ) ) {
 			return null;
 		}
 

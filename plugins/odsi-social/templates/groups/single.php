@@ -14,8 +14,9 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$odsi_status = (string) $group['viewer']['status'];
-$members     = isset( $members ) && is_array( $members ) ? $members : array();
+$odsi_status    = (string) $group['viewer']['status'];
+$members        = isset( $members ) && is_array( $members ) ? $members : array();
+$odsi_templates = \ODSI\Social\Plugin::instance()->container()->get( \ODSI\Social\Frontend\Templates::class );
 ?>
 <div class="odsi-social-group" data-group-id="<?php echo esc_attr( (string) $group['id'] ); ?>">
 	<?php if ( '' !== $group['cover'] ) : ?>
@@ -49,6 +50,9 @@ $members     = isset( $members ) && is_array( $members ) ? $members : array();
 							<?php echo 'public' === $group['visibility'] ? esc_html__( 'Join group', 'odsi-social' ) : esc_html__( 'Request to join', 'odsi-social' ); ?>
 						</button>
 					<?php endif; ?>
+					<?php if ( 'organiser' !== $group['viewer']['role'] ) : ?>
+						<button type="button" class="odsi-social-button odsi-social-button--quiet odsi-social-report" data-object-type="group" data-object-id="<?php echo esc_attr( (string) $group['id'] ); ?>"><?php esc_html_e( 'Report', 'odsi-social' ); ?></button>
+					<?php endif; ?>
 				</div>
 			<?php endif; ?>
 		</div>
@@ -76,5 +80,8 @@ $members     = isset( $members ) && is_array( $members ) ? $members : array();
 		<section class="odsi-social-group__feed"><?php echo $feed; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></section>
 	<?php else : ?>
 		<p class="odsi-social-notice"><?php esc_html_e( 'Join this group to see its activity.', 'odsi-social' ); ?></p>
+		<?php if ( $viewer_id > 0 ) : ?>
+			<?php echo $odsi_templates->render( 'parts/report-form', array( 'viewer_id' => $viewer_id ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- template output. ?>
+		<?php endif; ?>
 	<?php endif; ?>
 </div>

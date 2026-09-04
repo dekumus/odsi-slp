@@ -39,6 +39,7 @@ final class Lifecycle implements Bootable {
 	 * @param ActivityRepository $activity      Activity rows.
 	 * @param Activity           $activity_service Activity writer.
 	 * @param Settings           $settings      Settings.
+	 * @param Blocks             $blocks        Blocks.
 	 */
 	public function __construct(
 		private Profiles $profiles,
@@ -49,7 +50,8 @@ final class Lifecycle implements Bootable {
 		private ReactionRepository $reactions,
 		private ActivityRepository $activity,
 		private Activity $activity_service,
-		private Settings $settings
+		private Settings $settings,
+		private Blocks $blocks
 	) {
 	}
 
@@ -71,6 +73,7 @@ final class Lifecycle implements Bootable {
 		$this->follows->purge_user( $user_id );
 		$this->membership->purge_user( $user_id );
 		$this->notifications->purge_user( $user_id );
+		$this->blocks->purge_user( $user_id );
 
 		foreach ( $this->reactions->delete_user( $user_id ) as $activity_id ) {
 			$this->activity->adjust( $activity_id, 'reaction_count', -1 );

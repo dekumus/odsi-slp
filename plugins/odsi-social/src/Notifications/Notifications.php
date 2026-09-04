@@ -9,13 +9,17 @@ declare( strict_types = 1 );
 
 namespace ODSI\Social\Notifications;
 
+use ODSI\Social\Repositories\BlockRepository;
 use ODSI\Social\Repositories\MemberRepository;
 use ODSI\Social\Repositories\NotificationRepository;
+use ODSI\Social\Support\Capabilities;
 
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Write, read and count notifications. Never notifies an actor of their own action.
+ * Write, read and count notifications. Never notifies an actor of their own
+ * action, and never carries a blocked member's action to the other side of
+ * the block (SOC-MOD-006).
  */
 final class Notifications {
 
@@ -27,11 +31,13 @@ final class Notifications {
 	 * @param NotificationRepository $notifications Storage.
 	 * @param Renderers              $renderers     Renderers.
 	 * @param MemberRepository       $members       Member index, for actor avatars.
+	 * @param BlockRepository        $blocks        Blocks, to drop a blocked member's actions.
 	 */
 	public function __construct(
 		private NotificationRepository $notifications,
 		private Renderers $renderers,
-		private MemberRepository $members
+		private MemberRepository $members,
+		private BlockRepository $blocks
 	) {
 	}
 
@@ -50,6 +56,12 @@ final class Notifications {
 	 */
 	public function notify( int $recipient_id, int $actor_id, string $component, string $action, int $item_id, int $secondary_id = 0, bool $collapse = false ): int {
 		if ( $recipient_id <= 0 || $recipient_id === $actor_id || ! get_userdata( $recipient_id ) ) {
+			return 0;
+		}
+
+		// Nothing a blocked member does reaches the other side. Admins act
+		// as moderators (a report's outcome, for one) and are never blocked.
+		if ( $actor_id > 0 && $this->blocks->is_blocked( $recipient_id, $actor_id ) && ! Capabilities::is_admin( $actor_id ) ) {
 			return 0;
 		}
 

@@ -146,10 +146,17 @@ Groups are public, private (visible, request to join) or hidden (invisible
 except to members and invitees). Organisers manage members, moderators and
 settings from the group's **Manage** page; administrators see everything.
 
-Moderation: administrators delete posts and comments from the feed, and
-organisers ban members from groups. Member-initiated reporting is a v2
-item. Rate limits on posting, messaging and connection requests are on by
-default and adjustable through the `odsi_social_rate_limits` filter.
+Moderation: members report posts, comments, profiles, groups and message
+threads (spam, harassment, inappropriate, other) from a Report control, and
+block other members from a profile; a block hides the pair from each other
+everywhere and stops messages, connections, follows, mentions and
+notifications between them. Reports queue on **Community → Moderation**,
+where an administrator dismisses them, deletes the content or bans the
+author from the group; the reporter is told when their report is reviewed.
+Administrators also delete posts and comments straight from the feed, and
+organisers ban members from groups. Rate limits on posting, messaging,
+reporting and connection requests are on by default and adjustable through
+the `odsi_social_rate_limits` filter.
 
 ## 7. Put pages together
 

@@ -15,8 +15,9 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Sliding-window counters in the object cache (transients without one), so a
- * single member cannot flood others with requests, mentions or uploads
- * (SOC-EDGE "abuse"). Limits are generous for people and tight for scripts.
+ * single member cannot flood others with requests, mentions, uploads or
+ * reports (SOC-EDGE "abuse", SOC-MOD-012). Limits are generous for people
+ * and tight for scripts.
  */
 final class RateLimiter {
 
@@ -36,6 +37,7 @@ final class RateLimiter {
 			'group_invite'       => array( 60, 3600 ),
 			'group_create'       => array( 10, 86400 ),
 			'image_upload'       => array( 10, 3600 ),
+			'report'             => array( 20, 3600 ),
 		);
 
 		/**

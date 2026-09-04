@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-04T12:12:46+00:00\n"
+"POT-Creation-Date: 2026-09-04T13:05:52+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: odsi-social\n"
@@ -95,20 +95,24 @@ msgstr ""
 msgid "That privacy setting is not available."
 msgstr ""
 
-#: src/Activity/Feed.php:273
+#: src/Activity/Feed.php:280
 #: src/Activity/Renderers.php:62
-#: src/Frontend/Forms.php:270
+#: src/Frontend/Forms.php:307
 #: src/Groups/GroupActivity.php:118
-#: src/Messages/Messages.php:175
-#: src/Messages/Messages.php:241
-#: src/Notifications/Notifications.php:185
+#: src/Members/Blocks.php:148
+#: src/Messages/Messages.php:184
+#: src/Messages/Messages.php:250
+#: src/Moderation/Reports.php:376
+#: src/Moderation/Reports.php:555
+#: src/Notifications/Notifications.php:197
 #: src/Notifications/Renderers.php:52
 #: src/Rest/GroupsController.php:420
 msgid "A former member"
 msgstr ""
 
 #. translators: %s: human time difference.
-#: src/Activity/Feed.php:289
+#: src/Activity/Feed.php:296
+#: src/Moderation/Reports.php:386
 #, php-format
 msgid "%s ago"
 msgstr ""
@@ -224,15 +228,15 @@ msgid "Community settings"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:155
-#: src/Frontend/Shortcodes.php:307
+#: src/Frontend/Shortcodes.php:311
 #: templates/activity/feed.php:27
 msgid "Everyone"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:156
 #: src/Frontend/Router.php:211
-#: src/Frontend/Shortcodes.php:308
-#: templates/groups/single.php:62
+#: src/Frontend/Shortcodes.php:312
+#: templates/groups/single.php:66
 msgid "Members"
 msgstr ""
 
@@ -241,7 +245,7 @@ msgid "Connections"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:158
-#: src/Frontend/Shortcodes.php:310
+#: src/Frontend/Shortcodes.php:314
 msgid "Only me"
 msgstr ""
 
@@ -271,7 +275,7 @@ msgid "Default visibility"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:262
-#: templates/members/profile.php:68
+#: templates/members/profile.php:74
 msgid "Yes"
 msgstr ""
 
@@ -316,43 +320,150 @@ msgstr ""
 msgid "You cannot manage profile fields."
 msgstr ""
 
-#: src/Connections/Connections.php:103
+#: src/Admin/ModerationScreen.php:54
+#: src/Admin/ModerationScreen.php:69
+#: src/Admin/ModerationScreen.php:84
+msgid "Moderation"
+msgstr ""
+
+#. translators: %s: number of open reports.
+#: src/Admin/ModerationScreen.php:63
+#, php-format
+msgid "%s open report"
+msgid_plural "%s open reports"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Admin/ModerationScreen.php:91
+msgid "Open"
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:92
+#: src/Admin/ModerationScreen.php:209
+msgid "Dismissed"
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:93
+msgid "Actioned"
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:111
+msgid "Reported"
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:112
+msgid "Reporter"
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:113
+msgid "Reason"
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:114
+msgid "Age"
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:115
+msgid "Actions"
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:115
+msgid "Resolution"
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:119
+msgid "Nothing to review."
+msgstr ""
+
+#. translators: %s: member name.
+#. translators: %s: admin name.
+#: src/Admin/ModerationScreen.php:158
+#: src/Admin/ModerationScreen.php:195
+#, php-format
+msgid "by %s"
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:183
+msgid "Dismiss"
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:184
+msgid "Delete content"
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:185
+msgid "Ban from group"
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:210
+msgid "Content deleted"
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:211
+msgid "Banned from group"
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:212
+msgid "Content was deleted"
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:241
+msgid "Report resolved."
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:244
+#: src/Frontend/Shortcodes.php:383
+msgid "Something went wrong."
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:255
+#: src/Moderation/Reports.php:645
+msgid "You cannot review reports."
+msgstr ""
+
+#: src/Admin/ModerationScreen.php:288
+#: src/Frontend/Forms.php:279
+#: src/Moderation/Reports.php:237
+#: src/Rest/GroupsController.php:490
+msgid "Unknown action."
+msgstr ""
+
+#: src/Connections/Connections.php:106
+#: src/Connections/Connections.php:110
+#: src/Connections/Connections.php:152
 msgid "You cannot connect with that member."
 msgstr ""
 
-#: src/Connections/Connections.php:107
+#: src/Connections/Connections.php:114
 msgid "A connection or request already exists."
 msgstr ""
 
-#: src/Connections/Connections.php:113
+#: src/Connections/Connections.php:120
 msgid "You recently withdrew a request to this member. Try again later."
 msgstr ""
 
-#: src/Connections/Connections.php:141
+#: src/Connections/Connections.php:148
 msgid "There is no request to accept."
 msgstr ""
 
-#: src/Connections/Connections.php:171
+#: src/Connections/Connections.php:182
 msgid "There is nothing to remove."
 msgstr ""
 
-#: src/Connections/Follows.php:55
+#: src/Connections/Follows.php:58
+#: src/Connections/Follows.php:62
 msgid "You cannot follow that member."
 msgstr ""
 
-#: src/Frontend/Forms.php:120
+#: src/Frontend/Forms.php:95
+#: src/Frontend/Forms.php:157
 msgid "You cannot edit this profile."
 msgstr ""
 
-#: src/Frontend/Forms.php:205
+#: src/Frontend/Forms.php:242
 #: src/Groups/Groups.php:160
 #: src/Rest/GroupsController.php:339
 msgid "Only organisers can change group settings."
-msgstr ""
-
-#: src/Frontend/Forms.php:242
-#: src/Rest/GroupsController.php:490
-msgid "Unknown action."
 msgstr ""
 
 #: src/Frontend/Router.php:212
@@ -367,26 +478,22 @@ msgid "Activity"
 msgstr ""
 
 #: src/Frontend/Router.php:214
-#: templates/members/edit.php:128
+#: templates/members/edit.php:130
 msgid "Notifications"
 msgstr ""
 
 #: src/Frontend/Router.php:215
-#: templates/members/edit.php:134
+#: templates/members/edit.php:136
 msgid "Messages"
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:309
-#: templates/members/edit.php:138
+#: src/Frontend/Shortcodes.php:313
+#: templates/members/edit.php:140
 msgid "My connections"
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:371
+#: src/Frontend/Shortcodes.php:376
 msgid "Saved."
-msgstr ""
-
-#: src/Frontend/Shortcodes.php:378
-msgid "Something went wrong."
 msgstr ""
 
 #: src/Groups/GroupActivity.php:120
@@ -471,12 +578,20 @@ msgstr ""
 msgid "You cannot do that in this group."
 msgstr ""
 
-#: src/Members/Profiles.php:262
+#: src/Members/Blocks.php:56
+msgid "You cannot block that member."
+msgstr ""
+
+#: src/Members/Blocks.php:60
+msgid "Administrators cannot be blocked."
+msgstr ""
+
+#: src/Members/Profiles.php:284
 msgid "Each field must be an object with a value and/or a visibility."
 msgstr ""
 
 #. translators: %s: field name.
-#: src/Members/Profiles.php:278
+#: src/Members/Profiles.php:300
 #, php-format
 msgid "%s is required."
 msgstr ""
@@ -511,16 +626,112 @@ msgstr ""
 msgid "That file is not an image."
 msgstr ""
 
-#: src/Messages/Messages.php:92
+#: src/Messages/Messages.php:101
 msgid "You cannot message this member."
 msgstr ""
 
-#: src/Messages/Messages.php:98
+#: src/Messages/Messages.php:107
 msgid "Please write a message first."
 msgstr ""
 
-#: src/Messages/Messages.php:355
+#: src/Messages/Messages.php:364
 msgid "That conversation does not exist."
+msgstr ""
+
+#: src/Moderation/ReportNotificationRenderer.php:28
+msgid "A moderator has reviewed your report."
+msgstr ""
+
+#: src/Moderation/Reports.php:117
+msgid "Spam"
+msgstr ""
+
+#: src/Moderation/Reports.php:118
+msgid "Harassment"
+msgstr ""
+
+#: src/Moderation/Reports.php:119
+msgid "Inappropriate content"
+msgstr ""
+
+#: src/Moderation/Reports.php:120
+msgid "Something else"
+msgstr ""
+
+#: src/Moderation/Reports.php:146
+msgid "Please log in to report content."
+msgstr ""
+
+#: src/Moderation/Reports.php:150
+msgid "That cannot be reported."
+msgstr ""
+
+#: src/Moderation/Reports.php:154
+msgid "Please choose a reason."
+msgstr ""
+
+#: src/Moderation/Reports.php:164
+msgid "You cannot report your own content."
+msgstr ""
+
+#: src/Moderation/Reports.php:184
+msgid "The report could not be saved."
+msgstr ""
+
+#: src/Moderation/Reports.php:241
+msgid "That action does not apply to this report."
+msgstr ""
+
+#: src/Moderation/Reports.php:255
+msgid "That content no longer exists."
+msgstr ""
+
+#: src/Moderation/Reports.php:259
+msgid "That content is not in a group."
+msgstr ""
+
+#: src/Moderation/Reports.php:517
+#: templates/parts/activity-item.php:36
+msgid "Comment"
+msgstr ""
+
+#: src/Moderation/Reports.php:517
+#: templates/activity/feed.php:43
+msgid "Post"
+msgstr ""
+
+#: src/Moderation/Reports.php:527
+#: src/Moderation/Reports.php:542
+msgid "(deleted)"
+msgstr ""
+
+#: src/Moderation/Reports.php:532
+msgid "Member"
+msgstr ""
+
+#: src/Moderation/Reports.php:539
+#: src/PostTypes/GroupPostType.php:37
+msgid "Group"
+msgstr ""
+
+#: src/Moderation/Reports.php:547
+msgid "Private message"
+msgstr ""
+
+#: src/Moderation/Reports.php:548
+msgid "Message content is only visible to the conversation."
+msgstr ""
+
+#: src/Moderation/Reports.php:624
+msgid "That report does not exist."
+msgstr ""
+
+#: src/Moderation/Reports.php:628
+msgid "That report has already been resolved."
+msgstr ""
+
+#: src/Moderation/Reports.php:638
+msgid "That does not exist."
 msgstr ""
 
 #. translators: 1: member name, 2: number of other members.
@@ -609,10 +820,6 @@ msgstr ""
 msgid "%s did something on the site."
 msgstr ""
 
-#: src/PostTypes/GroupPostType.php:37
-msgid "Group"
-msgstr ""
-
 #: src/PostTypes/GroupPostType.php:40
 msgid "Add New Group"
 msgstr ""
@@ -658,32 +865,32 @@ msgstr ""
 msgid "Only moderators can see that list."
 msgstr ""
 
-#: src/Rest/MembersController.php:169
+#: src/Rest/MembersController.php:230
 msgid "That member does not exist."
 msgstr ""
 
-#: src/Rest/MembersController.php:185
+#: src/Rest/MembersController.php:246
 msgid "Fields must be an object keyed by field id."
 msgstr ""
 
-#: src/Support/Assets.php:69
+#: src/Support/Assets.php:70
 msgid "Posting…"
 msgstr ""
 
-#: src/Support/Assets.php:70
+#: src/Support/Assets.php:71
 msgid "Something went wrong. Please try again."
 msgstr ""
 
-#: src/Support/Assets.php:71
+#: src/Support/Assets.php:72
 msgid "Delete this?"
 msgstr ""
 
-#: src/Support/Assets.php:72
+#: src/Support/Assets.php:73
 #: templates/activity/feed.php:66
 msgid "Load more"
 msgstr ""
 
-#: src/Support/RateLimiter.php:75
+#: src/Support/RateLimiter.php:77
 msgid "You are doing that too often. Please wait a while and try again."
 msgstr ""
 
@@ -695,15 +902,11 @@ msgstr ""
 msgid "What is on your mind?"
 msgstr ""
 
-#: templates/activity/feed.php:43
-msgid "Post"
-msgstr ""
-
 #: templates/activity/feed.php:50
 msgid "Nothing here yet."
 msgstr ""
 
-#: templates/activity/single.php:28
+#: templates/activity/single.php:31
 msgid "Liked by"
 msgstr ""
 
@@ -712,7 +915,7 @@ msgstr ""
 #. translators: %d: member count.
 #: templates/groups/directory.php:34
 #: templates/groups/manage.php:114
-#: templates/groups/single.php:33
+#: templates/groups/single.php:34
 #: templates/members/directory.php:34
 #, php-format
 msgid "%d member"
@@ -827,12 +1030,12 @@ msgid "Remove group photo"
 msgstr ""
 
 #: templates/groups/manage.php:87
-#: templates/members/edit.php:48
+#: templates/members/edit.php:50
 msgid "Cover image"
 msgstr ""
 
 #: templates/groups/manage.php:90
-#: templates/members/edit.php:51
+#: templates/members/edit.php:53
 msgid "Remove cover image"
 msgstr ""
 
@@ -853,7 +1056,7 @@ msgid "Approve"
 msgstr ""
 
 #: templates/groups/manage.php:106
-#: templates/groups/single.php:46
+#: templates/groups/single.php:47
 msgid "Decline"
 msgstr ""
 
@@ -886,32 +1089,39 @@ msgstr ""
 msgid "Unban"
 msgstr ""
 
-#: templates/groups/single.php:38
+#: templates/groups/single.php:39
 msgid "Manage group"
 msgstr ""
 
-#: templates/groups/single.php:41
+#: templates/groups/single.php:42
 msgid "Leave group"
 msgstr ""
 
-#: templates/groups/single.php:43
-#: templates/members/profile.php:43
+#: templates/groups/single.php:44
+#: templates/members/profile.php:45
 msgid "Withdraw request"
 msgstr ""
 
-#: templates/groups/single.php:45
+#: templates/groups/single.php:46
 msgid "Accept invitation"
 msgstr ""
 
-#: templates/groups/single.php:49
+#: templates/groups/single.php:50
 msgid "Join group"
 msgstr ""
 
-#: templates/groups/single.php:49
+#: templates/groups/single.php:50
 msgid "Request to join"
 msgstr ""
 
-#: templates/groups/single.php:78
+#: templates/groups/single.php:54
+#: templates/members/profile.php:55
+#: templates/parts/activity-item.php:43
+#: templates/parts/activity-item.php:60
+msgid "Report"
+msgstr ""
+
+#: templates/groups/single.php:82
 msgid "Join this group to see its activity."
 msgstr ""
 
@@ -931,95 +1141,117 @@ msgid_plural "%d connections"
 msgstr[0] ""
 msgstr[1] ""
 
-#: templates/members/edit.php:21
-#: templates/members/profile.php:33
+#: templates/members/edit.php:23
+#: templates/members/profile.php:35
 msgid "Edit profile"
 msgstr ""
 
-#: templates/members/edit.php:22
+#: templates/members/edit.php:24
 msgid "Back to profile"
 msgstr ""
 
-#: templates/members/edit.php:34
+#: templates/members/edit.php:36
 msgid "Photos"
 msgstr ""
 
-#: templates/members/edit.php:38
+#: templates/members/edit.php:40
 msgid "Profile photo"
 msgstr ""
 
-#: templates/members/edit.php:41
+#: templates/members/edit.php:43
 msgid "Remove photo and use Gravatar"
 msgstr ""
 
-#: templates/members/edit.php:79
+#: templates/members/edit.php:81
 msgid "— Choose —"
 msgstr ""
 
-#: templates/members/edit.php:112
+#: templates/members/edit.php:114
 msgid "Visible to"
 msgstr ""
 
 #. translators: %s: visibility label.
-#: templates/members/edit.php:120
+#: templates/members/edit.php:122
 #, php-format
 msgid "Visible to: %s"
 msgstr ""
 
-#: templates/members/edit.php:130
+#: templates/members/edit.php:132
 msgid "Email me when something happens that I would want to know about"
 msgstr ""
 
-#: templates/members/edit.php:135
+#: templates/members/edit.php:137
 msgid "Who may message me"
 msgstr ""
 
-#: templates/members/edit.php:137
+#: templates/members/edit.php:139
 msgid "Anyone"
 msgstr ""
 
-#: templates/members/edit.php:139
+#: templates/members/edit.php:141
 msgid "No one"
 msgstr ""
 
-#: templates/members/edit.php:143
+#: templates/members/edit.php:145
 msgid "Save changes"
 msgstr ""
 
+#: templates/members/edit.php:149
+msgid "Blocked members"
+msgstr ""
+
+#: templates/members/edit.php:151
+msgid "You have not blocked anyone."
+msgstr ""
+
+#. translators: %s: human time difference.
+#: templates/members/edit.php:158
+#, php-format
+msgid "blocked %s ago"
+msgstr ""
+
+#: templates/members/edit.php:164
+msgid "Unblock"
+msgstr ""
+
 #. translators: %d: count.
-#: templates/members/profile.php:27
+#: templates/members/profile.php:29
 #, php-format
 msgid "%d connections"
 msgstr ""
 
 #. translators: %d: count.
-#: templates/members/profile.php:28
+#: templates/members/profile.php:30
 #, php-format
 msgid "%d followers"
 msgstr ""
 
-#: templates/members/profile.php:42
+#: templates/members/profile.php:44
 msgid "Remove connection"
 msgstr ""
 
-#: templates/members/profile.php:44
+#: templates/members/profile.php:46
 msgid "Accept request"
 msgstr ""
 
-#: templates/members/profile.php:45
+#: templates/members/profile.php:47
 msgid "Connect"
 msgstr ""
 
-#: templates/members/profile.php:49
+#: templates/members/profile.php:51
 msgid "Unfollow"
 msgstr ""
 
-#: templates/members/profile.php:49
+#: templates/members/profile.php:51
 msgid "Follow"
 msgstr ""
 
-#: templates/members/profile.php:50
+#: templates/members/profile.php:52
 msgid "Message"
+msgstr ""
+
+#: templates/members/profile.php:54
+msgid "Block"
 msgstr ""
 
 #. translators: %s: name.
@@ -1063,23 +1295,19 @@ msgstr ""
 msgid "Like"
 msgstr ""
 
-#: templates/parts/activity-item.php:36
-msgid "Comment"
-msgstr ""
-
 #. translators: %d: likes.
-#: templates/parts/activity-item.php:43
+#: templates/parts/activity-item.php:46
 #, php-format
 msgid "%d like"
 msgid_plural "%d likes"
 msgstr[0] ""
 msgstr[1] ""
 
-#: templates/parts/activity-item.php:62
+#: templates/parts/activity-item.php:68
 msgid "Write a comment…"
 msgstr ""
 
-#: templates/parts/activity-item.php:63
+#: templates/parts/activity-item.php:69
 msgid "Post comment"
 msgstr ""
 
@@ -1089,6 +1317,22 @@ msgstr ""
 
 #: templates/parts/not-found.php:10
 msgid "That page does not exist."
+msgstr ""
+
+#: templates/parts/report-form.php:18
+msgid "Why are you reporting this?"
+msgstr ""
+
+#: templates/parts/report-form.php:25
+msgid "Anything a moderator should know (optional)"
+msgstr ""
+
+#: templates/parts/report-form.php:27
+msgid "Cancel"
+msgstr ""
+
+#: templates/parts/report-form.php:28
+msgid "Send report"
 msgstr ""
 
 #: assets/src/blocks/index.js:27

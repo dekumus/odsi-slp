@@ -104,7 +104,7 @@ Every v1 row below is built and tested; see `docs/03-current-state.md`.
 | Friend connections (mutual, request-and-accept) | v1 |
 | Profile privacy levels | v2 |
 | Member types | v2 |
-| Blocking and reporting | v2 |
+| Blocking and reporting | v1 | `SOC-MOD-001..012` |
 | Profile completion prompts | Later |
 
 ### Activity
@@ -121,7 +121,7 @@ Every v1 row below is built and tested; see `docs/03-current-state.md`.
 | Cursor pagination and infinite scroll | v1 |
 | Link previews | v2 |
 | GIFs, emoji picker, polls | Later |
-| Moderation queue | v2 |
+| Moderation queue | v1 | Community → Moderation; `SOC-MOD-013..016` |
 
 ### Groups
 

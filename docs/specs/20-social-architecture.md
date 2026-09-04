@@ -19,17 +19,18 @@ ODSI\Social\
   Plugin, Container, Installer
   Contracts\        Bootable, Repository, ActivityRenderer, NotificationRenderer
   Database\         Schema, Migrator
-  Repositories\     one class per table (15)
-  Members\          Profiles, ProfileFields, Directory, Presence
+  Repositories\     one class per table (17)
+  Members\          Profiles, ProfileFields, Directory, Presence, Blocks, Lifecycle
   Connections\      Connections, Follows
   Activity\         Activity, Feed, Privacy, Reactions, Mentions, Renderers
   Groups\           Groups, Membership, Roles
   Notifications\    Notifications, Renderers, Cleanup
   Messages\         Messages
+  Moderation\       Reports, ReportNotificationRenderer
   PostTypes\        GroupPostType
   Rest\             RestServiceProvider + one controller per area
   Frontend\         Router (virtual pages), Templates, Shortcodes
-  Admin\            AdminMenu, ProfileFieldsScreen, Settings
+  Admin\            AdminMenu, ModerationScreen
   Support\          Capabilities, Meta, Assets, Settings, Cursor, Sanitizer
 ```
 
@@ -51,6 +52,8 @@ document; this is the shape.
 | Membership | `group_members` | (group, user) | State machine in the spec; the last organiser cannot leave or be demoted |
 | Notification | `notifications` | id | Never for the actor's own action; unread rows collapse on `collapse_key` |
 | Thread / message | `threads`, `messages`, `thread_participants` | id | One thread per unordered pair in v1 (`pair_key`); a participant's delete is per-participant |
+| Block | `blocks` | (blocker, blocked) | Directed; never on an admin; the effects are read either way and enforced by the services that own each action |
+| Report | `reports` | id | One open row per (reporter, object); resolved once; every action re-uses an existing service |
 
 ## 3. Component map
 
@@ -76,11 +79,17 @@ both directions.
    Connections, Follows ──fire──▶ odsi_social_connection_* / follow_* ──▶ Notifications, Members counts
    Groups, Membership   ──fire──▶ odsi_social_group_*                   ──▶ Activity (joined), Notifications
    Messages             ──fire──▶ odsi_social_message_sent               ──▶ Notifications
+   Blocks               ──calls──▶ Connections, Follows (sever)  ──fires──▶ odsi_social_member_blocked
+   Reports              ──calls──▶ Activity (delete), Membership (ban), Notifications (reporter)
+   Privacy, Messages, Connections, Follows, Notifications, Profiles, Directory ──read──▶ BlockRepository
 ```
 
 Dependency direction is strictly: repositories ← services ← controllers.
-`Privacy` depends on `ConnectionRepository` and `GroupMemberRepository` and on
-nothing else. `Feed` depends on `Privacy`. `Activity` (the writer) depends on
+`Privacy` depends on `ConnectionRepository`, `GroupMemberRepository`,
+`GroupRepository`, `ActivityRepository` and `BlockRepository` and on nothing
+else. Block *effects* are read from `BlockRepository` by whichever service
+owns the action (a service never asks `Members\Blocks`), which keeps
+`Blocks` free to call `Connections` and `Follows` when it severs a pair. `Feed` depends on `Privacy`. `Activity` (the writer) depends on
 `Privacy` only to validate that a comment's author may see its parent.
 `Notifications` depends on nothing in the domain; other services call it or fire
 actions it listens to. Nothing depends on `Feed`.
@@ -148,7 +157,23 @@ NotificationRenderer`, with the generic fallback.
 
 **`Messages\Messages`** — find-or-create the pair thread, send, list inbox,
 read thread, per-participant delete, unread counts, the "who may message me"
-check.
+check (a block wins over every setting).
+
+**`Members\Blocks`** — block / unblock (`SOC-MOD-001/002`): refuses admins
+and self, severs the pair's connection, pending request and follows, fires
+`odsi_social_member_blocked / unblocked`, lists a member's blocks. The
+effects (`SOC-MOD-003..006`) live where each action lives: `Privacy`
+(`hides_author()`, a block predicate in `where_clause()`), `Messages`,
+`Connections`, `Follows`, `Notifications`, `Profiles::is_visible()`,
+`Directory` (an `exclude` list).
+
+**`Moderation\Reports`** — file a report against a visible object, one open
+per (reporter, object), rate-limited; admins list, dismiss or act
+(`delete_content` through `Activity::delete()`, `ban_from_group` through
+`Membership::ban()`); closes open reports when their content is deleted;
+notifies the reporter (`moderation` / `resolved`) through a registered
+`NotificationRenderer`; retention sweep. `Admin\ModerationScreen` is the
+queue in wp-admin with a badge of open reports.
 
 **`Frontend\Router`** — rewrite rules for `/members/`, `/groups/`, `/activity/`,
 `/notifications/`, `/messages/`; resolves to a virtual page rendered through the
@@ -189,6 +214,9 @@ docblock; this is the index. Signatures are `( $arg1, $arg2, … )`.
 | `odsi_social_notification_created` | `object $notification, bool $collapsed` | After write; email listeners go here |
 | `odsi_social_notifications_read` | `int $user_id, int[] $ids` | |
 | `odsi_social_message_sent` | `object $message, int[] $recipient_ids` | After write |
+| `odsi_social_member_blocked` / `_unblocked` | `int $blocker_id, int $blocked_id` | After the block row is written / removed |
+| `odsi_social_content_reported` | `object $report` | After a report is filed |
+| `odsi_social_report_resolved` | `object $report, string $resolution` | After a report is dismissed, actioned or closed by a deletion |
 | `odsi_social_member_active` | `int $user_id` | Presence write (at most every five minutes) |
 | `odsi_social_daily_maintenance` | — | Cron |
 
@@ -212,6 +240,7 @@ docblock; this is the index. Signatures are `( $arg1, $arg2, … )`.
 | `odsi_social_locate_template` | `string $path, string $name` | |
 | `odsi_social_rest_controllers` | `object[], Container` | |
 | `odsi_social_route_slugs` | `array<string,string>` | Base slugs for virtual pages |
+| `odsi_social_rate_limits` | `array<string, array{int,int}>` | Per-member windows, including `report` |
 
 Anything a listener needs to act should be in the arguments. A listener that
 has to re-query for the item it was just told about is a sign the hook is
@@ -251,7 +280,9 @@ final class Privacy {
 ```
 
 For a visitor only the `public` and `group`+`public` branches remain. An admin
-gets `1 = 1`. Comments are never selected by feed queries directly; they are
+gets `1 = 1`. For a member the whole expression is wrapped in
+`a.user_id NOT IN ( blocked-either-way subquery )`, and `can_view()` applies
+the same rule first (`SOC-MOD-004`). Comments are never selected by feed queries directly; they are
 hydrated from their visible parents, which is how they inherit visibility.
 
 The two representations are kept honest by a single test data set: every row of
@@ -330,8 +361,9 @@ injected via `the_content`, and sets the document title. Base slugs come from
 
 ## 11. What is deliberately not here
 
-Media uploads on activity, forums, real-time delivery, email digests, blocking,
-moderation queues, member types. Each has a table or column reserved where it
+Media uploads on activity, forums, real-time delivery, email digests, member
+types. Blocking and the moderation queue arrived with `Members\Blocks` and
+`Moderation\Reports`; suspending accounts and moderating messages stay out. Each has a table or column reserved where it
 was cheap to do so (`activity_meta`, `status` on activity, `reaction` type
 string), the group index and activity repositories it needs to resolve a
 row's group and parent, and nothing else.

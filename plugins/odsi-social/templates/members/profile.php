@@ -6,13 +6,15 @@
  * @var int                  $viewer_id    Viewer.
  * @var string               $feed         Rendered profile feed.
  * @var bool                 $is_following Whether the viewer follows this member.
+ * @var bool                 $can_moderate Whether the viewer may block or report this member (never an admin).
  *
  * @package ODSI\Social
  */
 
 defined( 'ABSPATH' ) || exit;
 
-$odsi_uid = (int) $profile['id'];
+$odsi_uid     = (int) $profile['id'];
+$can_moderate = ! empty( $can_moderate );
 ?>
 <div class="odsi-social-profile" data-user-id="<?php echo esc_attr( (string) $odsi_uid ); ?>">
 	<?php if ( '' !== $profile['cover'] ) : ?>
@@ -48,6 +50,10 @@ $odsi_uid = (int) $profile['id'];
 					<button type="button" class="odsi-social-button odsi-social-connect" data-user-id="<?php echo esc_attr( (string) $odsi_uid ); ?>" data-status="<?php echo esc_attr( $odsi_status ); ?>"><?php echo esc_html( $odsi_label ); ?></button>
 					<button type="button" class="odsi-social-button odsi-social-follow <?php echo $is_following ? 'is-active' : ''; ?>" data-user-id="<?php echo esc_attr( (string) $odsi_uid ); ?>"><?php echo $is_following ? esc_html__( 'Unfollow', 'odsi-social' ) : esc_html__( 'Follow', 'odsi-social' ); ?></button>
 					<a class="odsi-social-button" href="<?php echo esc_url( add_query_arg( 'to', $odsi_uid, (string) apply_filters( 'odsi_social_page_url', home_url( '/messages/' ), 'messages', '', '' ) ) ); ?>"><?php esc_html_e( 'Message', 'odsi-social' ); ?></a>
+					<?php if ( $can_moderate ) : ?>
+						<button type="button" class="odsi-social-button odsi-social-button--quiet odsi-social-block" data-user-id="<?php echo esc_attr( (string) $odsi_uid ); ?>"><?php esc_html_e( 'Block', 'odsi-social' ); ?></button>
+						<button type="button" class="odsi-social-button odsi-social-button--quiet odsi-social-report" data-object-type="member" data-object-id="<?php echo esc_attr( (string) $odsi_uid ); ?>"><?php esc_html_e( 'Report', 'odsi-social' ); ?></button>
+					<?php endif; ?>
 				</div>
 			<?php endif; ?>
 		</div>

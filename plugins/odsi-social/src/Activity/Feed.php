@@ -153,7 +153,7 @@ final class Feed {
 		$hydrated = $this->hydrate( array( $row ), $viewer_id, false );
 		$item     = $hydrated[0];
 
-		$comments = $this->activity->comments( (int) $row->id, 500 );
+		$comments = array_values( array_filter( $this->activity->comments( (int) $row->id, 500 ), fn ( object $c ): bool => ! $this->privacy->hides_author( $viewer_id, (int) $c->user_id ) ) );
 		$this->members->prime_display( array_map( static fn ( object $c ): int => (int) $c->user_id, $comments ) );
 		$reacted          = $this->reactions->for_viewer( array_map( static fn ( object $c ): int => (int) $c->id, $comments ), $viewer_id );
 		$item['comments'] = array_map( fn ( object $c ): array => $this->present( $c, $viewer_id, $reacted ), $comments );
@@ -178,7 +178,7 @@ final class Feed {
 			return null;
 		}
 
-		$ids = $this->reactions->user_ids_for( $activity_id, $limit );
+		$ids = array_values( array_filter( $this->reactions->user_ids_for( $activity_id, $limit ), fn ( int $user_id ): bool => ! $this->privacy->hides_author( $viewer_id, $user_id ) ) );
 		$this->members->prime_display( $ids );
 
 		$out = array();
@@ -217,6 +217,13 @@ final class Feed {
 
 		$ids      = array_map( static fn ( object $r ): int => (int) $r->id, $rows );
 		$comments = $with_comments ? $this->activity->latest_comments( $ids, 3 ) : array();
+
+		// Comments by a member the viewer has blocked (or who blocked the
+		// viewer) are dropped here; the block set is already primed, so this
+		// costs no query (SOC-MOD-004).
+		foreach ( $comments as $parent_id => $list ) {
+			$comments[ $parent_id ] = array_values( array_filter( $list, fn ( object $c ): bool => ! $this->privacy->hides_author( $viewer_id, (int) $c->user_id ) ) );
+		}
 
 		$all_rows = $rows;
 

@@ -507,7 +507,8 @@ removed.
 
 **SOC-ABUSE-001** Per-member sliding-window limits (filter
 `odsi_social_rate_limits`) bound posts, comments, connection requests,
-messages, group invitations, group creation and image uploads; exceeding one
+messages, group invitations, group creation, image uploads and reports
+(`report`, 20 per hour by default); exceeding one
 returns 429 with `odsi_social_rate_limited`. A withdrawn, declined or removed
 connection rests for an hour (`odsi_social_connection_cooldown`) before either
 side may request again.
@@ -515,6 +516,113 @@ side may request again.
 **SOC-ABUSE-002** Rendered activity delivered over REST is filtered with
 `wp_kses_post` exactly like template output, and @mentions are rewritten in
 text nodes only, never inside a tag.
+
+---
+
+## 6a. Moderation — `SOC-MOD`
+
+### Stories
+
+- As a member, I want to block someone so that they and I no longer exist for
+  each other on the site, without anyone else noticing.
+- As a member, I want to report a post, comment, profile, group or message so
+  that a moderator can look at it.
+- As an admin, I want one queue of open reports with the reported content in
+  front of me and the fix one click away.
+
+### Blocking
+
+**SOC-MOD-001** A member may block any other member except an administrator
+(anyone holding `manage_odsi_social`), and never themselves. Blocking is
+idempotent and fires `odsi_social_member_blocked( blocker, blocked )`;
+lifting a block fires `odsi_social_member_unblocked`. A member sees the
+members they have blocked, with an unblock control, on their profile settings
+page (`/members/{nicename}/edit/`) and at `GET /members/me/blocks`. Unblocking
+restores visibility but restores nothing severed by the block.
+
+**SOC-MOD-002** Blocking severs the pair's relationship in both directions at
+once: an accepted connection, a pending request either way, and follows either
+way are removed, with counts adjusted as for any removal.
+
+**SOC-MOD-003** While a block exists in either direction, the pair cannot
+connect (request or accept), follow, or message each other — a new thread and
+a reply in an existing one are both refused (403 `odsi_social_blocked` /
+`odsi_social_cannot_message`), whatever the recipient's message setting and
+even for an admin sender. Existing threads stay readable.
+
+**SOC-MOD-004** A block is a visibility rule evaluated by `Privacy` before the
+privacy table: each side's items and comments are hidden from the other in
+feeds (SQL predicate), on single-item pages (`can_view`) and among a third
+party's comments and reactor lists. The pair therefore cannot comment on or
+react to each other's items (404, per ADR-011). A page of a feed costs one
+extra query for the viewer's block set, however many blocked authors or
+commenters it contains. Admins, who cannot be blocked, see everything even
+when they have blocked someone.
+
+**SOC-MOD-005** Each side's profile is a real 404 for the other
+(`odsi_social_page_exists`, `GET /members/{id}`) and the directory excludes
+both directions from its rows and its total. Visitors and admins are not party
+to any block.
+
+**SOC-MOD-006** A mention of a member by someone they are blocked with
+renders as plain text and notifies no one (it follows `SOC-ACT-007`). No
+notification whose actor is on the other side of a block from the recipient
+is written, including collapsed "also commented" rows; a notification whose
+actor is an admin is never suppressed.
+
+**SOC-MOD-007** Deleting a member's account removes every block they were
+party to (`SOC-MEM-010`).
+
+### Reporting
+
+**SOC-MOD-010** A logged-in member may report an `activity`, `comment`,
+`member`, `group` or `message` with a reason from `spam`, `harassment`,
+`inappropriate`, `other` and optional plain-text details (up to 2,000
+characters). The report is stored open, fires
+`odsi_social_content_reported( report )`, and is filed from a "Report"
+control on activity items and comments, on profiles and on group pages, through
+a single server-rendered form per page posting to `POST /reports`.
+
+**SOC-MOD-011** A member may report only what they can see: the object must
+exist and pass the visibility service for its type (`Privacy::can_view`,
+`Profiles::is_visible`, `Groups::can_view`, `Messages::can_read`); otherwise
+404. A member cannot report their own content or profile. An `activity` or
+`comment` report is stored with the row's real type.
+
+**SOC-MOD-012** One open report per member per object: a repeat returns the
+existing report's id and writes nothing. New reports count against the
+`report` rate-limit window.
+
+**SOC-MOD-013** Only admins (`manage_odsi_social`) may list, dismiss or act
+on reports; anyone else gets 403. A report is resolved once: a second
+resolution is a 409 (`odsi_social_report_closed`).
+
+**SOC-MOD-014** Actions: `delete_content` deletes a reported item or comment
+through the Activity service as the admin (comments and reactions cascade;
+content already gone still closes the report); `ban_from_group` bans the
+author of a reported item or comment from the group it was posted in through
+the Membership service (an organiser cannot be banned, and the report stays
+open). Neither action applies to member, group or message reports
+(`odsi_social_action_unavailable`).
+
+**SOC-MOD-014a** When reported content is deleted by anyone — its author, a
+moderator, a group cascade — every open report about it closes as `actioned`
+with resolution `content_deleted`.
+
+**SOC-MOD-015** Every resolution stores who resolved it, when, and the
+resolution (`dismissed`, `delete_content`, `ban_from_group`,
+`content_deleted`), fires `odsi_social_report_resolved( report, resolution )`,
+and notifies the reporter once (`moderation` / `resolved`, "A moderator has
+reviewed your report."), emailed per `SOC-NOT-008`. The reporter is told
+neither the outcome nor who decided. Admins review reports at Community →
+Moderation: open reports newest first with the reported content's excerpt
+and author, the reporter, reason, details, age and a row action per available
+resolution through nonced admin-post forms; filters by status; a badge on the
+menu item counts open reports. Message content is never shown there
+(`SOC-MSG-007`). The same list is at `GET /reports?status=`.
+
+**SOC-MOD-016** Resolved reports older than the notification retention
+setting are deleted by the daily maintenance job; open reports are kept.
 
 ---
 
@@ -527,6 +635,8 @@ text nodes only, never inside a tag.
 | `GET /members` | any | Directory, `SOC-MEM-008/009`, `search`, `orderby`, `page`. |
 | `GET /members/{id}` | any | Profile with fields filtered by visibility for the caller. |
 | `PATCH /members/me` | logged in | Update own fields and visibilities. |
+| `PUT /members/{id}/block`, `DELETE /members/{id}/block` | logged in | Block / unblock (`SOC-MOD-001`). 403 for an admin target. |
+| `GET /members/me/blocks` | logged in | Members the caller has blocked. |
 | `POST /members/me/{avatar\|cover}` | logged in | Multipart `file`; `SOC-MEM-004a`. 201 with the profile. `DELETE` clears it. |
 | `POST /groups/{id}/{avatar\|cover}` | organiser | Multipart `file`. 403 for others; `DELETE` clears it. |
 | `GET /activity` | any | Feed. `scope` in `site\|personal\|group\|profile`, plus `group_id` / `user_id`, `type`, `cursor`, `per_page` (0 or absent: the admin default); `render=1` adds each item's server-rendered `html`. |
@@ -549,6 +659,9 @@ text nodes only, never inside a tag.
 | `PUT /follows/{user}`, `DELETE /follows/{user}` | logged in | `SOC-CON-002`. |
 | `GET /notifications`, `POST /notifications/read`, `POST /notifications/{id}/read` | logged in | Own notifications only. |
 | `GET /messages`, `GET /messages/{thread}`, `POST /messages/to/{user}`, `POST /messages/{thread}`, `DELETE /messages/{thread}` | logged in | § 6. Inbox; read a thread; start a thread with a member; reply in a thread; leave a thread. Threads not involving the caller → 404. |
+| `POST /reports` | logged in | File a report: `object_type`, `object_id`, `reason`, `details` (`SOC-MOD-010..012`). 201 with the id; 404 when the object is not visible. |
+| `GET /reports?status=open\|dismissed\|actioned` | admin | The moderation queue, newest first, paginated (`SOC-MOD-015`). |
+| `POST /reports/{id}/dismiss`, `POST /reports/{id}/action` (`action` = `delete_content` \| `ban_from_group`) | admin | Resolve a report (`SOC-MOD-013/014`). 409 once resolved. |
 
 "404 when not visible" is deliberate throughout: existence of hidden content is
 not disclosed by a 403.
@@ -595,6 +708,8 @@ a 200 carrying a "not found" message.
 | Create group | ✗ | ✓ (setting) | — | — | — | ✓ |
 | Invite / approve / remove / ban | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ |
 | Promote / demote / settings / delete group | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ |
+| Block a member / file a report | ✗ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Review, dismiss or act on reports | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
 | Manage profile fields, plugin settings | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
 
 ---
@@ -615,6 +730,8 @@ a 200 carrying a "not found" message.
 | Recipient blocks messages from anyone | Existing threads remain readable; sending to them fails | MSG-002 |
 | Cursor from before a deletion | The deleted item is simply absent; pagination continues | ACT-034 |
 | Member banned from a group they had posted in | Their items in that group remain (moderators may delete); they lose visibility of private/hidden group content | GRP state machine, privacy table |
+| Member blocks someone they were connected to | Connection and follows removed both ways; each vanishes from the other's feeds, directory and profiles; existing message threads stay readable but closed to replies | MOD-002..005 |
+| Reported post deleted by its author before review | The report closes as `content_deleted`; the reporter is notified | MOD-014a |
 
 ---
 
