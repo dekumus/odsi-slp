@@ -58,7 +58,8 @@ final class SettingsScreen implements Bootable {
 			),
 			'default_pass_mark'       => array( __( 'Default quiz pass mark (%)', 'odsi-lms' ), 'number' ),
 			'enable_certificates'     => array( __( 'Issue certificates on completion', 'odsi-lms' ), 'checkbox' ),
-			'email_notifications'     => array( __( 'Email learners on enrollment, completion and assignment results', 'odsi-lms' ), 'checkbox' ),
+			'email_notifications'     => array( __( 'Email learners on enrollment, completion, assignment results and access expiry', 'odsi-lms' ), 'checkbox' ),
+			'expiry_warning_days'     => array( __( 'Warn learners this many days before access expires (0 disables)', 'odsi-lms' ), 'number' ),
 			'reset_data_on_uninstall' => array( __( 'Delete all learning data when the plugin is uninstalled', 'odsi-lms' ), 'checkbox' ),
 		);
 	}

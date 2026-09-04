@@ -6,6 +6,7 @@
  * @var int                                                        $user_id     Current user id.
  * @var bool                                                       $is_enrolled Whether the user is enrolled.
  * @var string                                                     $access_mode open, free, paid or closed.
+ * @var int[]                                                      $missing     Prerequisite courses not yet completed.
  * @var array{id:int,type:string,parent:int,depth:int}|null        $next_step   First step of the course.
  *
  * @package ODSI\LMS
@@ -18,6 +19,13 @@ defined( 'ABSPATH' ) || exit;
 		<a class="odsi-lms-button" href="<?php echo esc_url( wp_login_url( (string) get_permalink( $course_id ) ) ); ?>">
 			<?php esc_html_e( 'Log in to enroll', 'odsi-lms' ); ?>
 		</a>
+	<?php elseif ( array() !== $missing ) : ?>
+		<p class="odsi-lms-enroll__notice"><?php esc_html_e( 'Complete these courses first:', 'odsi-lms' ); ?></p>
+		<ul class="odsi-lms-enroll__prerequisites">
+			<?php foreach ( $missing as $required ) : ?>
+				<li><a href="<?php echo esc_url( (string) get_permalink( $required ) ); ?>"><?php echo esc_html( (string) get_the_title( $required ) ); ?></a></li>
+			<?php endforeach; ?>
+		</ul>
 	<?php elseif ( $is_enrolled ) : ?>
 		<a class="odsi-lms-button" href="<?php echo esc_url( $next_step ? (string) get_permalink( $next_step['id'] ) : (string) get_permalink( $course_id ) ); ?>">
 			<?php esc_html_e( 'Continue course', 'odsi-lms' ); ?>

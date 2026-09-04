@@ -132,6 +132,48 @@ final class EnrollmentRepository extends AbstractRepository {
 	}
 
 	/**
+	 * Change when an enrollment's access ends (a renewal); null keeps it open.
+	 *
+	 * @param int         $user_id    User id.
+	 * @param int         $course_id  Course post id.
+	 * @param string|null $expires_at UTC MySQL datetime or null.
+	 */
+	public function set_expiry( int $user_id, int $course_id, ?string $expires_at ): bool {
+		$row = $this->find_for( $user_id, $course_id );
+
+		if ( ! $row ) {
+			return false;
+		}
+
+		return $this->update_row( (int) $row->id, array( 'expires_at' => $expires_at ) );
+	}
+
+	/**
+	 * Active rows whose access ends within the next N days (LMS-ENR-015).
+	 *
+	 * @param int $days Window in days.
+	 *
+	 * @return object[]
+	 */
+	public function expiring_within( int $days ): array {
+		$table = $this->table();
+		$now   = $this->now();
+		$until = gmdate( 'Y-m-d H:i:s', time() + ( max( 0, $days ) * DAY_IN_SECONDS ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (array) $this->db->get_results(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$this->db->prepare(
+				"SELECT * FROM {$table}
+				 WHERE status = %s AND expires_at IS NOT NULL AND expires_at >= %s AND expires_at <= %s",
+				self::STATUS_ACTIVE,
+				$now,
+				$until
+			)
+		);
+	}
+
+	/**
 	 * Fetch the enrollment row linking a user to a course.
 	 *
 	 * @param int $user_id   User id.

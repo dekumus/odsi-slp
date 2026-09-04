@@ -73,6 +73,27 @@ final class CommerceTest extends TestCase {
 		self::assertSame( array( array( 'granted', $user, $course, 501 ), array( 'revoked', $user, $course ) ), $events );
 	}
 
+	public function test_com_002_repurchasing_renews_the_access_window(): void {
+		$course = $this->lms->course(
+			array(
+				'meta' => array(
+					Meta::ACCESS_MODE => 'paid',
+					Meta::ACCESS_DAYS => 30,
+				),
+			)
+		);
+		$user   = $this->lms->learner();
+
+		$this->purchases->grant( $user, $course, array( 'order_id' => 1 ) );
+		$this->enrollments->set_expiry( $user, $course, gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS ) );
+
+		$this->purchases->grant( $user, $course, array( 'order_id' => 2 ) );
+
+		$row = $this->enrollments->find_for( $user, $course );
+		self::assertSame( 1, (int) $row->source_id, 'The original order stays on the row.' );
+		self::assertGreaterThan( time() + 29 * DAY_IN_SECONDS, strtotime( (string) $row->expires_at . ' UTC' ), 'Access runs 30 days from the repurchase.' );
+	}
+
 	public function test_com_003_a_refund_never_touches_a_manual_or_other_order_enrollment(): void {
 		$course = $this->lms->course();
 		$user   = $this->lms->enrolled_learner( $course );

@@ -109,6 +109,28 @@ final class SettingsMetaBoxes implements Bootable {
 		}
 		echo '</select></p>';
 
+		$courses  = new WP_Query(
+			array(
+				'post_type'              => PostTypes::COURSE,
+				'post_status'            => 'publish',
+				'post__not_in'           => array( $post->ID ),
+				'posts_per_page'         => 200, // phpcs:ignore WordPress.WP.PostsPerPage.posts_per_page_posts_per_page -- bounded admin/outline read.
+				'orderby'                => 'title',
+				'order'                  => 'ASC',
+				'no_found_rows'          => true,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+			)
+		);
+		$required = array_map( 'intval', (array) get_post_meta( $post->ID, Meta::PREREQUISITES, true ) );
+
+		echo '<p><label for="odsi-prerequisites"><strong>' . esc_html__( 'Prerequisites', 'odsi-lms' ) . '</strong></label><br />';
+		echo '<select id="odsi-prerequisites" name="' . esc_attr( Meta::PREREQUISITES ) . '[]" multiple size="4" style="width:100%">';
+		foreach ( $courses->posts as $candidate ) {
+			printf( '<option value="%1$d" %2$s>%3$s</option>', (int) $candidate->ID, selected( in_array( (int) $candidate->ID, $required, true ), true, false ), esc_html( get_the_title( $candidate ) ) );
+		}
+		echo '</select><br /><span class="description">' . esc_html__( 'Learners must complete these before they can open this course.', 'odsi-lms' ) . '</span></p>';
+
 		/**
 		 * Fires at the end of the course settings box, for integrations that
 		 * add a field (the WooCommerce adapter adds its product id here).
@@ -193,6 +215,9 @@ final class SettingsMetaBoxes implements Bootable {
 				update_post_meta( $post_id, Meta::ACCESS_DAYS, $int( Meta::ACCESS_DAYS ) );
 				update_post_meta( $post_id, Meta::DURATION, $int( Meta::DURATION ) );
 				update_post_meta( $post_id, Meta::LINEAR_PROGRESSION, ! empty( $_POST[ Meta::LINEAR_PROGRESSION ] ) );
+
+				$required = array_values( array_unique( array_filter( array_map( 'absint', (array) wp_unslash( $_POST[ Meta::PREREQUISITES ] ?? array() ) ) ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- absint sanitises each id.
+				update_post_meta( $post_id, Meta::PREREQUISITES, array_values( array_filter( $required, static fn ( int $id ): bool => $id !== $post_id && PostTypes::COURSE === get_post_type( $id ) ) ) );
 
 				$certificate = $int( Meta::CERTIFICATE_ID );
 				update_post_meta( $post_id, Meta::CERTIFICATE_ID, PostTypes::CERTIFICATE === get_post_type( $certificate ) ? $certificate : 0 );

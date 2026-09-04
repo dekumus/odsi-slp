@@ -12,6 +12,7 @@ namespace ODSI\LMS;
 use ODSI\LMS\Admin\AdminMenu;
 use ODSI\LMS\Admin\AssignmentMetaBox;
 use ODSI\LMS\Admin\CohortMetaBox;
+use ODSI\LMS\Admin\CourseActions;
 use ODSI\LMS\Admin\CourseBuilder;
 use ODSI\LMS\Admin\GradingScreen;
 use ODSI\LMS\Admin\QuestionMetaBox;
@@ -25,6 +26,7 @@ use ODSI\LMS\Commerce\Purchases;
 use ODSI\LMS\Commerce\WooCommerce;
 use ODSI\LMS\Contracts\Bootable;
 use ODSI\LMS\Courses\Access;
+use ODSI\LMS\Courses\Cloner;
 use ODSI\LMS\Courses\Cohorts;
 use ODSI\LMS\Courses\Enrollment;
 use ODSI\LMS\Courses\Maintenance;
@@ -40,6 +42,7 @@ use ODSI\LMS\PostTypes\Taxonomies;
 use ODSI\LMS\Quizzes\Grader;
 use ODSI\LMS\Quizzes\QuizService;
 use ODSI\LMS\Reports\EnrollmentReport;
+use ODSI\LMS\Reports\QuizReport;
 use ODSI\LMS\Repositories\CertificateRepository;
 use ODSI\LMS\Repositories\EnrollmentRepository;
 use ODSI\LMS\Repositories\ProgressRepository;
@@ -199,13 +202,16 @@ final class Plugin {
 		);
 		$c->set( Blocks::class, static fn ( Container $c ): object => new Blocks( $c->get( Shortcodes::class ) ) );
 		$c->set( CertificateRepository::class, static fn (): object => new CertificateRepository() );
-		$c->set( EnrollmentReport::class, static fn ( Container $c ): object => new EnrollmentReport( $c->get( Progress::class ) ) );
+		$c->set( EnrollmentReport::class, static fn ( Container $c ): object => new EnrollmentReport( $c->get( Progress::class ), $c->get( Enrollment::class ) ) );
+		$c->set( QuizReport::class, static fn (): object => new QuizReport() );
+		$c->set( Cloner::class, static fn (): object => new Cloner() );
+		$c->set( CourseActions::class, static fn ( Container $c ): object => new CourseActions( $c->get( Cloner::class ) ) );
 		$c->set( Certificates::class, static fn ( Container $c ): object => new Certificates( $c->get( CertificateRepository::class ), $c->get( Templates::class ), $c->get( Settings::class ) ) );
 		$c->set( Cohorts::class, static fn ( Container $c ): object => new Cohorts( $c->get( Enrollment::class ) ) );
 		$c->set( Emails::class, static fn ( Container $c ): object => new Emails( $c->get( Settings::class ), $c->get( CertificateRepository::class ), $c->get( Certificates::class ) ) );
 		$c->set( SettingsScreen::class, static fn ( Container $c ): object => new SettingsScreen( $c->get( Settings::class ) ) );
 		$c->set( ObjectCache::class, static fn ( Container $c ): object => new ObjectCache( $c->get( Structure::class ) ) );
-		$c->set( ReportsScreen::class, static fn ( Container $c ): object => new ReportsScreen( $c->get( EnrollmentReport::class ), $c->get( Enrollment::class ) ) );
+		$c->set( ReportsScreen::class, static fn ( Container $c ): object => new ReportsScreen( $c->get( EnrollmentReport::class ), $c->get( Enrollment::class ), $c->get( QuizReport::class ) ) );
 		$c->set( GradingScreen::class, static fn ( Container $c ): object => new GradingScreen( $c->get( EnrollmentReport::class ), $c->get( QuizService::class ), $c->get( Assignments::class ) ) );
 		$c->set( AssignmentMetaBox::class, static fn (): object => new AssignmentMetaBox() );
 		$c->set( SettingsMetaBoxes::class, static fn ( Container $c ): object => new SettingsMetaBoxes( $c->get( Settings::class ) ) );
@@ -290,6 +296,7 @@ final class Plugin {
 			$services[] = SettingsScreen::class;
 			$services[] = SettingsMetaBoxes::class;
 			$services[] = QuestionMetaBox::class;
+			$services[] = CourseActions::class;
 		}
 
 		/**

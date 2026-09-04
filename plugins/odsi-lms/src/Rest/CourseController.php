@@ -182,6 +182,17 @@ final class CourseController {
 			);
 		}
 
+		if ( array() !== $this->access->missing_prerequisites( $user_id, $course_id ) ) {
+			return new WP_Error(
+				'odsi_lms_prerequisites',
+				__( 'Complete the prerequisite courses first.', 'odsi-lms' ),
+				array(
+					'status'  => 403,
+					'missing' => $this->access->missing_prerequisites( $user_id, $course_id ),
+				)
+			);
+		}
+
 		$enrollment_id = $this->enrollment->enroll( $user_id, $course_id, array( 'source' => 'self' ) );
 
 		if ( $enrollment_id <= 0 ) {

@@ -35,7 +35,8 @@ Multisite: activate per site; the tables are per site.
 | Default access mode | Mode new courses start with (see § 4). |
 | Default pass mark | Pass mark for quizzes that do not set their own. |
 | Certificates | Issue certificates on course completion (a course still needs a certificate template). |
-| Email notifications | Enrollment, completion and assignment emails to learners. |
+| Email notifications | Enrollment, completion, assignment and access-expiry emails to learners. |
+| Expiry warning days | How many days before access ends the learner is warned; 0 disables. |
 | Delete all data on uninstall | Off by default. Uninstall keeps every table and post unless this is on. |
 
 Roles: **Instructor** creates, edits, publishes and deletes their own courses
@@ -59,7 +60,8 @@ editor's sidebar as post meta):
 
 - **Course settings**: access mode, price, access expiry in days, linear
   progression (steps must be completed in order), duration, certificate
-  template, and, with WooCommerce active, the product that sells the course.
+  template, prerequisite courses (learners must complete them first), and,
+  with WooCommerce active, the product that sells the course.
 - **Release and duration** on lessons and topics: available immediately, a
   number of days after enrollment, or on a fixed date in the site timezone.
 - **Quiz settings**: pass mark, maximum attempts (0 for unlimited), time limit
@@ -79,6 +81,9 @@ placeholders; the issued page is print-styled and verifiable at
 Cohorts (**Learning → Cohorts**) enroll a set of learners on a set of courses
 at once and cancel those enrollments when a learner leaves the cohort.
 
+**Duplicate** on the courses list copies a course and everything under it as
+drafts, ready to edit; learners and certificates stay with the original.
+
 ## 4. Who can take a course
 
 Each course has one access mode:
@@ -90,9 +95,12 @@ Each course has one access mode:
 | `paid` | Enrollment comes from a purchase (§ 5). Visitors see a purchase notice, or a buy button when a product is linked. |
 | `closed` | Only an administrator, a cohort or an integration enrolls. |
 
-Administrators enroll and remove learners on **Learning → Reports**, which
-also exports a CSV of enrollments and progress. Access can expire after a
-number of days; a daily job closes expired enrollments.
+Administrators enroll and remove learners on **Learning → Reports**, one at
+a time or from a pasted list of usernames or emails, and export a CSV of
+enrollments and progress. The same screen shows each quiz's attempts, pass
+rate and a per-question breakdown, also exportable. Access can expire after
+a number of days; a daily job warns learners a configurable number of days
+before, closes expired enrollments and emails them that access ended.
 
 ## 5. Selling courses
 

@@ -25,10 +25,10 @@ matching what users need to do, not how a competitor draws it.
 | Ordering via `menu_order` | v1 | Built |
 | Categories, tags, difficulty levels | v1 | Built |
 | Featured image, excerpt, block-editor content | v1 | Inherited from post types |
-| Course duplication / cloning | v2 | |
+| Course duplication / cloning | v1 | Row action; LMS-AUT-013 |
 | Shared course steps (one lesson in several courses) | Later | Breaks the single `_odsi_course_id` model; needs a join table |
 | Import / export of a course as a portable file | v2 | |
-| Course prerequisites | v2 | |
+| Course prerequisites | v1 | LMS-ACC-009 |
 | Course points / required-points gating | Later | |
 
 ### Enrollment and access
@@ -43,7 +43,7 @@ matching what users need to do, not how a competitor draws it.
 | Cohorts / course groups | v1 | Built: membership grants enrollment (ADR-010); no leader role yet |
 | WooCommerce integration | v2 | The realistic path to `paid` |
 | Subscriptions and recurring access | Later | |
-| Enrollment expiry notifications | v2 | `odsi_lms_enrollment_expired` is the seam |
+| Enrollment expiry notifications | v1 | Warning before and notice after; LMS-ENR-015/016 |
 
 ### Learning experience
 
@@ -83,9 +83,9 @@ matching what users need to do, not how a competitor draws it.
 | Instructor role with own-content capabilities | v1 | Built |
 | Enrollment list per course | v1 | Built: sortable, filterable list table |
 | Progress and completion report | v1 | Built |
-| Quiz results and per-question breakdown | v2 | |
+| Quiz results and per-question breakdown | v1 | Reports screen and CSV; LMS-ADM-009 |
 | CSV export of the enrollment report | v1 | Built (LMS-ADM-006) |
-| Bulk enroll / unenroll | v2 | |
+| Bulk enroll / unenroll | v1 | Bulk enroll from a list (LMS-ADM-008); unenroll stays per row |
 | Email notifications on enrollment, completion and assignment results | v1 | Built (LMS-ADM-007) |
 | Learner-facing dashboard | v1 | Built: `[odsi_my_courses]`, the My courses block, certificates list |
 

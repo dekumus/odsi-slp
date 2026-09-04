@@ -14,6 +14,8 @@ defined( 'ABSPATH' ) || exit;
 use ODSI\LMS\Contracts\Bootable;
 use ODSI\LMS\Courses\Enrollment;
 use ODSI\LMS\PostTypes\PostTypes;
+use ODSI\LMS\Repositories\EnrollmentRepository;
+use ODSI\LMS\Support\Meta;
 
 /**
  * A commerce integration never touches the enrollment table. It fires
@@ -94,6 +96,16 @@ final class Purchases implements Bootable {
 				'source_id' => $order_id,
 			)
 		);
+
+		// Buying again while a purchased enrollment is still active renews the
+		// access window from today (LMS-COM-002).
+		if ( $id > 0 && $existing && self::SOURCE === (string) $existing->source && EnrollmentRepository::STATUS_ACTIVE === (string) $existing->status ) {
+			$days = (int) get_post_meta( $course_id, Meta::ACCESS_DAYS, true );
+
+			if ( $days > 0 ) {
+				$this->enrollment->repository()->set_expiry( $user_id, $course_id, gmdate( 'Y-m-d H:i:s', time() + ( $days * DAY_IN_SECONDS ) ) );
+			}
+		}
 
 		if ( $id > 0 ) {
 			/**

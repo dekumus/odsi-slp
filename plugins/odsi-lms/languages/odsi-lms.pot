@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-04T12:29:59+00:00\n"
+"POT-Creation-Date: 2026-09-04T12:53:17+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: odsi-lms\n"
@@ -53,7 +53,7 @@ msgid "Learning"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:62
-#: src/Admin/ReportsScreen.php:56
+#: src/Admin/ReportsScreen.php:59
 msgid "Reports"
 msgstr ""
 
@@ -122,11 +122,24 @@ msgstr ""
 msgid "Add members (usernames or emails, comma separated)"
 msgstr ""
 
+#: src/Admin/CourseActions.php:60
+msgid "Duplicate"
+msgstr ""
+
+#: src/Admin/CourseActions.php:94
+msgid "That course could not be duplicated."
+msgstr ""
+
+#: src/Admin/CourseActions.php:109
+msgid "Course duplicated. This copy and every step in it are drafts."
+msgstr ""
+
 #: src/Admin/CourseBuilder.php:57
 msgid "Course placement"
 msgstr ""
 
 #: src/Admin/CourseBuilder.php:79
+#: src/Admin/ReportsScreen.php:162
 #: src/PostTypes/PostTypes.php:113
 #: assets/src/course-builder/index.js:189
 #: assets/src/course-builder/index.js:196
@@ -135,7 +148,7 @@ msgid "Quiz"
 msgstr ""
 
 #: src/Admin/CourseBuilder.php:89
-#: src/Admin/ReportsScreen.php:102
+#: src/Admin/ReportsScreen.php:221
 #: src/PostTypes/PostTypes.php:72
 #: assets/src/blocks/index.js:37
 #: assets/src/blocks/index.js:87
@@ -165,7 +178,7 @@ msgid "Learner"
 msgstr ""
 
 #: src/Admin/EnrollmentListTable.php:49
-#: src/Reports/EnrollmentReport.php:199
+#: src/Reports/EnrollmentReport.php:201
 msgid "Status"
 msgstr ""
 
@@ -174,14 +187,14 @@ msgid "Progress"
 msgstr ""
 
 #: src/Admin/EnrollmentListTable.php:51
-#: src/Reports/EnrollmentReport.php:201
+#: src/Reports/EnrollmentReport.php:203
 msgid "Enrolled"
 msgstr ""
 
 #: src/Admin/EnrollmentListTable.php:52
 #: src/Admin/EnrollmentListTable.php:150
 #: src/Frontend/ContentDecorator.php:132
-#: src/Reports/EnrollmentReport.php:202
+#: src/Reports/EnrollmentReport.php:204
 #: src/Support/Assets.php:72
 #: templates/parts/course-outline.php:54
 #: assets/src/blocks/index.js:109
@@ -295,6 +308,7 @@ msgid "Essay (graded by hand)"
 msgstr ""
 
 #: src/Admin/QuestionMetaBox.php:72
+#: src/Admin/ReportsScreen.php:191
 msgid "Type"
 msgstr ""
 
@@ -324,52 +338,139 @@ msgstr ""
 msgid "One option per line. Start a line with * to mark it correct (single or multiple choice). For fill-in-the-blank, list every accepted answer, one per line. Leave empty for essays."
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:59
+#: src/Admin/ReportsScreen.php:63
 msgid "No courses to report on yet."
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:85
+#: src/Admin/ReportsScreen.php:89
 msgid "Search learners"
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:120
+#. translators: 1: enrolled count, 2: already-enrolled count.
+#: src/Admin/ReportsScreen.php:113
+#, php-format
+msgid "%1$d learners enrolled, %2$d were already enrolled."
+msgstr ""
+
+#. translators: %s: list of names.
+#: src/Admin/ReportsScreen.php:118
+#, php-format
+msgid "Not found: %s"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:130
+msgid "Enroll many learners"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:135
+#: src/Admin/ReportsScreen.php:136
+msgid "Usernames or emails, one per line"
+msgstr ""
+
+#. translators: %d: maximum names.
+#: src/Admin/ReportsScreen.php:137
+#, php-format
+msgid "Up to %d per request. Names that match nobody are reported back, not created."
+msgstr ""
+
+#. translators: %d: maximum names.
+#: src/Admin/ReportsScreen.php:138
+msgid "Enroll all"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:150
+msgid "Quiz results"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:153
+msgid "This course has no quizzes."
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:170
+msgid "attempts"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:171
+msgid "learners"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:172
+msgid "pass rate"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:173
+msgid "average score"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:188
+msgid "Export question breakdown (CSV)"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:191
+#: src/PostTypes/PostTypes.php:126
+msgid "Question"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:191
+msgid "Answered"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:191
+#: src/Support/Assets.php:80
+msgid "Correct"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:191
+msgid "Average points"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:191
+#: src/Support/Assets.php:79
+msgid "Awaiting grading"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:239
 msgid "enrolled"
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:121
+#: src/Admin/ReportsScreen.php:240
 msgid "active"
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:122
+#: src/Admin/ReportsScreen.php:241
 msgid "completed"
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:123
+#: src/Admin/ReportsScreen.php:242
 msgid "completion rate"
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:146
+#: src/Admin/ReportsScreen.php:265
 msgid "Export CSV"
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:159
+#: src/Admin/ReportsScreen.php:278
 msgid "You cannot export this course."
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:185
+#: src/Admin/ReportsScreen.php:288
+msgid "That quiz is not part of this course."
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:322
 msgid "Enroll a learner"
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:190
-#: src/Admin/ReportsScreen.php:191
+#: src/Admin/ReportsScreen.php:327
+#: src/Admin/ReportsScreen.php:328
 msgid "Username or email"
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:192
+#: src/Admin/ReportsScreen.php:329
 msgid "Enroll"
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:206
+#: src/Admin/ReportsScreen.php:343
 msgid "You cannot manage this course."
 msgstr ""
 
@@ -422,7 +523,7 @@ msgid "Zero keeps access indefinitely."
 msgstr ""
 
 #: src/Admin/SettingsMetaBoxes.php:81
-#: src/Admin/SettingsMetaBoxes.php:150
+#: src/Admin/SettingsMetaBoxes.php:172
 msgid "Duration (minutes)"
 msgstr ""
 
@@ -440,47 +541,55 @@ msgstr ""
 msgid "None"
 msgstr ""
 
+#: src/Admin/SettingsMetaBoxes.php:127
+msgid "Prerequisites"
+msgstr ""
+
 #: src/Admin/SettingsMetaBoxes.php:132
+msgid "Learners must complete these before they can open this course."
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:154
 msgid "Available immediately"
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:133
+#: src/Admin/SettingsMetaBoxes.php:155
 msgid "Days after enrollment"
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:134
+#: src/Admin/SettingsMetaBoxes.php:156
 msgid "On a fixed date"
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:137
+#: src/Admin/SettingsMetaBoxes.php:159
 msgid "Release"
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:145
+#: src/Admin/SettingsMetaBoxes.php:167
 msgid "Release value"
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:148
+#: src/Admin/SettingsMetaBoxes.php:170
 msgid "A number of days, or a date such as 2026-09-30 (site timezone)."
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:164
+#: src/Admin/SettingsMetaBoxes.php:186
 msgid "Pass mark (%)"
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:165
+#: src/Admin/SettingsMetaBoxes.php:187
 msgid "Maximum attempts"
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:165
+#: src/Admin/SettingsMetaBoxes.php:187
 msgid "Zero means unlimited."
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:166
+#: src/Admin/SettingsMetaBoxes.php:188
 msgid "Time limit (minutes)"
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:166
+#: src/Admin/SettingsMetaBoxes.php:188
 msgid "Zero means no limit."
 msgstr ""
 
@@ -517,26 +626,30 @@ msgid "Issue certificates on completion"
 msgstr ""
 
 #: src/Admin/SettingsScreen.php:61
-msgid "Email learners on enrollment, completion and assignment results"
+msgid "Email learners on enrollment, completion, assignment results and access expiry"
 msgstr ""
 
 #: src/Admin/SettingsScreen.php:62
+msgid "Warn learners this many days before access expires (0 disables)"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:63
 msgid "Delete all learning data when the plugin is uninstalled"
 msgstr ""
 
-#: src/Admin/SettingsScreen.php:72
+#: src/Admin/SettingsScreen.php:73
 msgid "Learning settings"
 msgstr ""
 
-#: src/Admin/SettingsScreen.php:75
+#: src/Admin/SettingsScreen.php:76
 msgid "Settings saved."
 msgstr ""
 
-#: src/Admin/SettingsScreen.php:105
+#: src/Admin/SettingsScreen.php:106
 msgid "Save settings"
 msgstr ""
 
-#: src/Admin/SettingsScreen.php:116
+#: src/Admin/SettingsScreen.php:117
 msgid "You cannot change these settings."
 msgstr ""
 
@@ -592,30 +705,36 @@ msgstr ""
 msgid "Buying this product enrolls the customer. Set the access mode to Paid."
 msgstr ""
 
-#: src/Courses/Access.php:390
+#: src/Courses/Access.php:448
 msgid "This lesson is not available yet."
 msgstr ""
 
 #. translators: %s: formatted date.
-#: src/Courses/Access.php:395
+#: src/Courses/Access.php:453
 #, php-format
 msgid "This lesson will be available on %s."
 msgstr ""
 
-#: src/Courses/Access.php:402
+#: src/Courses/Access.php:460
 msgid "Complete the previous step to unlock this one."
 msgstr ""
 
-#: src/Courses/Access.php:407
+#: src/Courses/Access.php:465
 msgid "Enroll on this course to view this lesson."
 msgstr ""
 
-#: src/Courses/Access.php:408
+#: src/Courses/Access.php:466
 msgid "Please log in and enroll on this course to view this lesson."
 msgstr ""
 
-#: src/Courses/Access.php:421
+#: src/Courses/Access.php:479
 msgid "Back to the course"
+msgstr ""
+
+#. translators: %s: course title.
+#: src/Courses/Cloner.php:53
+#, php-format
+msgid "Copy of %s"
 msgstr ""
 
 #: src/Frontend/ContentDecorator.php:109
@@ -640,13 +759,43 @@ msgid "JavaScript is required to take this quiz."
 msgstr ""
 
 #. translators: %s: course title.
-#: src/Notifications/Emails.php:81
+#: src/Notifications/Emails.php:79
+#, php-format
+msgid "Your access to %s ends soon"
+msgstr ""
+
+#. translators: 1: course title, 2: date, 3: course URL.
+#: src/Notifications/Emails.php:82
+#, php-format
+msgid ""
+"Your access to %1$s ends on %2$s.\n"
+"\n"
+"Pick up where you left off: %3$s"
+msgstr ""
+
+#. translators: %s: course title.
+#: src/Notifications/Emails.php:107
+#, php-format
+msgid "Your access to %s has ended"
+msgstr ""
+
+#. translators: 1: course title, 2: course URL.
+#: src/Notifications/Emails.php:110
+#, php-format
+msgid ""
+"Your access to %1$s has ended. Your progress is kept, so renewing picks up where you stopped.\n"
+"\n"
+"%2$s"
+msgstr ""
+
+#. translators: %s: course title.
+#: src/Notifications/Emails.php:137
 #, php-format
 msgid "You are enrolled on %s"
 msgstr ""
 
 #. translators: 1: course title, 2: course URL.
-#: src/Notifications/Emails.php:84
+#: src/Notifications/Emails.php:140
 #, php-format
 msgid ""
 "You now have access to %1$s.\n"
@@ -655,37 +804,37 @@ msgid ""
 msgstr ""
 
 #. translators: %s: course title.
-#: src/Notifications/Emails.php:103
+#: src/Notifications/Emails.php:159
 #, php-format
 msgid "Congratulations, you have completed %s."
 msgstr ""
 
 #. translators: %s: certificate URL.
-#: src/Notifications/Emails.php:110
+#: src/Notifications/Emails.php:166
 #, php-format
 msgid "Your certificate: %s"
 msgstr ""
 
 #. translators: %s: course title.
-#: src/Notifications/Emails.php:119
+#: src/Notifications/Emails.php:175
 #, php-format
 msgid "You completed %s"
 msgstr ""
 
 #. translators: %s: step title.
-#: src/Notifications/Emails.php:142
+#: src/Notifications/Emails.php:198
 #, php-format
 msgid "Your assignment for %s was approved"
 msgstr ""
 
 #. translators: %s: step title.
-#: src/Notifications/Emails.php:144
+#: src/Notifications/Emails.php:200
 #, php-format
 msgid "Your assignment for %s needs another look"
 msgstr ""
 
 #. translators: %s: step URL.
-#: src/Notifications/Emails.php:147
+#: src/Notifications/Emails.php:203
 #, php-format
 msgid "See the feedback and your result here: %s"
 msgstr ""
@@ -709,10 +858,6 @@ msgstr ""
 
 #: src/PostTypes/PostTypes.php:125
 msgid "Questions"
-msgstr ""
-
-#: src/PostTypes/PostTypes.php:126
-msgid "Question"
 msgstr ""
 
 #: src/PostTypes/PostTypes.php:142
@@ -832,24 +977,28 @@ msgstr ""
 msgid "The time limit for this quiz has expired."
 msgstr ""
 
-#: src/Reports/EnrollmentReport.php:197
+#: src/Reports/EnrollmentReport.php:199
 msgid "Name"
 msgstr ""
 
-#: src/Reports/EnrollmentReport.php:198
+#: src/Reports/EnrollmentReport.php:200
 msgid "Email"
 msgstr ""
 
-#: src/Reports/EnrollmentReport.php:200
+#: src/Reports/EnrollmentReport.php:202
 msgid "Source"
 msgstr ""
 
-#: src/Reports/EnrollmentReport.php:203
+#: src/Reports/EnrollmentReport.php:205
 msgid "Expires"
 msgstr ""
 
-#: src/Reports/EnrollmentReport.php:204
+#: src/Reports/EnrollmentReport.php:206
 msgid "Progress %"
+msgstr ""
+
+#: src/Reports/QuizReport.php:153
+msgid "(deleted question)"
 msgstr ""
 
 #: src/Rest/BuilderController.php:139
@@ -885,7 +1034,11 @@ msgstr ""
 msgid "This course cannot be joined directly."
 msgstr ""
 
-#: src/Rest/CourseController.php:190
+#: src/Rest/CourseController.php:188
+msgid "Complete the prerequisite courses first."
+msgstr ""
+
+#: src/Rest/CourseController.php:201
 msgid "You could not be enrolled on this course."
 msgstr ""
 
@@ -944,14 +1097,6 @@ msgstr ""
 
 #: src/Support/Assets.php:78
 msgid "Not this time."
-msgstr ""
-
-#: src/Support/Assets.php:79
-msgid "Awaiting grading"
-msgstr ""
-
-#: src/Support/Assets.php:80
-msgid "Correct"
 msgstr ""
 
 #: src/Support/Assets.php:81
@@ -1061,23 +1206,27 @@ msgstr ""
 msgid "Locked"
 msgstr ""
 
-#: templates/parts/enroll-button.php:19
+#: templates/parts/enroll-button.php:20
 msgid "Log in to enroll"
 msgstr ""
 
 #: templates/parts/enroll-button.php:23
+msgid "Complete these courses first:"
+msgstr ""
+
+#: templates/parts/enroll-button.php:31
 msgid "Continue course"
 msgstr ""
 
-#: templates/parts/enroll-button.php:34
+#: templates/parts/enroll-button.php:42
 msgid "This course requires a purchase."
 msgstr ""
 
-#: templates/parts/enroll-button.php:37
+#: templates/parts/enroll-button.php:45
 msgid "Enrollment on this course is by invitation."
 msgstr ""
 
-#: templates/parts/enroll-button.php:41
+#: templates/parts/enroll-button.php:49
 msgid "Enroll on this course"
 msgstr ""
 

@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace ODSI\LMS\Reports;
 
+use ODSI\LMS\Courses\Enrollment;
 use ODSI\LMS\Courses\Progress;
 use ODSI\LMS\Database\Schema;
 use ODSI\LMS\PostTypes\PostTypes;
@@ -34,10 +35,11 @@ final class EnrollmentReport {
 	/**
 	 * Constructor.
 	 *
-	 * @param Progress  $progress Progress service.
-	 * @param wpdb|null $db       Database.
+	 * @param Progress   $progress   Progress service.
+	 * @param Enrollment $enrollment Enrollment service.
+	 * @param wpdb|null  $db         Database.
 	 */
-	public function __construct( private Progress $progress, ?wpdb $db = null ) {
+	public function __construct( private Progress $progress, private Enrollment $enrollment, ?wpdb $db = null ) {
 		global $wpdb;
 
 		$this->db = $db ?? $wpdb;
@@ -258,9 +260,67 @@ final class EnrollmentReport {
 	 *
 	 * @param string $value Cell.
 	 */
-	private static function csv_safe( string $value ): string {
+	public static function csv_safe( string $value ): string {
 		return '' !== $value && str_contains( "=+-@\t\r\n", $value[0] ) ? "'" . $value : $value;
 	}
+
+	/**
+	 * Enroll a list of learners given as usernames or emails, one per line
+	 * (LMS-ADM-008). Unknown names are skipped and reported, never guessed.
+	 *
+	 * @param int    $actor_id  Administrator performing the action.
+	 * @param int    $course_id Course.
+	 * @param string $lines     Raw textarea content.
+	 *
+	 * @return array{enrolled: int, already: int, unknown: string[]}
+	 */
+	public function bulk_enroll( int $actor_id, int $course_id, string $lines ): array {
+		$result = array(
+			'enrolled' => 0,
+			'already'  => 0,
+			'unknown'  => array(),
+		);
+
+		if ( ! $this->can_report( $actor_id, $course_id ) ) {
+			return $result;
+		}
+
+		$needles = array_unique( array_filter( array_map( 'trim', preg_split( '/[\r\n,;]+/', $lines ) ?: array() ) ) );
+
+		foreach ( array_slice( $needles, 0, self::BULK_LIMIT ) as $needle ) {
+			$user = is_email( $needle ) ? get_user_by( 'email', $needle ) : get_user_by( 'login', $needle );
+
+			if ( ! $user ) {
+				$result['unknown'][] = $needle;
+				continue;
+			}
+
+			if ( $this->enrollment->is_enrolled( (int) $user->ID, $course_id ) ) {
+				++$result['already'];
+				continue;
+			}
+
+			$id = $this->enrollment->enroll(
+				(int) $user->ID,
+				$course_id,
+				array(
+					'source'    => 'manual',
+					'source_id' => $actor_id,
+				)
+			);
+
+			if ( $id > 0 ) {
+				++$result['enrolled'];
+			}
+		}//end foreach
+
+		return $result;
+	}
+
+	/**
+	 * Most names one bulk request handles.
+	 */
+	public const BULK_LIMIT = 500;
 
 	/**
 	 * Headline numbers for a course.

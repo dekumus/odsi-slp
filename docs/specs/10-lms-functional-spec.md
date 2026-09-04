@@ -81,6 +81,14 @@ editor through registered meta. The meta `auth_callback` is `edit_post` on
 that post, so an instructor writes settings on their own content only.
 Defaults for pass mark and access mode come from the plugin settings.
 
+**LMS-AUT-013** Duplicating a course (row action on the courses list, or
+`Courses\Cloner::duplicate()`) copies the course and every lesson, topic,
+quiz and question under it, drafts included, as drafts owned by the actor,
+with meta and terms, parent links rewired to the copies, and the source's
+prerequisites kept. Learner data, certificates and the commerce product link
+are not copied. The actor must be able to edit the source and create courses.
+`odsi_lms_course_duplicated` receives the source-to-copy id map.
+
 **LMS-AUT-012** Changing a topic's or quiz's `_odsi_lesson_id` by any path
 re-aligns its `_odsi_course_id` with the lesson's course. Trashing a cohort
 behaves like deleting it.
@@ -199,6 +207,15 @@ row.
 **LMS-ENR-013** Enrolling a user whose row is `completed` returns that row
 unchanged: finishing a course is not undone by re-enrolling.
 
+**LMS-ENR-015** When `expiry_warning_days` is above zero (default 7), the
+daily job fires `odsi_lms_enrollment_expiring` once per expiry date for each
+active enrollment ending inside the window, and the learner is emailed.
+A renewed access window (a later `expires_at`) is announced again.
+
+**LMS-ENR-016** When an enrollment expires the learner is emailed that access
+ended and progress is kept. Both messages obey the `email_notifications`
+setting and the `odsi_lms_email` filter.
+
 **LMS-ENR-014** Deleting a WordPress user removes their enrollments, progress,
 attempts and answers, submissions and certificates (`deleted_user`), after
 firing `odsi_lms_before_erase_user`. Authored content follows WordPress's own
@@ -254,13 +271,20 @@ filter the final decision. A filter may grant or deny. Filters run after the
 built-in rule, receive its result, and receive the ids needed to decide.
 
 
-**LMS-ACC-008** The lock applies wherever WordPress renders a step, not only
+**LMS-ACC-008a** The lock applies wherever WordPress renders a step, not only
 on its page: `the_content` and excerpts in query loops, feeds, search and the
 core `wp/v2` endpoints all yield the locked notice (content marked
 `protected`) or nothing. Lessons, topics and quizzes are excluded from site
 search. Questions and cohorts are readable over core REST only by users who
 may edit them. Unpublished steps and courses are the author's: a learner
 cannot open, complete, attempt, submit to, or self-enroll on them.
+
+**LMS-ACC-009** A course may list prerequisite courses (`_odsi_prerequisites`,
+published courses only, self excluded, filter `odsi_lms_course_prerequisites`).
+Until the learner's enrollment on every prerequisite is `completed`, the
+course is locked for them even when they are enrolled, self-enrollment is
+refused with 403 `odsi_lms_prerequisites` naming the missing courses, and
+the enroll button lists them with links. Managers of the course are exempt.
 
 ---
 
@@ -520,7 +544,9 @@ course's access mode is today, and fires `odsi_lms_purchase_granted`.
 
 **LMS-COM-002** A purchase by a learner who is already enrolled by another
 route keeps the existing row (LMS-ENR-002); `odsi_lms_purchase_granted` still
-fires with `$was_enrolled = true` so the integration can reconcile.
+fires with `$was_enrolled = true` so the integration can reconcile. Buying
+again while a purchased enrollment is active renews its access window from
+today when the course sets access days; the original order id stays.
 
 **LMS-COM-003** A refund removes only an enrollment whose source is
 `purchase` and, when the refund names an order, only that order's. Manual and
@@ -569,6 +595,18 @@ report action. Rows are fetched in pages, so the export never loads a course's
 roster into memory at once, and cells beginning with `=`, `+`, `-` or `@` are
 prefixed with an apostrophe so a display name cannot become a spreadsheet
 formula. `odsi_lms_report_csv_columns` and `odsi_lms_report_csv_row` extend it.
+
+**LMS-ADM-008** The Reports screen enrolls many learners at once from a list
+of usernames or emails (one per line, up to 500 per request). Unknown names
+are reported back, never created; already-enrolled learners are counted, not
+changed. The same reporting capability as the single form applies.
+
+**LMS-ADM-009** The Reports screen shows, per quiz of the course, the
+completed-attempt count, distinct learners, pass rate and average score, and a
+per-question breakdown (answered, correct and rate, average points of
+possible, answers awaiting grading) in quiz order, with removed questions
+still listed. Open attempts never count. The breakdown exports as CSV with
+the same formula guard as the enrollment export.
 
 **LMS-ADM-007** When the `email_notifications` setting is on (default), a
 learner receives a plain-text email on enrollment (except automatic

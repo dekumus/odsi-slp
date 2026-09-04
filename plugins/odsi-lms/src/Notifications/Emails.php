@@ -42,6 +42,8 @@ final class Emails implements Bootable {
 	 * Register hooks. Completion runs after Certificates (10) has issued.
 	 */
 	public function boot(): void {
+		add_action( 'odsi_lms_enrollment_expiring', array( $this, 'on_expiring' ), 10, 3 );
+		add_action( 'odsi_lms_enrollment_expired', array( $this, 'on_expired' ), 10, 2 );
 		add_action( 'odsi_lms_user_enrolled', array( $this, 'on_enrolled' ), 10, 4 );
 		add_action( 'odsi_lms_course_completed', array( $this, 'on_completed' ), 20, 2 );
 		add_action( 'odsi_lms_submission_graded', array( $this, 'on_submission_graded' ), 10, 5 );
@@ -57,6 +59,60 @@ final class Emails implements Bootable {
 		 * @param bool $enabled Setting value.
 		 */
 		return (bool) apply_filters( 'odsi_lms_emails_enabled', $this->settings->bool( 'email_notifications' ) );
+	}
+
+	/**
+	 * Access ends soon (LMS-ENR-015).
+	 *
+	 * @param int    $user_id    Learner.
+	 * @param int    $course_id  Course.
+	 * @param string $expires_at Expiry, UTC.
+	 */
+	public function on_expiring( int $user_id, int $course_id, string $expires_at ): void {
+		$title = (string) get_the_title( $course_id );
+		$when  = wp_date( (string) get_option( 'date_format' ), (int) strtotime( $expires_at . ' UTC' ) );
+
+		$this->send(
+			'expiring',
+			$user_id,
+			/* translators: %s: course title. */
+			sprintf( __( 'Your access to %s ends soon', 'odsi-lms' ), $title ),
+			sprintf(
+				/* translators: 1: course title, 2: date, 3: course URL. */
+				__( "Your access to %1\$s ends on %2\$s.\n\nPick up where you left off: %3\$s", 'odsi-lms' ),
+				$title,
+				(string) $when,
+				(string) get_permalink( $course_id )
+			),
+			array(
+				'course_id'  => $course_id,
+				'expires_at' => $expires_at,
+			)
+		);
+	}
+
+	/**
+	 * Access has ended (LMS-ENR-016).
+	 *
+	 * @param int $user_id   Learner.
+	 * @param int $course_id Course.
+	 */
+	public function on_expired( int $user_id, int $course_id ): void {
+		$title = (string) get_the_title( $course_id );
+
+		$this->send(
+			'expired',
+			$user_id,
+			/* translators: %s: course title. */
+			sprintf( __( 'Your access to %s has ended', 'odsi-lms' ), $title ),
+			sprintf(
+				/* translators: 1: course title, 2: course URL. */
+				__( "Your access to %1\$s has ended. Your progress is kept, so renewing picks up where you stopped.\n\n%2\$s", 'odsi-lms' ),
+				$title,
+				(string) get_permalink( $course_id )
+			),
+			array( 'course_id' => $course_id )
+		);
 	}
 
 	/**
@@ -174,7 +230,7 @@ final class Emails implements Bootable {
 		 * Filters an outgoing learner email. Return an empty array to suppress it.
 		 *
 		 * @param array<string, mixed> $email   `to`, `subject`, `body`, `headers`.
-		 * @param string               $kind    enrolled, completed, submission_approved, submission_rejected.
+		 * @param string               $kind    enrolled, completed, submission_approved, submission_rejected, expiring, expired.
 		 * @param int                  $user_id Recipient.
 		 * @param array<string, mixed> $context Ids relevant to the email.
 		 */

@@ -33,6 +33,9 @@ final class Meta {
 	/** Certificate post id awarded on course completion. */
 	public const CERTIFICATE_ID = '_odsi_certificate_id';
 
+	/** Courses a learner must complete first (LMS-ACC-009). */
+	public const PREREQUISITES = '_odsi_prerequisites';
+
 	/** WooCommerce product that sells the course (LMS-COM-004). */
 	public const WC_PRODUCT_ID = '_odsi_wc_product_id';
 
@@ -176,6 +179,23 @@ final class Meta {
 				);
 			}
 		}
+
+		register_post_meta(
+			PostTypes::COURSE,
+			self::PREREQUISITES,
+			array(
+				'single'        => true,
+				'type'          => 'array',
+				'default'       => array(),
+				'show_in_rest'  => array(
+					'schema' => array(
+						'type'  => 'array',
+						'items' => array( 'type' => 'integer' ),
+					),
+				),
+				'auth_callback' => static fn ( bool $allowed, string $key, int $post_id ): bool => current_user_can( 'edit_post', $post_id ),
+			)
+		);
 
 		// Answers are a nested structure the block editor never edits directly, so
 		// they are kept out of REST and written only through the quiz builder.

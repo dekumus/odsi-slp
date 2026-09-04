@@ -134,6 +134,7 @@ final class Shortcodes implements Bootable {
 				'user_id'     => $user_id,
 				'is_enrolled' => $is_enrolled,
 				'access_mode' => (string) get_post_meta( $course_id, Meta::ACCESS_MODE, true ) ?: 'free',
+				'missing'     => $user_id > 0 ? $this->access->missing_prerequisites( $user_id, $course_id ) : array(),
 				'next_step'   => $resume_id > 0 ? array( 'id' => $resume_id ) : ( $this->structure->outline( $course_id )[0] ?? null ),
 			)
 		);

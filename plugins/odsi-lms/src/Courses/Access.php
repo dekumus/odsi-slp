@@ -104,6 +104,12 @@ final class Access implements Bootable {
 
 		$allowed = 'open' === $mode || ( $user_id > 0 && $this->enrollments->has_access( $user_id, $course_id ) );
 
+		// A prerequisite left unfinished locks the course even for an enrolled
+		// learner (LMS-ACC-009); an administrator's enrollment still waits.
+		if ( $allowed && array() !== $this->missing_prerequisites( $user_id, $course_id ) ) {
+			$allowed = false;
+		}
+
 		/**
 		 * Filters whether a user may access a course.
 		 *
@@ -114,6 +120,58 @@ final class Access implements Bootable {
 		$this->course_access[ $key ] = (bool) apply_filters( 'odsi_lms_can_access_course', $allowed, $user_id, $course_id );
 
 		return $this->course_access[ $key ];
+	}
+
+	/**
+	 * Prerequisite courses the user has not completed yet (LMS-ACC-009).
+	 *
+	 * @param int $user_id   User id, 0 for a visitor (every prerequisite is missing).
+	 * @param int $course_id Course post id.
+	 *
+	 * @return int[] Course ids, in the configured order.
+	 */
+	public function missing_prerequisites( int $user_id, int $course_id ): array {
+		$missing = array();
+
+		foreach ( self::prerequisites( $course_id ) as $required ) {
+			if ( $required === $course_id ) {
+				continue;
+			}
+
+			$row = $user_id > 0 ? $this->enrollments->find_for( $user_id, $required ) : null;
+
+			if ( ! $row || EnrollmentRepository::STATUS_COMPLETED !== (string) $row->status ) {
+				$missing[] = $required;
+			}
+		}
+
+		return $missing;
+	}
+
+	/**
+	 * A course's configured prerequisites: published courses only, self excluded.
+	 *
+	 * @param int $course_id Course post id.
+	 *
+	 * @return int[]
+	 */
+	public static function prerequisites( int $course_id ): array {
+		$ids = array_map( 'intval', (array) get_post_meta( $course_id, Meta::PREREQUISITES, true ) );
+		$out = array();
+
+		foreach ( array_unique( $ids ) as $id ) {
+			if ( $id > 0 && $id !== $course_id && PostTypes::COURSE === get_post_type( $id ) && 'publish' === get_post_status( $id ) ) {
+				$out[] = $id;
+			}
+		}
+
+		/**
+		 * Filters the prerequisites of a course.
+		 *
+		 * @param int[] $out       Course ids.
+		 * @param int   $course_id Course.
+		 */
+		return array_map( 'intval', (array) apply_filters( 'odsi_lms_course_prerequisites', $out, $course_id ) );
 	}
 
 	/**

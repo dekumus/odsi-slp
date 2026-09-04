@@ -7,7 +7,7 @@ when you change what it describes.
 
 | Plugin | State |
 | --- | --- |
-| `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 130 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
+| `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 140 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens, blocks, profile and group settings pages, notification emails. 164 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules plus an uninstall data switch (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 15 integration tests. |
 
@@ -294,6 +294,13 @@ Numbering is kept from the original list. Struck-through items are closed.
 18. ~~The enrollment report loads percentages per row~~ Closed:
     `Progress::course_percentages()` is one GROUP BY query per page.
 
+Former v2 items now built: course prerequisites (`Access::missing_prerequisites`,
+LMS-ACC-009), expiry warnings and notices (`Maintenance::warn_expiring`,
+LMS-ENR-015/016), bulk enrollment (`EnrollmentReport::bulk_enroll`,
+LMS-ADM-008), quiz results with a per-question breakdown and CSV
+(`Reports\QuizReport`, LMS-ADM-009), course duplication (`Courses\Cloner`
+and the row action, LMS-AUT-013).
+
 ## Security review (this branch)
 
 Three adversarial reviews (one per plugin plus tooling) were run and every
@@ -415,9 +422,13 @@ count individually), which is why they can exceed the number of methods.
 | Builder routes: tree, add, reorder, detach, ownership | integration `BuilderTest` | 2 |
 | `LMS-ASN-*` service, uploads, REST, grading scope | integration `AssignmentsTest` | 9 |
 | `LMS-IF-004` block registration and rendering | integration `BlocksTest` | 3 |
-| `LMS-ACC-008`, `LMS-AUT-008`, `LMS-ASN-010` regressions | integration `SecurityTest` | 8 |
+| `LMS-ACC-008a`, `LMS-AUT-008`, `LMS-ASN-010` regressions | integration `SecurityTest` | 8 |
 | `LMS-AUT-011/012`, `LMS-ENR-013/014`, `LMS-PRG-014`, `LMS-QZ-024/025`, certificates switch, timezone drips | integration `CorrectnessTest` | 10 |
-| `LMS-COM-*` purchase contract and WooCommerce adapter | integration `CommerceTest` | 5 |
+| `LMS-COM-*` purchase contract and WooCommerce adapter | integration `CommerceTest` | 6 |
+| `LMS-ACC-009` prerequisites | integration `PrerequisitesTest` | 3 |
+| `LMS-ENR-015/016` expiry warning and notice | integration `ExpiryNoticesTest` | 2 |
+| `LMS-ADM-008/009` bulk enrollment, quiz results | integration `QuizReportTest` | 2 |
+| `LMS-AUT-013` course duplication | integration `ClonerTest` | 2 |
 | Learner flow in a browser | e2e `lms-learner-flow` | 1, passing |
 | Course builder in the editor | e2e `lms-course-builder` | 1, passing |
 | Course settings, quiz settings and the question editor through the classic boxes | e2e `lms-authoring` | 2, passing |

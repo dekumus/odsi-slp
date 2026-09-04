@@ -29,6 +29,7 @@ final class Settings {
 			'default_access_mode'     => 'free',
 			'default_pass_mark'       => 80,
 			'enable_certificates'     => true,
+			'expiry_warning_days'     => 7,
 			'enable_social_bridge'    => true,
 			'email_notifications'     => true,
 			'reset_data_on_uninstall' => false,
