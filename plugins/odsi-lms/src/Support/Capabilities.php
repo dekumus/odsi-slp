@@ -31,7 +31,7 @@ final class Capabilities {
 		return array(
 			'odsi_instructor' => array(
 				'label'    => __( 'Instructor', 'odsi-lms' ),
-				'inherits' => 'editor',
+				'inherits' => 'subscriber',
 			),
 			'odsi_student'    => array(
 				'label'    => __( 'Student', 'odsi-lms' ),
@@ -68,11 +68,34 @@ final class Capabilities {
 	}
 
 	/**
-	 * Every capability an instructor-level user needs.
+	 * Capabilities an instructor holds: author their own LMS content and see
+	 * reports. Nothing that reaches another author's content (LMS-AUT-008).
 	 *
 	 * @return string[]
 	 */
 	public static function instructor_caps(): array {
+		$caps = array( self::REPORT, 'upload_files' );
+
+		foreach ( self::capability_bases() as $singular => $plural ) {
+			$caps[] = "edit_{$singular}";
+			$caps[] = "read_{$singular}";
+			$caps[] = "delete_{$singular}";
+			$caps[] = "edit_{$plural}";
+			$caps[] = "delete_{$plural}";
+			$caps[] = "publish_{$plural}";
+			$caps[] = "edit_published_{$plural}";
+			$caps[] = "delete_published_{$plural}";
+		}
+
+		return array_values( array_unique( $caps ) );
+	}
+
+	/**
+	 * Every LMS capability, for administrators and anyone managing the LMS.
+	 *
+	 * @return string[]
+	 */
+	public static function manager_caps(): array {
 		$caps = array( self::MANAGE, self::REPORT );
 
 		foreach ( self::capability_bases() as $singular => $plural ) {
@@ -111,16 +134,19 @@ final class Capabilities {
 			add_role( $slug, $role['label'], $caps );
 		}
 
-		$instructor_caps = self::instructor_caps();
+		$grants = array(
+			'administrator'   => self::manager_caps(),
+			'odsi_instructor' => self::instructor_caps(),
+		);
 
-		foreach ( array( 'administrator', 'odsi_instructor' ) as $slug ) {
+		foreach ( $grants as $slug => $caps ) {
 			$role = get_role( $slug );
 
 			if ( ! $role instanceof \WP_Role ) {
 				continue;
 			}
 
-			foreach ( $instructor_caps as $cap ) {
+			foreach ( $caps as $cap ) {
 				$role->add_cap( $cap );
 			}
 		}
@@ -140,7 +166,7 @@ final class Capabilities {
 			return;
 		}
 
-		foreach ( self::instructor_caps() as $cap ) {
+		foreach ( self::manager_caps() as $cap ) {
 			$role->remove_cap( $cap );
 		}
 	}

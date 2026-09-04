@@ -38,7 +38,7 @@ final class AdminMenu implements Bootable {
 		add_menu_page(
 			__( 'Learning', 'odsi-lms' ),
 			__( 'Learning', 'odsi-lms' ),
-			Capabilities::MANAGE,
+			'edit_odsi_courses',
 			self::SLUG,
 			array( $this, 'render_dashboard' ),
 			'dashicons-welcome-learn-more',

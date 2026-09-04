@@ -32,7 +32,12 @@ final class EnrollmentTest extends TestCase {
 		$user   = $this->lms->learner();
 
 		$fired = 0;
-		add_action( 'odsi_lms_user_enrolled', static function () use ( &$fired ): void { ++$fired; } );
+		add_action(
+			'odsi_lms_user_enrolled',
+			static function () use ( &$fired ): void {
+				++$fired;
+			}
+		);
 
 		$id = $this->enrollment->enroll( $user, $course, array( 'source' => 'self' ) );
 		self::assertGreaterThan( 0, $id );
@@ -65,7 +70,12 @@ final class EnrollmentTest extends TestCase {
 		$before = $this->rows->find_for( $user, $course );
 
 		$fired = 0;
-		add_action( 'odsi_lms_user_enrolled', static function () use ( &$fired ): void { ++$fired; } );
+		add_action(
+			'odsi_lms_user_enrolled',
+			static function () use ( &$fired ): void {
+				++$fired;
+			}
+		);
 
 		$id = $this->enrollment->enroll( $user, $course, array( 'source' => 'self' ) );
 
@@ -83,7 +93,17 @@ final class EnrollmentTest extends TestCase {
 		$this->enrollment->enroll( $user, $course );
 
 		global $wpdb;
-		$wpdb->update( $this->rows->table(), array( 'status' => 'expired', 'enrolled_at' => '2020-01-01 00:00:00' ), array( 'user_id' => $user, 'course_id' => $course ) );
+		$wpdb->update(
+			$this->rows->table(),
+			array(
+				'status' => 'expired',
+				'enrolled_at' => '2020-01-01 00:00:00',
+			),
+			array(
+				'user_id' => $user,
+				'course_id' => $course,
+			)
+		);
 		self::assertFalse( $this->enrollment->is_enrolled( $user, $course ) );
 
 		$this->enrollment->enroll( $user, $course );
@@ -100,7 +120,12 @@ final class EnrollmentTest extends TestCase {
 
 		add_filter( 'odsi_lms_pre_enroll', '__return_false' );
 		$fired = 0;
-		add_action( 'odsi_lms_user_enrolled', static function () use ( &$fired ): void { ++$fired; } );
+		add_action(
+			'odsi_lms_user_enrolled',
+			static function () use ( &$fired ): void {
+				++$fired;
+			}
+		);
 
 		self::assertSame( 0, $this->enrollment->enroll( $user, $course ) );
 		self::assertNull( $this->rows->find_for( $user, $course ) );
@@ -147,7 +172,14 @@ final class EnrollmentTest extends TestCase {
 		$this->enrollment->enroll( $user, $course );
 
 		global $wpdb;
-		$wpdb->update( $this->rows->table(), array( 'expires_at' => '2020-01-01 00:00:00' ), array( 'user_id' => $user, 'course_id' => $course ) );
+		$wpdb->update(
+			$this->rows->table(),
+			array( 'expires_at' => '2020-01-01 00:00:00' ),
+			array(
+				'user_id' => $user,
+				'course_id' => $course,
+			)
+		);
 
 		self::assertFalse( $this->enrollment->is_enrolled( $user, $course ) );
 		self::assertSame( 'active', $this->rows->find_for( $user, $course )->status, 'Row is persisted lazily.' );
@@ -161,10 +193,22 @@ final class EnrollmentTest extends TestCase {
 		$this->enrollment->enroll( $b, $course );
 
 		global $wpdb;
-		$wpdb->update( $this->rows->table(), array( 'expires_at' => '2020-01-01 00:00:00' ), array( 'user_id' => $a, 'course_id' => $course ) );
+		$wpdb->update(
+			$this->rows->table(),
+			array( 'expires_at' => '2020-01-01 00:00:00' ),
+			array(
+				'user_id' => $a,
+				'course_id' => $course,
+			)
+		);
 
 		$expired = array();
-		add_action( 'odsi_lms_enrollment_expired', static function ( int $user_id ) use ( &$expired ): void { $expired[] = $user_id; } );
+		add_action(
+			'odsi_lms_enrollment_expired',
+			static function ( int $user_id ) use ( &$expired ): void {
+				$expired[] = $user_id;
+			}
+		);
 
 		do_action( 'odsi_lms_daily_maintenance' );
 

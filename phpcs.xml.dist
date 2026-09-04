@@ -38,6 +38,23 @@
 
 	<rule ref="PHPCompatibilityWP"/>
 
+	<rule ref="WordPress.WP.Capabilities">
+		<properties>
+			<property name="custom_capabilities" type="array">
+				<element value="manage_odsi_lms"/>
+				<element value="view_odsi_lms_reports"/>
+				<element value="manage_odsi_social"/>
+				<element value="edit_odsi_course"/>
+				<element value="edit_odsi_courses"/>
+				<element value="edit_others_odsi_courses"/>
+				<element value="edit_odsi_lessons"/>
+				<element value="edit_odsi_quizzes"/>
+				<element value="edit_odsi_questions"/>
+				<element value="edit_odsi_social_groups"/>
+			</property>
+		</properties>
+	</rule>
+
 	<rule ref="WordPress.WP.I18n">
 		<properties>
 			<property name="text_domain" type="array">

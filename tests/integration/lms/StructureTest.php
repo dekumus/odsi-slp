@@ -47,9 +47,27 @@ final class StructureTest extends TestCase {
 
 	public function test_aut_005_menu_order_then_date_then_id(): void {
 		$course = $this->lms->course();
-		$b      = $this->lms->lesson( $course, array( 'menu_order' => 2, 'post_date' => '2024-01-01 00:00:00' ) );
-		$a      = $this->lms->lesson( $course, array( 'menu_order' => 1, 'post_date' => '2024-06-01 00:00:00' ) );
-		$c      = $this->lms->lesson( $course, array( 'menu_order' => 2, 'post_date' => '2024-03-01 00:00:00' ) );
+		$b      = $this->lms->lesson(
+			$course,
+			array(
+				'menu_order' => 2,
+				'post_date' => '2024-01-01 00:00:00',
+			)
+		);
+		$a      = $this->lms->lesson(
+			$course,
+			array(
+				'menu_order' => 1,
+				'post_date' => '2024-06-01 00:00:00',
+			)
+		);
+		$c      = $this->lms->lesson(
+			$course,
+			array(
+				'menu_order' => 2,
+				'post_date' => '2024-03-01 00:00:00',
+			)
+		);
 
 		self::assertSame( array( $a, $b, $c ), $this->structure->step_ids( $course ) );
 	}
@@ -102,8 +120,18 @@ final class StructureTest extends TestCase {
 		self::assertFalse( $this->structure->is_section( $c['lesson1'] ) );
 		self::assertTrue( $this->structure->is_section( $c['lesson2'] ) );
 
-		wp_update_post( array( 'ID' => $c['topic21'], 'post_status' => 'draft' ) );
-		wp_update_post( array( 'ID' => $c['topic22'], 'post_status' => 'draft' ) );
+		wp_update_post(
+			array(
+				'ID' => $c['topic21'],
+				'post_status' => 'draft',
+			)
+		);
+		wp_update_post(
+			array(
+				'ID' => $c['topic22'],
+				'post_status' => 'draft',
+			)
+		);
 		$this->structure->flush();
 
 		self::assertFalse( $this->structure->is_section( $c['lesson2'] ), 'Unpublishing every topic makes a leaf.' );

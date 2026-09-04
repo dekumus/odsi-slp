@@ -47,7 +47,7 @@ final class Enrollment {
 	 * @return int Enrollment id, or 0 when the course is invalid or a filter vetoes it.
 	 */
 	public function enroll( int $user_id, int $course_id, array $args = array() ): int {
-		if ( $user_id <= 0 || PostTypes::COURSE !== get_post_type( $course_id ) ) {
+		if ( $user_id <= 0 || PostTypes::COURSE !== get_post_type( $course_id ) || ! get_userdata( $user_id ) ) {
 			return 0;
 		}
 
@@ -65,6 +65,12 @@ final class Enrollment {
 
 		if ( ! isset( $args['expires_at'] ) ) {
 			$args['expires_at'] = $this->access_expiry( $course_id );
+		}
+
+		// An already-active learner is a no-op: nothing changes and nothing
+		// fires (LMS-ENR-002, LMS-ENR-005).
+		if ( $this->enrollments->is_active( $user_id, $course_id ) ) {
+			return (int) $this->enrollments->find_for( $user_id, $course_id )->id;
 		}
 
 		$enrollment_id = $this->enrollments->enroll( $user_id, $course_id, $args );

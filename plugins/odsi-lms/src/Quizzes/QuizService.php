@@ -51,9 +51,11 @@ final class QuizService {
 				'post_status'            => 'publish',
 				// phpcs:ignore WordPress.WP.PostsPerPage.posts_per_page_posts_per_page -- bounded internal outline query, not a listing.
 				'posts_per_page'         => 500,
+				// LMS-AUT-005: menu_order, then date, then id, so ordering is total.
 				'orderby'                => array(
 					'menu_order' => 'ASC',
 					'date'       => 'ASC',
+					'ID'         => 'ASC',
 				),
 				'fields'                 => 'ids',
 				'no_found_rows'          => true,
@@ -85,7 +87,7 @@ final class QuizService {
 	}
 
 	/**
-	 * Open a new attempt.
+	 * Open an attempt, or resume the learner's open one (LMS-QZ-001, LMS-QZ-002).
 	 *
 	 * @param int $user_id User id.
 	 * @param int $quiz_id Quiz post id.
@@ -95,6 +97,16 @@ final class QuizService {
 	public function start( int $user_id, int $quiz_id ): int|WP_Error {
 		if ( PostTypes::QUIZ !== get_post_type( $quiz_id ) ) {
 			return new WP_Error( 'odsi_lms_invalid_quiz', __( 'That quiz does not exist.', 'odsi-lms' ) );
+		}
+
+		$open = $this->attempts->find_open( $user_id, $quiz_id );
+
+		if ( $open ) {
+			if ( ! $this->has_timed_out( $open ) ) {
+				return (int) $open->id;
+			}
+
+			$this->attempts->abandon( (int) $open->id );
 		}
 
 		$remaining = $this->attempts_remaining( $user_id, $quiz_id );
@@ -126,12 +138,24 @@ final class QuizService {
 	}
 
 	/**
+	 * Whether the learner's open attempt is being resumed rather than created.
+	 *
+	 * @param int $user_id User id.
+	 * @param int $quiz_id Quiz post id.
+	 */
+	public function has_open_attempt( int $user_id, int $quiz_id ): bool {
+		$open = $this->attempts->find_open( $user_id, $quiz_id );
+
+		return $open && ! $this->has_timed_out( $open );
+	}
+
+	/**
 	 * Grade and close an attempt.
 	 *
 	 * @param int               $attempt_id Attempt id.
 	 * @param array<int, mixed> $answers    Submitted answers keyed by question id.
 	 *
-	 * @return array{attempt_id: int, points_earned: float, points_possible: float, percentage: float, passed: bool, needs_grading: bool}|WP_Error
+	 * @return array<string, mixed>|WP_Error Result with per-question breakdown.
 	 */
 	public function submit( int $attempt_id, array $answers ): array|WP_Error {
 		$attempt = $this->attempts->find( $attempt_id );
@@ -144,10 +168,17 @@ final class QuizService {
 			return new WP_Error( 'odsi_lms_attempt_closed', __( 'That quiz attempt has already been submitted.', 'odsi-lms' ) );
 		}
 
+		if ( $this->has_timed_out( $attempt ) ) {
+			$this->attempts->abandon( $attempt_id );
+
+			return new WP_Error( 'odsi_lms_attempt_timed_out', __( 'The time limit for this quiz has expired.', 'odsi-lms' ) );
+		}
+
 		$quiz_id       = (int) $attempt->quiz_id;
 		$earned        = 0.0;
 		$possible      = 0.0;
 		$needs_grading = false;
+		$breakdown     = array();
 
 		foreach ( $this->questions( $quiz_id ) as $question_id ) {
 			$grade = $this->grader->grade( $question_id, $answers[ $question_id ] ?? null );
@@ -160,18 +191,23 @@ final class QuizService {
 			}
 
 			$this->attempts->save_answer( $attempt_id, $question_id, $answers[ $question_id ] ?? null, $grade );
+
+			$breakdown[ $question_id ] = array(
+				'is_correct'      => (bool) $grade['is_correct'],
+				'needs_grading'   => (bool) $grade['needs_grading'],
+				'points_earned'   => (float) $grade['points_earned'],
+				'points_possible' => (float) $grade['points_possible'],
+			);
 		}
 
 		$pass_mark  = (float) get_post_meta( $quiz_id, Meta::PASS_MARK, true );
 		$percentage = $possible > 0 ? round( ( $earned / $possible ) * 100, 2 ) : 0.0;
-		$passed     = $percentage >= $pass_mark;
+		$passed     = $percentage >= $pass_mark && ! $needs_grading;
 
-		$this->attempts->complete( $attempt_id, $earned, $possible, $pass_mark );
+		$this->attempts->complete( $attempt_id, $earned, $possible, $passed );
 
-		// An attempt awaiting manual marking is not final, so it must not unlock
-		// the next step yet.
-		if ( $passed && ! $needs_grading ) {
-			$this->progress->complete_step( (int) $attempt->user_id, $quiz_id );
+		if ( $passed ) {
+			$this->progress->complete_quiz( (int) $attempt->user_id, $quiz_id );
 		}
 
 		$result = array(
@@ -181,6 +217,7 @@ final class QuizService {
 			'percentage'      => $percentage,
 			'passed'          => $passed,
 			'needs_grading'   => $needs_grading,
+			'questions'       => $breakdown,
 		);
 
 		/**
@@ -193,6 +230,80 @@ final class QuizService {
 		do_action( 'odsi_lms_quiz_completed', $result, (int) $attempt->user_id, $quiz_id );
 
 		return $result;
+	}
+
+	/**
+	 * Manually grade one answer and recompute the attempt (LMS-QZ-010).
+	 *
+	 * @param int   $attempt_id  Attempt id.
+	 * @param int   $question_id Question post id.
+	 * @param float $points      Points awarded; capped at the question's points.
+	 */
+	public function grade_answer( int $attempt_id, int $question_id, float $points ): bool {
+		$attempt = $this->attempts->find( $attempt_id );
+
+		if ( ! $attempt || QuizAttemptRepository::STATUS_COMPLETED !== $attempt->status ) {
+			return false;
+		}
+
+		$max    = (float) get_post_meta( $question_id, Meta::QUESTION_POINTS, true ) ?: 1.0;
+		$points = max( 0.0, min( $points, $max ) );
+
+		if ( ! $this->attempts->grade_answer( $attempt_id, $question_id, $points ) ) {
+			return false;
+		}
+
+		$earned        = 0.0;
+		$possible      = 0.0;
+		$needs_grading = false;
+
+		foreach ( $this->attempts->answers_for( $attempt_id ) as $answer ) {
+			$earned   += (float) $answer->points_earned;
+			$possible += (float) $answer->points_possible;
+
+			if ( (int) $answer->needs_grading ) {
+				$needs_grading = true;
+			}
+		}
+
+		$pass_mark  = (float) get_post_meta( (int) $attempt->quiz_id, Meta::PASS_MARK, true );
+		$percentage = $possible > 0 ? round( ( $earned / $possible ) * 100, 2 ) : 0.0;
+		$passed     = $percentage >= $pass_mark && ! $needs_grading;
+
+		$this->attempts->complete( $attempt_id, $earned, $possible, $passed );
+
+		if ( $passed ) {
+			$this->progress->complete_quiz( (int) $attempt->user_id, (int) $attempt->quiz_id );
+		}
+
+		/**
+		 * Fires after an answer has been graded by hand.
+		 *
+		 * @param int   $attempt_id  Attempt id.
+		 * @param int   $question_id Question post id.
+		 * @param float $points      Points awarded.
+		 * @param bool  $passed      Whether the attempt now passes.
+		 */
+		do_action( 'odsi_lms_answer_graded', $attempt_id, $question_id, $points, $passed );
+
+		return true;
+	}
+
+	/**
+	 * Whether an attempt has run past its quiz's time limit plus grace (LMS-QZ-006).
+	 *
+	 * @param object $attempt Attempt row.
+	 */
+	public function has_timed_out( object $attempt ): bool {
+		$limit = (int) get_post_meta( (int) $attempt->quiz_id, Meta::TIME_LIMIT, true );
+
+		if ( $limit <= 0 ) {
+			return false;
+		}
+
+		$deadline = strtotime( (string) $attempt->started_at ) + ( $limit * MINUTE_IN_SECONDS ) + 30;
+
+		return time() > $deadline;
 	}
 
 	/**

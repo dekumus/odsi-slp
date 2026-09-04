@@ -45,6 +45,92 @@ final class Progress {
 	public function complete_step( int $user_id, int $object_id ): bool {
 		$type = (string) get_post_type( $object_id );
 
+		// Quizzes complete by passing (LMS-PRG-002) and sections complete with
+		// their descendants (LMS-PRG-003); neither is marked by hand.
+		if ( PostTypes::QUIZ === $type || $this->structure->is_section( $object_id ) ) {
+			return false;
+		}
+
+		return $this->record_completion( $user_id, $object_id, $type );
+	}
+
+	/**
+	 * Complete a quiz node on behalf of the quiz service after a pass.
+	 *
+	 * @param int $user_id User id.
+	 * @param int $quiz_id Quiz post id.
+	 */
+	public function complete_quiz( int $user_id, int $quiz_id ): bool {
+		if ( PostTypes::QUIZ !== get_post_type( $quiz_id ) ) {
+			return false;
+		}
+
+		return $this->record_completion( $user_id, $quiz_id, PostTypes::QUIZ );
+	}
+
+	/**
+	 * The node a learner should be sent to next (LMS-PRG-011).
+	 *
+	 * First incomplete node the learner can open; the last node when everything
+	 * is complete; the first node when nothing is openable yet.
+	 *
+	 * @param int $user_id   User id.
+	 * @param int $course_id Course post id.
+	 *
+	 * @return int Node post id, or 0 for an empty course.
+	 */
+	public function resume_step( int $user_id, int $course_id ): int {
+		$steps = $this->structure->outline( $course_id );
+
+		if ( array() === $steps ) {
+			return 0;
+		}
+
+		$completed = $this->progress->completed_ids( $user_id, $course_id );
+		$all_done  = true;
+
+		foreach ( $steps as $step ) {
+			if ( in_array( $step['id'], $completed, true ) ) {
+				continue;
+			}
+
+			$all_done = false;
+
+			// Sections are headings, not destinations.
+			if ( ! empty( $step['section'] ) ) {
+				continue;
+			}
+
+			/**
+			 * Filters whether a node may be opened, for the resume calculation.
+			 *
+			 * The access service registers here so that Progress need not depend
+			 * on it, which would be circular.
+			 *
+			 * @param bool $can_open  Whether the learner may open the node.
+			 * @param int  $user_id   User id.
+			 * @param int  $object_id Node post id.
+			 */
+			if ( apply_filters( 'odsi_lms_resume_can_open', true, $user_id, $step['id'] ) ) {
+				return $step['id'];
+			}
+		}//end foreach
+
+		if ( $all_done ) {
+			return $steps[ count( $steps ) - 1 ]['id'];
+		}
+
+		return $steps[0]['id'];
+	}
+
+	/**
+	 * Write a completion row and run the consequences.
+	 *
+	 * @param int    $user_id   User id.
+	 * @param int    $object_id Node post id.
+	 * @param string $type      Node post type.
+	 */
+	private function record_completion( int $user_id, int $object_id, string $type ): bool {
 		if ( ! in_array( $type, PostTypes::trackable(), true ) ) {
 			return false;
 		}
@@ -81,9 +167,53 @@ final class Progress {
 		 */
 		do_action( 'odsi_lms_step_completed', $user_id, $object_id, $course_id, $type );
 
+		$this->maybe_complete_sections( $user_id, $object_id, $course_id );
 		$this->maybe_complete_course( $user_id, $course_id );
 
 		return true;
+	}
+
+	/**
+	 * Complete any section whose last descendant just completed (LMS-PRG-003).
+	 *
+	 * @param int $user_id   User id.
+	 * @param int $object_id Node that just completed.
+	 * @param int $course_id Course post id.
+	 */
+	private function maybe_complete_sections( int $user_id, int $object_id, int $course_id ): void {
+		$steps     = $this->structure->outline( $course_id );
+		$completed = $this->progress->completed_ids( $user_id, $course_id );
+
+		foreach ( $steps as $index => $step ) {
+			if ( empty( $step['section'] ) || in_array( $step['id'], $completed, true ) ) {
+				continue;
+			}
+
+			$descendants = array();
+			$total       = count( $steps );
+
+			for ( $i = $index + 1; $i < $total; $i++ ) {
+				if ( 0 === $steps[ $i ]['depth'] ) {
+					break;
+				}
+
+				$descendants[] = $steps[ $i ]['id'];
+			}
+
+			if ( array() === $descendants || array_diff( $descendants, $completed ) !== array() ) {
+				continue;
+			}
+
+			$this->progress->record(
+				$user_id,
+				$step['id'],
+				$course_id,
+				PostTypes::LESSON,
+				array( 'status' => ProgressRepository::STATUS_COMPLETED )
+			);
+
+			do_action( 'odsi_lms_step_completed', $user_id, $step['id'], $course_id, PostTypes::LESSON );
+		}//end foreach
 	}
 
 	/**
@@ -152,9 +282,35 @@ final class Progress {
 	 * @param int $course_id Course post id.
 	 */
 	public function has_completed_course( int $user_id, int $course_id ): bool {
-		$total = $this->structure->total_steps( $course_id );
+		$required = $this->required_step_ids( $course_id );
 
-		return $total > 0 && $this->completed_count( $user_id, $course_id ) >= $total;
+		if ( array() === $required ) {
+			return false;
+		}
+
+		$completed = $this->progress->completed_ids( $user_id, $course_id );
+
+		return array() === array_diff( $required, $completed );
+	}
+
+	/**
+	 * Node ids that must be complete for the course to count as complete.
+	 *
+	 * Every node in v1. A future "optional step" flag is a filter here, not a
+	 * schema change (spec § 11.2).
+	 *
+	 * @param int $course_id Course post id.
+	 *
+	 * @return int[]
+	 */
+	public function required_step_ids( int $course_id ): array {
+		/**
+		 * Filters the nodes a learner must complete to finish a course.
+		 *
+		 * @param int[] $ids       Node post ids.
+		 * @param int   $course_id Course post id.
+		 */
+		return array_map( 'intval', (array) apply_filters( 'odsi_lms_required_step_ids', $this->structure->step_ids( $course_id ), $course_id ) );
 	}
 
 	/**

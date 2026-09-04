@@ -514,24 +514,27 @@ hold the `odsi_instructor` role.
 
 ---
 
-## 12. Where the scaffold at `ca23590` disagrees with this spec
+## 12. Where the scaffold at `ca23590` disagreed with this spec
 
-Recorded so the hardening brief has an exact list. Each is a bug to fix with a
-failing test first.
+Recorded so the hardening brief had an exact list. Each was fixed with a
+failing test first; the "Fix" column records the outcome. Two further bugs
+the suites found that this list had missed: unanswered single-choice questions
+were graded as option 0, and sibling ordering had no id tiebreaker so equal
+dates produced a non-deterministic outline. Both are fixed and tested.
 
 | Scaffold behaviour | Spec | Fix |
 | --- | --- | --- |
-| `Structure::previous_step()` returns the section lesson as the gate for its first topic, which can never be complete before the topic → **deadlock under linear progression** | `OUT-005` gate skips sections | Add `gate()`; use it in `Access` |
-| `Progress::complete_step()` lets a learner mark a quiz or a section complete via REST | `PRG-002`, `PRG-003` | Reject by type; auto-complete sections |
-| `EnrollmentRepository::enroll()` keeps the old `enrolled_at` on reactivation | `ENR-003` | Reset it when the previous status was not `active` |
-| `Enrollment::enroll()` fires `odsi_lms_user_enrolled` on the `active` → `active` no-op | `ENR-005` | Fire only on a real transition |
-| `QuizService::start()` always creates a new attempt | `QZ-001`, `QZ-002` | Return an open attempt; abandon timed-out ones |
-| `QuizAttemptRepository::count_attempts()` counts `in_progress` rows | `QZ-003` | Count `completed` + `abandoned` |
-| No time-limit enforcement | `QZ-006` | Check at submit and at start |
+| `Structure::previous_step()` returns the section lesson as the gate for its first topic, which can never be complete before the topic → **deadlock under linear progression** | `OUT-005` gate skips sections | Add `gate()`; use it in `Access` **Fixed** (`Structure::gate()`, `is_section()`). |
+| `Progress::complete_step()` lets a learner mark a quiz or a section complete via REST | `PRG-002`, `PRG-003` | Reject by type; auto-complete sections **Fixed.** |
+| `EnrollmentRepository::enroll()` keeps the old `enrolled_at` on reactivation | `ENR-003` | Reset it when the previous status was not `active` **Fixed.** |
+| `Enrollment::enroll()` fires `odsi_lms_user_enrolled` on the `active` → `active` no-op | `ENR-005` | Fire only on a real transition **Fixed.** |
+| `QuizService::start()` always creates a new attempt | `QZ-001`, `QZ-002` | Return an open attempt; abandon timed-out ones **Fixed.** |
+| `QuizAttemptRepository::count_attempts()` counts `in_progress` rows | `QZ-003` | Count `completed` + `abandoned` **Fixed.** |
+| No time-limit enforcement | `QZ-006` | Check at submit and at start **Fixed.** |
 | `Grader` grades an unknown question type as single choice, so a custom type nobody handles can pass | `QZ-023` | Fail closed on the default branch. **Fixed** in brief 02 with a unit test. |
-| No `odsi_lms_enrollment_expired`, no cron listener | `ENR-011`, `ADM-005` | Add both |
-| `Migrator::maybe_migrate()` on every request | — (gap 10) | Move behind `admin_init` |
-| `Access::filter_content()` shows one generic locked message | `ACC-006` | Three distinct reasons |
+| No `odsi_lms_enrollment_expired`, no cron listener | `ENR-011`, `ADM-005` | Add both **Fixed** (`Courses\Maintenance`). |
+| `Migrator::maybe_migrate()` on every request | — (gap 10) | Move behind `admin_init` **Fixed** (`admin_init` and cron only). |
+| `Access::filter_content()` shows one generic locked message | `ACC-006` | Three distinct reasons **Fixed** (`Access::lock_reason()`). |
 | `Access` treats a course author as instructor only when `course_id > 0`; a node with no course resolves to 0 and denies the author | `ACC-001` | Deny is correct: a node with no course is in no outline. Document. |
-| Open-access courses never write an enrollment row, so `days_after_enrollment` drip can never elapse for them | `ACC-003` | Write a `source = open` row on first access |
-| No `resume` in the outline response; no `GET /me/courses`; no `GET /quizzes/{id}/questions` | § 8 | Add routes |
+| Open-access courses never write an enrollment row, so `days_after_enrollment` drip can never elapse for them | `ACC-003` | Write a `source = open` row on first access **Fixed.** |
+| No `resume` in the outline response; no `GET /me/courses`; no `GET /quizzes/{id}/questions` | § 8 | Add routes **Fixed.** |

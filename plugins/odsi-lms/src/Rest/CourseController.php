@@ -64,6 +64,16 @@ final class CourseController {
 
 		register_rest_route(
 			RestServiceProvider::NAMESPACE,
+			'/me/courses',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'my_courses' ),
+				'permission_callback' => static fn (): bool => is_user_logged_in(),
+			)
+		);
+
+		register_rest_route(
+			RestServiceProvider::NAMESPACE,
 			'/courses/(?P<id>\d+)/enroll',
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
@@ -85,9 +95,14 @@ final class CourseController {
 	 *
 	 * @param WP_REST_Request $request Request.
 	 */
-	public function get_outline( WP_REST_Request $request ): WP_REST_Response {
+	public function get_outline( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$course_id = (int) $request['id'];
 		$user_id   = get_current_user_id();
+
+		if ( \ODSI\LMS\PostTypes\PostTypes::COURSE !== get_post_type( $course_id ) || 'publish' !== get_post_status( $course_id ) ) {
+			return new WP_Error( 'odsi_lms_course_not_found', __( 'That course does not exist.', 'odsi-lms' ), array( 'status' => 404 ) );
+		}
+
 		$completed = $this->progress->repository()->completed_ids( $user_id, $course_id );
 
 		$steps = array_map(
@@ -110,8 +125,32 @@ final class CourseController {
 				'steps'      => $steps,
 				'enrolled'   => $user_id > 0 && $this->enrollment->is_enrolled( $user_id, $course_id ),
 				'percentage' => $user_id > 0 ? $this->progress->course_percentage( $user_id, $course_id ) : 0.0,
+				'resume'     => $user_id > 0 ? $this->progress->resume_step( $user_id, $course_id ) : ( $this->structure->outline( $course_id )[0]['id'] ?? 0 ),
 			)
 		);
+	}
+
+	/**
+	 * `GET /me/courses`
+	 */
+	public function my_courses(): WP_REST_Response {
+		$user_id = get_current_user_id();
+		$courses = array();
+
+		foreach ( $this->enrollment->courses_for( $user_id ) as $course_id ) {
+			$row = $this->enrollment->repository()->find_for( $user_id, $course_id );
+
+			$courses[] = array(
+				'id'         => $course_id,
+				'title'      => html_entity_decode( (string) get_the_title( $course_id ), ENT_QUOTES, 'UTF-8' ),
+				'permalink'  => (string) get_permalink( $course_id ),
+				'status'     => $row ? (string) $row->status : '',
+				'percentage' => $this->progress->course_percentage( $user_id, $course_id ),
+				'resume'     => $this->progress->resume_step( $user_id, $course_id ),
+			);
+		}
+
+		return new WP_REST_Response( array( 'courses' => $courses ) );
 	}
 
 	/**

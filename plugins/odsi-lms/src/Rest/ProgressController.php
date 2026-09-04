@@ -65,6 +65,11 @@ final class ProgressController {
 	public function complete( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$object_id = (int) $request['id'];
 		$user_id   = get_current_user_id();
+		$type      = (string) get_post_type( $object_id );
+
+		if ( ! in_array( $type, \ODSI\LMS\PostTypes\PostTypes::trackable(), true ) ) {
+			return new WP_Error( 'odsi_lms_step_not_found', __( 'That step does not exist.', 'odsi-lms' ), array( 'status' => 404 ) );
+		}
 
 		// A learner must be able to open a step before they can complete it,
 		// otherwise linear progression could be skipped by calling the API.
@@ -79,7 +84,7 @@ final class ProgressController {
 		if ( ! $this->progress->complete_step( $user_id, $object_id ) ) {
 			return new WP_Error(
 				'odsi_lms_completion_failed',
-				__( 'That step could not be marked complete.', 'odsi-lms' ),
+				__( 'That step cannot be marked complete directly.', 'odsi-lms' ),
 				array( 'status' => 400 )
 			);
 		}

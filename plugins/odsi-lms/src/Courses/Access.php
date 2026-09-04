@@ -45,6 +45,18 @@ final class Access implements Bootable {
 	 */
 	public function boot(): void {
 		add_filter( 'the_content', array( $this, 'filter_content' ), 20 );
+		add_filter( 'odsi_lms_resume_can_open', array( $this, 'filter_resume_can_open' ), 10, 3 );
+	}
+
+	/**
+	 * Supply the access decision to the resume calculation.
+	 *
+	 * @param bool $can_open  Current decision.
+	 * @param int  $user_id   User id.
+	 * @param int  $object_id Node post id.
+	 */
+	public function filter_resume_can_open( bool $can_open, int $user_id, int $object_id ): bool {
+		return $can_open && $this->can_access_step( $user_id, $object_id );
 	}
 
 	/**
@@ -61,6 +73,8 @@ final class Access implements Bootable {
 		$mode = (string) get_post_meta( $course_id, Meta::ACCESS_MODE, true );
 
 		if ( 'open' === $mode ) {
+			$this->record_open_enrollment( $user_id, $course_id );
+
 			return true;
 		}
 
@@ -138,11 +152,59 @@ final class Access implements Bootable {
 			return $content;
 		}
 
-		if ( $this->can_access_step( $user_id, $post_id ) ) {
+		$reason = $this->lock_reason( $user_id, $post_id );
+
+		if ( '' === $reason ) {
 			return $content;
 		}
 
-		return $this->locked_notice( $post_id, $user_id );
+		return $this->locked_notice( $post_id, $user_id, $reason );
+	}
+
+	/**
+	 * Why a user cannot open a node: `enroll`, `drip`, `progression`, or '' when they can.
+	 *
+	 * Evaluated in that order so the most fundamental reason wins (LMS-ACC-006).
+	 *
+	 * @param int $user_id   User id.
+	 * @param int $object_id Node post id.
+	 */
+	public function lock_reason( int $user_id, int $object_id ): string {
+		$course_id = $this->structure->course_id_for( $object_id );
+
+		if ( $this->can_manage( $user_id, $course_id ) ) {
+			return '';
+		}
+
+		if ( ! $this->can_access_course( $user_id, $course_id ) ) {
+			return 'enroll';
+		}
+
+		if ( ! $this->is_dripped( $user_id, $object_id, $course_id ) ) {
+			return 'drip';
+		}
+
+		if ( ! $this->passes_linear_progression( $user_id, $object_id, $course_id ) ) {
+			return 'progression';
+		}
+
+		return $this->can_access_step( $user_id, $object_id ) ? '' : 'progression';
+	}
+
+	/**
+	 * On an open course, a logged-in visitor's first access becomes an
+	 * enrollment with `source = open`, so that drip schedules keyed to the
+	 * enrollment date have a date to key to (LMS-ACC-003).
+	 *
+	 * @param int $user_id   User id.
+	 * @param int $course_id Course post id.
+	 */
+	private function record_open_enrollment( int $user_id, int $course_id ): void {
+		if ( $user_id <= 0 || $this->enrollments->find_for( $user_id, $course_id ) ) {
+			return;
+		}
+
+		$this->enrollments->enroll( $user_id, $course_id, array( 'source' => 'open' ) );
 	}
 
 	/**
@@ -192,13 +254,13 @@ final class Access implements Bootable {
 			return true;
 		}
 
-		$previous = $this->structure->previous_step( $course_id, $object_id );
+		$gate = $this->structure->gate( $course_id, $object_id );
 
-		if ( null === $previous ) {
+		if ( null === $gate ) {
 			return true;
 		}
 
-		return $this->progress->is_completed( $user_id, $previous['id'] );
+		return $this->progress->is_completed( $user_id, $gate['id'] );
 	}
 
 	/**
@@ -220,20 +282,43 @@ final class Access implements Bootable {
 	}
 
 	/**
-	 * Markup shown in place of locked content.
+	 * Markup shown in place of locked content, naming the reason (LMS-ACC-006).
 	 *
-	 * @param int $object_id Step post id.
-	 * @param int $user_id   User id.
+	 * @param int    $object_id Step post id.
+	 * @param int    $user_id   User id.
+	 * @param string $reason    `enroll`, `drip` or `progression`.
 	 */
-	private function locked_notice( int $object_id, int $user_id ): string {
+	private function locked_notice( int $object_id, int $user_id, string $reason ): string {
 		$course_id = $this->structure->course_id_for( $object_id );
 
-		$message = $user_id > 0
-			? __( 'This lesson is not available yet. Complete the previous step or wait for it to unlock.', 'odsi-lms' )
-			: __( 'Please log in and enroll on this course to view this lesson.', 'odsi-lms' );
+		switch ( $reason ) {
+			case 'drip':
+				$value   = (string) get_post_meta( $object_id, Meta::DRIP_VALUE, true );
+				$type    = (string) get_post_meta( $object_id, Meta::DRIP_TYPE, true );
+				$message = __( 'This lesson is not available yet.', 'odsi-lms' );
+
+				if ( 'date' === $type && '' !== $value ) {
+					$message = sprintf(
+						/* translators: %s: formatted date. */
+						__( 'This lesson will be available on %s.', 'odsi-lms' ),
+						wp_date( (string) get_option( 'date_format' ), (int) strtotime( $value ) )
+					);
+				}
+				break;
+
+			case 'progression':
+				$message = __( 'Complete the previous step to unlock this one.', 'odsi-lms' );
+				break;
+
+			default:
+				$message = $user_id > 0
+					? __( 'Enroll on this course to view this lesson.', 'odsi-lms' )
+					: __( 'Please log in and enroll on this course to view this lesson.', 'odsi-lms' );
+		}//end switch
 
 		$html = sprintf(
-			'<div class="odsi-lms-locked"><p>%s</p>',
+			'<div class="odsi-lms-locked odsi-lms-locked--%1$s"><p>%2$s</p>',
+			esc_attr( $reason ),
 			esc_html( $message )
 		);
 

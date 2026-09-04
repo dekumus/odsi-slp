@@ -1,20 +1,22 @@
 # Current state
 
-Accurate as of commit `ca23590`. Read this before writing code, and update it
+Accurate as of the commit that last touched this file; check `git log -1 -- docs/03-current-state.md`. Read this before writing code, and update it
 when you change what it describes.
 
 ## Summary
 
 | Plugin | State |
 | --- | --- |
-| `odsi-lms` | Scaffolded and coherent. ~5,300 lines. Boots, installs, registers content, exposes REST. Not yet proven by tests, never run against a live WordPress. |
+| `odsi-lms` | Kernel, data layer, content model, services and REST proven by 30 unit and 79 integration tests against WordPress 7.1 on MariaDB. PHPCS and PHPStan level 6 clean. Not yet exercised in a browser. |
 | `odsi-social` | Empty directory. Nothing written. |
 | `odsi-bridge` | Empty directory. Nothing written. |
 
-Nothing in this repository has been executed against a real WordPress install.
-Every PHP file passes `php -l` and every internal class reference resolves; that
-is the entire extent of the verification so far. **Treat the LMS scaffold as a
-considered proposal, not as working software.**
+Verification so far: the integration suite boots WordPress core with the
+plugin as a must-use plugin, runs activation, and exercises enrollment, outline
+derivation, progress, access, the quiz lifecycle and every REST route against a
+real database. What has **not** happened: nobody has clicked through the
+front end in a browser, and the E2E flow is written but cannot pass until the
+quiz player exists. **Treat the LMS as a tested engine with an unproven UI.**
 
 ## `odsi-lms` — what exists
 
@@ -63,24 +65,37 @@ stores `_odsi_lesson_id` and inherits `_odsi_course_id` from it. Ordering is
 
 ### Services
 
-- `Courses\Structure` — flattens a course into an ordered step list; resolves
-  next/previous; per-request cached. The single source of truth for ordering.
-- `Courses\Enrollment` — enroll, unenroll, access-window calculation, fires
-  `odsi_lms_user_enrolled` / `_unenrolled`.
-- `Courses\Progress` — step completion, derived course percentage, automatic
-  course completion, fires `odsi_lms_step_completed` / `_course_completed`.
-- `Courses\Access` — composes enrollment, drip schedule and linear progression
-  into one decision; filters `the_content` to lock steps.
+- `Courses\Structure` — flattens a course into an ordered node list with a
+  `section` flag; resolves next/previous and `gate()` (skips sections, ADR-007);
+  `is_section()`; per-request cache invalidated on every post, status and
+  relationship-meta change.
+- `Courses\Enrollment` — enroll (no-op on an active row; fresh `enrolled_at` on
+  reactivation), unenroll, access-window calculation, fires
+  `odsi_lms_user_enrolled` / `_unenrolled` on real transitions only.
+- `Courses\Maintenance` — daily cron: expires lapsed enrollments and fires
+  `odsi_lms_enrollment_expired` per row.
+- `Courses\Progress` — leaf completion (quizzes and sections are rejected),
+  automatic section completion, derived percentage, course completion through
+  the `odsi_lms_required_step_ids` filter, `resume_step()`, fires
+  `odsi_lms_step_completed` / `_course_completed`.
+- `Courses\Access` — composes enrollment, drip and linear progression (via
+  `gate()`); `lock_reason()` distinguishes enroll / drip / progression for the
+  three locked notices; writes a `source = open` enrollment on first access to
+  an open course; filters `the_content`.
 - `Quizzes\Grader` — grades single, multiple, true/false, fill-blank and essay
   answers; extensible via `odsi_lms_grade_answer`.
-- `Quizzes\QuizService` — attempt lifecycle, attempt limits, scoring, marks the
-  quiz step complete on a pass that needs no manual grading.
+- `Quizzes\QuizService` — resumes an open attempt, abandons timed-out ones,
+  counts only closed attempts against the limit, enforces the time limit with
+  a 30 s grace at submit, returns a per-question breakdown, `grade_answer()`
+  for manual marking that can complete the node.
 
 ### Interfaces
 
-- REST `odsi-lms/v1`: `GET /courses/<id>/outline`,
-  `POST /courses/<id>/enroll`, `POST /steps/<id>/complete`,
-  `POST /quizzes/<id>/attempts`, `POST /attempts/<id>/submit`.
+- REST `odsi-lms/v1`: `GET /courses/<id>/outline` (with `resume`),
+  `POST /courses/<id>/enroll`, `GET /me/courses`, `POST /steps/<id>/complete`,
+  `GET /quizzes/<id>/questions`, `POST /quizzes/<id>/attempts`,
+  `POST /attempts/<id>/submit`. A test-only
+  `POST /e2e/questions/<id>/answers` exists when `ODSI_E2E` is defined.
 - Admin: top-level "Learning" menu, placeholder dashboard and reports screens,
   classic relationship meta boxes on every child post type.
 - Front end: theme-overridable templates for course, lesson, quiz and archive;
@@ -95,37 +110,54 @@ stores `_odsi_lesson_id` and inherits `_odsi_course_id` from it. Ordering is
 `odsi_lms_pre_enroll`, `odsi_lms_user_enrolled`, `odsi_lms_user_unenrolled`,
 `odsi_lms_step_completed`, `odsi_lms_course_completed`,
 `odsi_lms_can_access_course`, `odsi_lms_can_access_step`,
-`odsi_lms_grade_answer`, `odsi_lms_quiz_started`, `odsi_lms_quiz_completed`,
+`odsi_lms_resume_can_open`, `odsi_lms_required_step_ids`,
+`odsi_lms_enrollment_expired`, `odsi_lms_grade_answer`,
+`odsi_lms_quiz_started`, `odsi_lms_quiz_completed`, `odsi_lms_answer_graded`,
 `odsi_lms_rest_controllers`, `odsi_lms_locate_template`,
-`odsi_lms_enqueue_frontend_assets`.
+`odsi_lms_enqueue_frontend_assets`, `odsi_lms_daily_maintenance` (cron).
 
-## Known gaps in the LMS scaffold
+## Known gaps in the LMS
 
-These are deliberate omissions, not oversights — but they are all still missing.
+Numbering is kept from the original list so the briefs still line up.
+Struck-through items are closed.
 
-1. **No tests, and no test harness at all.** Highest priority.
+1. ~~No tests, and no test harness at all.~~ Closed by brief 02.
 2. **Reports and dashboard are placeholder screens.** No reporting queries exist.
 3. **Certificates**: the table exists; nothing issues, renders or verifies one.
 4. **Submissions**: the table exists; no upload, grading UI or service.
 5. **The React course builder is not written.** `Support\Assets` looks for a
    compiled bundle and silently skips it; the classic meta boxes are the only
-   editing UI. No build tooling (`package.json`, `@wordpress/scripts`) exists.
+   editing UI. Root `package.json` carries `@wordpress/scripts` but no source.
 6. **No blocks.** Shortcodes only.
 7. **The quiz player is a mount point.** `templates/single-quiz.php` renders an
-   empty div; no JS renders questions or posts answers.
-8. **Manual grading has no interface**, so `needs_grading` answers are a dead end.
+   empty div; the REST routes it needs now exist, the JavaScript does not.
+8. **Manual grading has no interface.** `QuizService::grade_answer()` exists and
+   is tested; nothing in the admin calls it.
 9. **No object caching** anywhere. `Structure` caches per request only.
-10. **`Migrator::maybe_migrate()` runs on every request** including the front
-    end. It short-circuits on a version compare, but should move behind
-    `admin_init` or a scheduled check.
+10. ~~`Migrator::maybe_migrate()` runs on every request.~~ Closed: `admin_init`
+    and the daily cron only.
 11. **No commerce integration** — `access_mode = paid` is declared and enforced
     but nothing can fulfil it.
-12. **No cron handler.** `Installer` schedules `odsi_lms_daily_maintenance` but
-    nothing is hooked to it; `EnrollmentRepository::expire_due()` is written and
-    never called.
+12. ~~No cron handler.~~ Closed: `Courses\Maintenance`.
 13. **No i18n build**, no `.pot` file.
-14. **No `Structure` cache invalidation on post save** beyond the builder's
-    explicit `flush()`.
+14. ~~No `Structure` cache invalidation on post save.~~ Closed.
+15. **Cohort behaviour is unimplemented.** The post type exists; `LMS-ENR-012`
+    is decided; nothing enrolls a cohort's members.
+16. **No enrollment or grading admin actions** (`LMS-ADM-003`, `LMS-ADM-004`).
+
+## Test coverage map
+
+| Spec area | Suite | Tests |
+| --- | --- | --- |
+| Grader, container, capability map | unit | 30 |
+| Schema, activation, roles | integration `SchemaTest` | 6 |
+| `LMS-ENR-*` | integration `EnrollmentTest` | 11 |
+| `LMS-OUT-*`, `LMS-AUT-005/006` | integration `StructureTest` | 10 |
+| `LMS-PRG-*` | integration `ProgressTest` | 11 |
+| `LMS-ACC-*` | integration `AccessTest` | 11 |
+| `LMS-QZ-*` | integration `QuizTest` | 15 |
+| `LMS-IF` REST, `LMS-ACC-007` | integration `RestTest` | 9 |
+| Learner flow in a browser | e2e | 1, blocked on gap 7 |
 
 ## Open questions
 

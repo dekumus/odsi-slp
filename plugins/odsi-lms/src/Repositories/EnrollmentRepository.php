@@ -51,7 +51,11 @@ final class EnrollmentRepository extends AbstractRepository {
 	}
 
 	/**
-	 * Enroll a user, or reactivate an existing enrollment.
+	 * Enroll a user, or reactivate a lapsed enrollment.
+	 *
+	 * An existing `active` row is left exactly as it is (LMS-ENR-002). Any other
+	 * existing row is reactivated with a fresh `enrolled_at`, so access windows
+	 * and drip schedules restart (LMS-ENR-003, ADR-008).
 	 *
 	 * @param int                  $user_id   User id.
 	 * @param int                  $course_id Course post id.
@@ -63,12 +67,18 @@ final class EnrollmentRepository extends AbstractRepository {
 		$existing = $this->find_for( $user_id, $course_id );
 		$now      = $this->now();
 
+		if ( $existing && self::STATUS_ACTIVE === $existing->status ) {
+			return (int) $existing->id;
+		}
+
 		$data = array(
-			'status'     => (string) ( $args['status'] ?? self::STATUS_ACTIVE ),
-			'source'     => (string) ( $args['source'] ?? 'manual' ),
-			'source_id'  => (int) ( $args['source_id'] ?? 0 ),
-			'expires_at' => $args['expires_at'] ?? null,
-			'updated_at' => $now,
+			'status'       => (string) ( $args['status'] ?? self::STATUS_ACTIVE ),
+			'source'       => (string) ( $args['source'] ?? 'manual' ),
+			'source_id'    => (int) ( $args['source_id'] ?? 0 ),
+			'enrolled_at'  => $now,
+			'expires_at'   => $args['expires_at'] ?? null,
+			'completed_at' => null,
+			'updated_at'   => $now,
 		);
 
 		if ( $existing ) {
@@ -79,10 +89,41 @@ final class EnrollmentRepository extends AbstractRepository {
 
 		return $this->insert_row(
 			$data + array(
-				'user_id'     => $user_id,
-				'course_id'   => $course_id,
-				'enrolled_at' => $now,
-				'created_at'  => $now,
+				'user_id'    => $user_id,
+				'course_id'  => $course_id,
+				'created_at' => $now,
+			)
+		);
+	}
+
+	/**
+	 * Whether the user's row is currently `active`, ignoring the access window.
+	 *
+	 * @param int $user_id   User id.
+	 * @param int $course_id Course post id.
+	 */
+	public function is_active( int $user_id, int $course_id ): bool {
+		$row = $this->find_for( $user_id, $course_id );
+
+		return $row && self::STATUS_ACTIVE === $row->status;
+	}
+
+	/**
+	 * Active rows whose access window has closed.
+	 *
+	 * @return object[]
+	 */
+	public function due_to_expire(): array {
+		$table = $this->table();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (array) $this->db->get_results(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$this->db->prepare(
+				"SELECT * FROM {$table}
+				 WHERE status = %s AND expires_at IS NOT NULL AND expires_at < %s",
+				self::STATUS_ACTIVE,
+				$this->now()
 			)
 		);
 	}

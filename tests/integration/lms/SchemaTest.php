@@ -102,7 +102,10 @@ final class SchemaTest extends TestCase {
 
 		$instructor = get_role( 'odsi_instructor' );
 		self::assertTrue( $instructor->has_cap( 'edit_odsi_courses' ) );
-		self::assertTrue( $instructor->has_cap( Capabilities::MANAGE ) );
+		self::assertTrue( $instructor->has_cap( Capabilities::REPORT ) );
+		self::assertFalse( $instructor->has_cap( Capabilities::MANAGE ), 'LMS-AUT-008' );
+		self::assertFalse( $instructor->has_cap( 'edit_others_odsi_courses' ), 'LMS-AUT-008' );
+		self::assertFalse( $instructor->has_cap( 'edit_pages' ), 'Instructors get no site-content capabilities.' );
 	}
 
 	public function test_instructor_can_edit_own_course_but_not_anothers(): void {
@@ -114,9 +117,6 @@ final class SchemaTest extends TestCase {
 		self::assertTrue( user_can( $a, 'edit_post', $course ) );
 		self::assertTrue( user_can( $a, 'edit_odsi_course', $course ) );
 
-		// The instructor role inherits editor and is granted manage_odsi_lms, so
-		// another instructor CAN edit it under the scaffold. LMS-AUT-008 requires
-		// that they cannot; see the hardening brief.
 		self::assertFalse( user_can( $b, 'edit_post', $course ), 'LMS-AUT-008: instructors edit only their own courses.' );
 	}
 }

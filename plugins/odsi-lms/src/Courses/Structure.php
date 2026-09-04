@@ -9,8 +9,10 @@ declare( strict_types = 1 );
 
 namespace ODSI\LMS\Courses;
 
+use ODSI\LMS\Contracts\Bootable;
 use ODSI\LMS\PostTypes\PostTypes;
 use ODSI\LMS\Support\Meta;
+use WP_Post;
 use WP_Query;
 
 defined( 'ABSPATH' ) || exit;
@@ -21,7 +23,7 @@ defined( 'ABSPATH' ) || exit;
  * The outline is the single source of truth for navigation, progress percentages
  * and linear-progression locking, so every consumer sees the same ordering.
  */
-final class Structure {
+final class Structure implements Bootable {
 
 	/**
 	 * Cached outlines for the current request, keyed by course id.
@@ -31,6 +33,82 @@ final class Structure {
 	private array $cache = array();
 
 	/**
+	 * Register hooks.
+	 *
+	 * Any change to a node, or to the relationship meta that places it, drops
+	 * the cached outline so that a stale outline is never observable (LMS-OUT-006).
+	 */
+	public function boot(): void {
+		add_action( 'save_post', array( $this, 'on_post_change' ), 10, 2 );
+		add_action( 'deleted_post', array( $this, 'on_post_change' ), 10, 2 );
+		add_action( 'trashed_post', array( $this, 'on_post_id_change' ) );
+		add_action( 'untrashed_post', array( $this, 'on_post_id_change' ) );
+		add_action( 'transition_post_status', array( $this, 'on_status_change' ), 10, 3 );
+
+		foreach ( array( 'added_post_meta', 'updated_post_meta', 'deleted_post_meta' ) as $hook ) {
+			add_action( $hook, array( $this, 'on_meta_change' ), 10, 3 );
+		}
+	}
+
+	/**
+	 * Flush when a node is saved or deleted.
+	 *
+	 * @param int          $post_id Post id.
+	 * @param WP_Post|null $post    Post object, when the hook supplies one.
+	 */
+	public function on_post_change( int $post_id, ?WP_Post $post = null ): void {
+		$type = $post instanceof WP_Post ? $post->post_type : (string) get_post_type( $post_id );
+
+		if ( $this->is_node_type( $type ) || PostTypes::COURSE === $type ) {
+			$this->flush();
+		}
+	}
+
+	/**
+	 * Flush when a node is trashed or restored.
+	 *
+	 * @param int $post_id Post id.
+	 */
+	public function on_post_id_change( int $post_id ): void {
+		$this->on_post_change( $post_id );
+	}
+
+	/**
+	 * Flush when a node changes status.
+	 *
+	 * @param string  $new_status New status.
+	 * @param string  $old_status Old status.
+	 * @param WP_Post $post       Post.
+	 */
+	public function on_status_change( string $new_status, string $old_status, WP_Post $post ): void {
+		if ( $new_status !== $old_status && $this->is_node_type( $post->post_type ) ) {
+			$this->flush();
+		}
+	}
+
+	/**
+	 * Flush when relationship meta changes.
+	 *
+	 * @param int|int[] $meta_id  Meta id(s).
+	 * @param int       $post_id  Post id.
+	 * @param string    $meta_key Meta key.
+	 */
+	public function on_meta_change( int|array $meta_id, int $post_id, string $meta_key ): void {
+		if ( in_array( $meta_key, array( Meta::COURSE_ID, Meta::LESSON_ID ), true ) ) {
+			$this->flush();
+		}
+	}
+
+	/**
+	 * Whether a post type is an outline node.
+	 *
+	 * @param string $type Post type.
+	 */
+	private function is_node_type( string $type ): bool {
+		return in_array( $type, PostTypes::trackable(), true );
+	}
+
+	/**
 	 * Flattened, ordered outline for a course.
 	 *
 	 * Lessons come first in `menu_order`, each followed by its topics and then any
@@ -38,7 +116,9 @@ final class Structure {
 	 *
 	 * @param int $course_id Course post id.
 	 *
-	 * @return array<int, array{id: int, type: string, parent: int, depth: int}>
+	 * Lessons carry a `section` flag: true when they have topics (ADR-007).
+	 *
+	 * @return array<int, array{id: int, type: string, parent: int, depth: int, section?: bool}>
 	 */
 	public function outline( int $course_id ): array {
 		if ( isset( $this->cache[ $course_id ] ) ) {
@@ -48,14 +128,17 @@ final class Structure {
 		$steps = array();
 
 		foreach ( $this->lessons( $course_id ) as $lesson_id ) {
+			$topics = $this->topics( $lesson_id );
+
 			$steps[] = array(
-				'id'     => $lesson_id,
-				'type'   => PostTypes::LESSON,
-				'parent' => $course_id,
-				'depth'  => 0,
+				'id'      => $lesson_id,
+				'type'    => PostTypes::LESSON,
+				'parent'  => $course_id,
+				'depth'   => 0,
+				'section' => array() !== $topics,
 			);
 
-			foreach ( $this->topics( $lesson_id ) as $topic_id ) {
+			foreach ( $topics as $topic_id ) {
 				$steps[] = array(
 					'id'     => $topic_id,
 					'type'   => PostTypes::TOPIC,
@@ -175,9 +258,11 @@ final class Structure {
 				'post_status'            => 'publish',
 				// phpcs:ignore WordPress.WP.PostsPerPage.posts_per_page_posts_per_page -- bounded internal outline query, not a listing.
 				'posts_per_page'         => 200,
+				// LMS-AUT-005: menu_order, then date, then id, so ordering is total.
 				'orderby'                => array(
 					'menu_order' => 'ASC',
 					'date'       => 'ASC',
+					'ID'         => 'ASC',
 				),
 				'fields'                 => 'ids',
 				'no_found_rows'          => true,
@@ -256,6 +341,50 @@ final class Structure {
 	}
 
 	/**
+	 * Whether a lesson is a section (has at least one published topic).
+	 *
+	 * Derived at read time; see ADR-007.
+	 *
+	 * @param int $lesson_id Lesson post id.
+	 */
+	public function is_section( int $lesson_id ): bool {
+		if ( PostTypes::LESSON !== get_post_type( $lesson_id ) ) {
+			return false;
+		}
+
+		return array() !== $this->topics( $lesson_id );
+	}
+
+	/**
+	 * The node whose completion unlocks the given one under linear progression.
+	 *
+	 * Section lessons are containers and never gates (ADR-007), so this walks
+	 * back past them to the nearest leaf node. Null means nothing gates it.
+	 *
+	 * @param int $course_id Course post id.
+	 * @param int $object_id Node post id.
+	 *
+	 * @return array{id: int, type: string, parent: int, depth: int}|null
+	 */
+	public function gate( int $course_id, int $object_id ): ?array {
+		$steps = $this->outline( $course_id );
+		$ids   = array_column( $steps, 'id' );
+		$index = array_search( $object_id, $ids, true );
+
+		if ( false === $index ) {
+			return null;
+		}
+
+		for ( $i = $index - 1; $i >= 0; $i-- ) {
+			if ( empty( $steps[ $i ]['section'] ) ) {
+				return $steps[ $i ];
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Discard the in-request outline cache for a course.
 	 *
 	 * @param int|null $course_id Course post id, or null to clear everything.
@@ -290,9 +419,11 @@ final class Structure {
 				'post_status'            => 'publish',
 				// phpcs:ignore WordPress.WP.PostsPerPage.posts_per_page_posts_per_page -- bounded internal outline query, not a listing.
 				'posts_per_page'         => 500,
+				// LMS-AUT-005: menu_order, then date, then id, so ordering is total.
 				'orderby'                => array(
 					'menu_order' => 'ASC',
 					'date'       => 'ASC',
+					'ID'         => 'ASC',
 				),
 				'fields'                 => 'ids',
 				'no_found_rows'          => true,

@@ -91,9 +91,32 @@ final class Grader {
 	 * @param mixed                            $submitted Submitted answer index.
 	 */
 	private function grade_single( array $answers, mixed $submitted ): bool {
-		$index = is_array( $submitted ) ? (int) reset( $submitted ) : (int) $submitted;
+		if ( $this->is_blank( $submitted ) ) {
+			return false;
+		}
 
-		return ! empty( $answers[ $index ]['correct'] );
+		$value = is_array( $submitted ) ? reset( $submitted ) : $submitted;
+
+		if ( ! is_numeric( $value ) ) {
+			return false;
+		}
+
+		return ! empty( $answers[ (int) $value ]['correct'] );
+	}
+
+	/**
+	 * Whether a submission is empty: no answer given at all.
+	 *
+	 * An unanswered question must never be read as "option 0" (LMS-QZ-007).
+	 *
+	 * @param mixed $submitted Raw submission.
+	 */
+	private function is_blank( mixed $submitted ): bool {
+		if ( null === $submitted || '' === $submitted || array() === $submitted ) {
+			return true;
+		}
+
+		return is_array( $submitted ) && '' === trim( (string) reset( $submitted ) );
 	}
 
 	/**
@@ -103,6 +126,10 @@ final class Grader {
 	 * @param mixed                            $submitted Submitted answer indexes.
 	 */
 	private function grade_multiple( array $answers, mixed $submitted ): bool {
+		if ( $this->is_blank( $submitted ) ) {
+			return false;
+		}
+
 		$expected = array();
 
 		foreach ( $answers as $index => $answer ) {

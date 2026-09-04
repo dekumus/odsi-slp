@@ -40,18 +40,34 @@ final class CapabilitiesTest extends TestCase {
 		self::assertSame( 'edit_odsi_courses', $caps['create_posts'], 'Creating maps onto editing so instructors need no extra grant.' );
 	}
 
-	public function test_instructor_caps_include_manage_report_and_every_post_type(): void {
+	public function test_instructor_caps_are_own_content_only(): void {
 		$caps = Capabilities::instructor_caps();
 
-		self::assertContains( Capabilities::MANAGE, $caps );
+		self::assertNotContains( Capabilities::MANAGE, $caps, 'LMS-AUT-008: instructors do not manage the LMS.' );
 		self::assertContains( Capabilities::REPORT, $caps );
+		self::assertContains( 'upload_files', $caps );
 
 		foreach ( Capabilities::capability_bases() as $singular => $plural ) {
 			self::assertContains( "edit_{$singular}", $caps );
 			self::assertContains( "publish_{$plural}", $caps );
+			self::assertNotContains( "edit_others_{$plural}", $caps, 'LMS-AUT-008' );
+			self::assertNotContains( "delete_others_{$plural}", $caps );
+			self::assertNotContains( "read_private_{$plural}", $caps );
 		}
 
 		self::assertSame( array_values( array_unique( $caps ) ), $caps, 'No duplicates.' );
+	}
+
+	public function test_manager_caps_cover_everything(): void {
+		$caps = Capabilities::manager_caps();
+
+		self::assertContains( Capabilities::MANAGE, $caps );
+
+		foreach ( Capabilities::capability_bases() as $singular => $plural ) {
+			foreach ( Capabilities::post_type_caps( $singular, $plural ) as $cap ) {
+				self::assertContains( $cap, $caps );
+			}
+		}
 	}
 
 	public function test_capability_bases_cover_every_registered_post_type(): void {
@@ -66,7 +82,7 @@ final class CapabilitiesTest extends TestCase {
 	public function test_roles_inherit_from_core_roles(): void {
 		$roles = Capabilities::roles();
 
-		self::assertSame( 'editor', $roles['odsi_instructor']['inherits'] );
+		self::assertSame( 'subscriber', $roles['odsi_instructor']['inherits'], 'LMS-AUT-008: instructors get no site-content capabilities.' );
 		self::assertSame( 'subscriber', $roles['odsi_student']['inherits'] );
 	}
 }

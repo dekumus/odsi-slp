@@ -14,6 +14,7 @@ use ODSI\LMS\Admin\CourseBuilder;
 use ODSI\LMS\Contracts\Bootable;
 use ODSI\LMS\Courses\Access;
 use ODSI\LMS\Courses\Enrollment;
+use ODSI\LMS\Courses\Maintenance;
 use ODSI\LMS\Courses\Progress;
 use ODSI\LMS\Courses\Structure;
 use ODSI\LMS\Database\Migrator;
@@ -148,6 +149,7 @@ final class Plugin {
 				$c->get( Structure::class )
 			)
 		);
+		$c->set( Maintenance::class, static fn ( Container $c ): object => new Maintenance( $c->get( EnrollmentRepository::class ) ) );
 		$c->set( Assets::class, static fn (): object => new Assets() );
 		$c->set( Templates::class, static fn (): object => new Templates() );
 		$c->set(
@@ -184,7 +186,9 @@ final class Plugin {
 		$services = array(
 			Taxonomies::class,
 			PostTypes::class,
+			Structure::class,
 			Access::class,
+			Maintenance::class,
 			Assets::class,
 			Templates::class,
 			Shortcodes::class,
@@ -214,7 +218,10 @@ final class Plugin {
 
 		$this->booted = true;
 
-		Migrator::maybe_migrate();
+		// Schema upgrades run from the admin and from cron, never from a
+		// front-end request, so a version check can never sit in the hot path.
+		add_action( 'admin_init', array( Migrator::class, 'maybe_migrate' ) );
+		add_action( Installer::CRON_HOOK, array( Migrator::class, 'maybe_migrate' ), 1 );
 
 		add_action( 'init', array( Meta::class, 'register' ), 6 );
 

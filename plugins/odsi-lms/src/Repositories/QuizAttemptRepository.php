@@ -69,7 +69,7 @@ final class QuizAttemptRepository extends AbstractRepository {
 				'user_id'        => $user_id,
 				'quiz_id'        => $quiz_id,
 				'course_id'      => $course_id,
-				'attempt_number' => $this->count_attempts( $user_id, $quiz_id ) + 1,
+				'attempt_number' => $this->count_all( $user_id, $quiz_id ) + 1,
 				'status'         => self::STATUS_IN_PROGRESS,
 				'started_at'     => $this->now(),
 			)
@@ -79,13 +79,17 @@ final class QuizAttemptRepository extends AbstractRepository {
 	/**
 	 * Close an attempt and store its score.
 	 *
+	 * The pass decision is the service's, because it depends on more than the
+	 * percentage (an ungraded essay holds a pass back, LMS-QZ-009).
+	 *
 	 * @param int   $attempt_id Attempt id.
 	 * @param float $earned     Points earned.
 	 * @param float $possible   Points available.
-	 * @param float $pass_mark  Passing percentage.
+	 * @param bool  $passed     Whether the attempt passes.
 	 */
-	public function complete( int $attempt_id, float $earned, float $possible, float $pass_mark ): bool {
+	public function complete( int $attempt_id, float $earned, float $possible, bool $passed ): bool {
 		$percentage = $possible > 0 ? round( ( $earned / $possible ) * 100, 2 ) : 0.0;
+		$existing   = $this->find( $attempt_id );
 
 		return $this->update_row(
 			$attempt_id,
@@ -94,14 +98,15 @@ final class QuizAttemptRepository extends AbstractRepository {
 				'points_earned'   => $earned,
 				'points_possible' => $possible,
 				'percentage'      => $percentage,
-				'passed'          => $percentage >= $pass_mark ? 1 : 0,
-				'completed_at'    => $this->now(),
+				'passed'          => $passed ? 1 : 0,
+				'completed_at'    => $existing && ! empty( $existing->completed_at ) ? $existing->completed_at : $this->now(),
 			)
 		);
 	}
 
 	/**
-	 * How many attempts a user has already made at a quiz.
+	 * How many attempts a user has used at a quiz: closed ones only. An open
+	 * attempt is resumable and has not been spent (LMS-QZ-003).
 	 *
 	 * @param int $user_id User id.
 	 * @param int $quiz_id Quiz post id.
@@ -113,13 +118,98 @@ final class QuizAttemptRepository extends AbstractRepository {
 		$count = $this->db->get_var(
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$this->db->prepare(
-				"SELECT COUNT(*) FROM {$table} WHERE user_id = %d AND quiz_id = %d",
+				"SELECT COUNT(*) FROM {$table}
+				 WHERE user_id = %d AND quiz_id = %d AND status IN (%s, %s)",
 				$user_id,
-				$quiz_id
+				$quiz_id,
+				self::STATUS_COMPLETED,
+				self::STATUS_ABANDONED
 			)
 		);
 
 		return (int) $count;
+	}
+
+	/**
+	 * Total rows for a user and quiz, whatever their status.
+	 *
+	 * @param int $user_id User id.
+	 * @param int $quiz_id Quiz post id.
+	 */
+	public function count_all( int $user_id, int $quiz_id ): int {
+		$table = $this->table();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (int) $this->db->get_var(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$this->db->prepare( "SELECT COUNT(*) FROM {$table} WHERE user_id = %d AND quiz_id = %d", $user_id, $quiz_id )
+		);
+	}
+
+	/**
+	 * The user's open attempt at a quiz, if any.
+	 *
+	 * @param int $user_id User id.
+	 * @param int $quiz_id Quiz post id.
+	 */
+	public function find_open( int $user_id, int $quiz_id ): ?object {
+		$table = $this->table();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row = $this->db->get_row(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$this->db->prepare(
+				"SELECT * FROM {$table} WHERE user_id = %d AND quiz_id = %d AND status = %s
+				 ORDER BY id DESC LIMIT 1",
+				$user_id,
+				$quiz_id,
+				self::STATUS_IN_PROGRESS
+			)
+		);
+
+		return $row ?: null;
+	}
+
+	/**
+	 * Mark an attempt abandoned.
+	 *
+	 * @param int $attempt_id Attempt id.
+	 */
+	public function abandon( int $attempt_id ): bool {
+		return $this->update_row(
+			$attempt_id,
+			array(
+				'status'       => self::STATUS_ABANDONED,
+				'completed_at' => $this->now(),
+			)
+		);
+	}
+
+	/**
+	 * Overwrite the score of a single answer and report whether it exists.
+	 *
+	 * @param int   $attempt_id  Attempt id.
+	 * @param int   $question_id Question post id.
+	 * @param float $points      Points awarded.
+	 */
+	public function grade_answer( int $attempt_id, int $question_id, float $points ): bool {
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$updated = $this->db->update(
+			Schema::table( 'quiz_answers' ),
+			array(
+				'points_earned' => $points,
+				'is_correct'    => $points > 0 ? 1 : 0,
+				'needs_grading' => 0,
+			),
+			array(
+				'attempt_id'  => $attempt_id,
+				'question_id' => $question_id,
+			),
+			array( '%f', '%d', '%d' ),
+			array( '%d', '%d' )
+		);
+
+		return false !== $updated && $updated > 0;
 	}
 
 	/**
