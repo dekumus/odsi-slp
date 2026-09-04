@@ -109,6 +109,64 @@
 			} );
 	}
 
+	/**
+	 * Hand in an assignment form as multipart, then reload to show the state.
+	 *
+	 * @param {HTMLFormElement} form Form.
+	 */
+	function submitAssignment( form ) {
+		const section = form.closest( '.odsi-lms-assignment' );
+		const stepId = section ? section.getAttribute( 'data-step-id' ) : '';
+		const button = form.querySelector( '.odsi-lms-assignment__submit' );
+		const error = form.querySelector( '.odsi-lms-assignment__error' );
+
+		if ( button ) {
+			button.disabled = true;
+		}
+
+		if ( error ) {
+			error.hidden = true;
+		}
+
+		window
+			.fetch( config.restUrl + '/steps/' + stepId + '/submissions', {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: { 'X-WP-Nonce': config.nonce },
+				body: new window.FormData( form ),
+			} )
+			.then( function( response ) {
+				return response.json().then( function( data ) {
+					if ( ! response.ok ) {
+						throw new Error( data.message || config.i18n.error );
+					}
+
+					window.location.reload();
+				} );
+			} )
+			.catch( function( failure ) {
+				if ( button ) {
+					button.disabled = false;
+				}
+
+				if ( error ) {
+					error.textContent = failure.message;
+					error.hidden = false;
+				} else {
+					window.alert( failure.message );
+				}
+			} );
+	}
+
+	document.addEventListener( 'submit', function( event ) {
+		const form = event.target;
+
+		if ( form instanceof HTMLFormElement && form.classList.contains( 'odsi-lms-assignment__form' ) ) {
+			event.preventDefault();
+			submitAssignment( form );
+		}
+	} );
+
 	document.addEventListener( 'click', function( event ) {
 		const target = event.target;
 

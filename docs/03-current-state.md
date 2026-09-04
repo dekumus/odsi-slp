@@ -7,7 +7,7 @@ when you change what it describes.
 
 | Plugin | State |
 | --- | --- |
-| `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 89 integration tests, plus the learner flow and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
+| `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 98 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens. 114 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 8 integration tests. |
 
@@ -155,6 +155,12 @@ stores `_odsi_lesson_id` and inherits `_odsi_course_id` from it. Ordering is
   `gate()`); `lock_reason()` distinguishes enroll / drip / progression for the
   three locked notices; writes a `source = open` enrollment on first access to
   an open course; filters `the_content`.
+- `Assignments\Assignments` — a leaf lesson or topic can require a hand-in
+  (text and/or an allow-listed upload); one pending submission at a time;
+  approve (points capped, feedback) completes the step through the
+  `odsi_lms_can_complete_step` gate on `Progress`; reject allows another try;
+  auto-approve option; cleared on progress reset; fires
+  `odsi_lms_submission_created` / `_graded`.
 - `Quizzes\Grader` — grades single, multiple, true/false, fill-blank and essay
   answers; extensible via `odsi_lms_grade_answer`.
 - `Quizzes\QuizService` — resumes an open attempt, abandons timed-out ones,
@@ -181,12 +187,16 @@ stores `_odsi_lesson_id` and inherits `_odsi_course_id` from it. Ordering is
   `GET /quizzes/<id>/questions`, `POST /quizzes/<id>/attempts`,
   `POST /attempts/<id>/submit`. Builder routes for course editors:
   `GET|POST /courses/<id>/builder`, `POST /courses/<id>/builder/reorder`,
-  `DELETE /courses/<id>/builder/<node>` (detaches, never deletes). A test-only
+  `DELETE /courses/<id>/builder/<node>` (detaches, never deletes). Assignments:
+  `GET|POST /steps/<id>/submissions`, `GET /submissions`,
+  `POST /submissions/<id>/grade`. A test-only
   `POST /e2e/questions/<id>/answers` exists when `ODSI_E2E` is defined.
 - Admin: "Learning" menu whose dashboard is the enrollment report
   (`WP_List_Table`, enroll / remove / reset actions), a grading queue for
-  essays, classic relationship meta boxes on every child post type, cohort
-  course and member boxes, and the course builder: a block-editor sidebar
+  essays and assignment submissions (approve with points and feedback, or
+  reject), classic relationship meta boxes on every child post type, an
+  Assignment box on lessons and topics, cohort course and member boxes, and
+  the course builder: a block-editor sidebar
   panel on `odsi_course` (`assets/src/course-builder`, compiled to
   `assets/build`, which is committed so a checkout works without Node) that
   shows the outline with drafts, adds lessons, topics and quizzes, moves
@@ -209,6 +219,9 @@ stores `_odsi_lesson_id` and inherits `_odsi_course_id` from it. Ordering is
 `odsi_lms_resume_can_open`, `odsi_lms_required_step_ids`,
 `odsi_lms_enrollment_expired`, `odsi_lms_grade_answer`,
 `odsi_lms_quiz_started`, `odsi_lms_quiz_completed`, `odsi_lms_answer_graded`,
+`odsi_lms_can_complete_step`, `odsi_lms_submission_created`,
+`odsi_lms_submission_graded`, `odsi_lms_assignment_mime_types`,
+`odsi_lms_assignment_max_bytes`,
 `odsi_lms_rest_controllers`, `odsi_lms_locate_template`,
 `odsi_lms_enqueue_frontend_assets`, `odsi_lms_daily_maintenance` (cron).
 
@@ -220,7 +233,8 @@ Numbering is kept from the original list. Struck-through items are closed.
 2. ~~Reports and dashboard are placeholder screens.~~ Closed.
 3. ~~Certificates.~~ Closed: issued, rendered, verified, revocable. No PDF;
    the page is print-styled.
-4. **Submissions**: the table exists; no upload, grading UI or service.
+4. ~~Submissions~~ Closed: `Assignments\Assignments`, REST, front-end hand-in
+   form with history, grading in the Grading screen, `AssignmentsTest`.
 5. ~~The React course builder is not written.~~ Closed: editor sidebar panel
    backed by `Rest\BuilderController`, covered by `BuilderTest` and the
    `lms-course-builder` E2E flow. Drag and drop is not implemented; ordering
@@ -257,8 +271,10 @@ Numbering is kept from the original list. Struck-through items are closed.
 | `LMS-IF` REST, `LMS-ACC-007` | integration `RestTest` | 9 |
 | `LMS-ADM-*`, `LMS-ENR-007/012`, certificates, cache | integration `HardeningTest` | 8 |
 | Builder routes: tree, add, reorder, detach, ownership | integration `BuilderTest` | 2 |
+| `LMS-ASN-*` service, uploads, REST, grading scope | integration `AssignmentsTest` | 9 |
 | Learner flow in a browser | e2e `lms-learner-flow` | 1, passing |
 | Course builder in the editor | e2e `lms-course-builder` | 1, passing |
+| Assignment hand-in and approval in a browser | e2e `lms-assignment` | 1, passing |
 | Member flow in a browser | e2e `social-member-flow` | 1, passing |
 | Social schema, ADR-005 scan | integration `social/SchemaTest` | 20 |
 | Privacy decision table, both representations | integration `social/PrivacyTest` | 42 |

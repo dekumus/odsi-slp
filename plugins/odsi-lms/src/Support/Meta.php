@@ -72,6 +72,15 @@ final class Meta {
 	/** Points a question is worth. */
 	public const QUESTION_POINTS = '_odsi_question_points';
 
+	/** Whether a lesson or topic requires an assignment before it completes. */
+	public const ASSIGNMENT_REQUIRED = '_odsi_assignment_required';
+
+	/** Points an assignment is worth. Zero means approve/reject only. */
+	public const ASSIGNMENT_POINTS = '_odsi_assignment_points';
+
+	/** Whether submissions are approved on receipt. */
+	public const ASSIGNMENT_AUTO_APPROVE = '_odsi_assignment_auto_approve';
+
 	/**
 	 * Meta definitions keyed by post type, then meta key.
 	 *
@@ -104,17 +113,23 @@ final class Meta {
 				self::CERTIFICATE_ID     => $int,
 			),
 			PostTypes::LESSON   => array(
-				self::COURSE_ID  => $int,
-				self::QUIZ_ID    => $int,
-				self::DRIP_TYPE  => $string + array( 'default' => 'none' ),
-				self::DRIP_VALUE => $string,
-				self::DURATION   => $int,
+				self::COURSE_ID               => $int,
+				self::QUIZ_ID                 => $int,
+				self::DRIP_TYPE               => $string + array( 'default' => 'none' ),
+				self::DRIP_VALUE              => $string,
+				self::DURATION                => $int,
+				self::ASSIGNMENT_REQUIRED     => $bool,
+				self::ASSIGNMENT_POINTS       => $int,
+				self::ASSIGNMENT_AUTO_APPROVE => $bool,
 			),
 			PostTypes::TOPIC    => array(
-				self::COURSE_ID => $int,
-				self::LESSON_ID => $int,
-				self::QUIZ_ID   => $int,
-				self::DURATION  => $int,
+				self::COURSE_ID               => $int,
+				self::LESSON_ID               => $int,
+				self::QUIZ_ID                 => $int,
+				self::DURATION                => $int,
+				self::ASSIGNMENT_REQUIRED     => $bool,
+				self::ASSIGNMENT_POINTS       => $int,
+				self::ASSIGNMENT_AUTO_APPROVE => $bool,
 			),
 			PostTypes::QUIZ     => array(
 				self::COURSE_ID    => $int,

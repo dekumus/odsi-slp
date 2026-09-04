@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace ODSI\LMS\Rest;
 
+use ODSI\LMS\Assignments\Assignments;
 use ODSI\LMS\Container;
 use ODSI\LMS\Contracts\Bootable;
 use ODSI\LMS\Courses\Access;
@@ -16,6 +17,7 @@ use ODSI\LMS\Courses\Enrollment;
 use ODSI\LMS\Courses\Progress;
 use ODSI\LMS\Courses\Structure;
 use ODSI\LMS\Quizzes\QuizService;
+use ODSI\LMS\Reports\EnrollmentReport;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -61,6 +63,7 @@ final class RestServiceProvider implements Bootable {
 				$this->container->get( Access::class )
 			),
 			new BuilderController( $this->container->get( Structure::class ) ),
+			new SubmissionController( $this->container->get( Assignments::class ), $this->container->get( EnrollmentReport::class ) ),
 		);
 
 		/**

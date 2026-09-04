@@ -51,6 +51,21 @@ final class Progress {
 			return false;
 		}
 
+		/**
+		 * Filters whether a learner may mark a step complete by hand.
+		 *
+		 * Assignments register here: a step that requires one completes only
+		 * once a submission is approved. Access is not checked here; callers
+		 * that reach this from the outside check it first.
+		 *
+		 * @param bool $can       Whether completion is allowed.
+		 * @param int  $user_id   User id.
+		 * @param int  $object_id Step post id.
+		 */
+		if ( ! apply_filters( 'odsi_lms_can_complete_step', true, $user_id, $object_id ) ) {
+			return false;
+		}
+
 		return $this->record_completion( $user_id, $object_id, $type );
 	}
 

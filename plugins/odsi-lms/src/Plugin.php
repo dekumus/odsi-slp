@@ -10,10 +10,12 @@ declare( strict_types = 1 );
 namespace ODSI\LMS;
 
 use ODSI\LMS\Admin\AdminMenu;
+use ODSI\LMS\Admin\AssignmentMetaBox;
 use ODSI\LMS\Admin\CohortMetaBox;
 use ODSI\LMS\Admin\CourseBuilder;
 use ODSI\LMS\Admin\GradingScreen;
 use ODSI\LMS\Admin\ReportsScreen;
+use ODSI\LMS\Assignments\Assignments;
 use ODSI\LMS\Certificates\Certificates;
 use ODSI\LMS\Contracts\Bootable;
 use ODSI\LMS\Courses\Access;
@@ -35,6 +37,7 @@ use ODSI\LMS\Repositories\CertificateRepository;
 use ODSI\LMS\Repositories\EnrollmentRepository;
 use ODSI\LMS\Repositories\ProgressRepository;
 use ODSI\LMS\Repositories\QuizAttemptRepository;
+use ODSI\LMS\Repositories\SubmissionRepository;
 use ODSI\LMS\Rest\RestServiceProvider;
 use ODSI\LMS\Support\ObjectCache;
 use ODSI\LMS\Support\Assets;
@@ -119,6 +122,7 @@ final class Plugin {
 		$c->set( EnrollmentRepository::class, static fn (): object => new EnrollmentRepository() );
 		$c->set( ProgressRepository::class, static fn (): object => new ProgressRepository() );
 		$c->set( QuizAttemptRepository::class, static fn (): object => new QuizAttemptRepository() );
+		$c->set( SubmissionRepository::class, static fn (): object => new SubmissionRepository() );
 
 		// Domain services.
 		$c->set( Structure::class, static fn (): object => new Structure() );
@@ -158,6 +162,15 @@ final class Plugin {
 				$c->get( Structure::class )
 			)
 		);
+		$c->set(
+			Assignments::class,
+			static fn ( Container $c ): object => new Assignments(
+				$c->get( SubmissionRepository::class ),
+				$c->get( Structure::class ),
+				$c->get( Access::class ),
+				$c->get( Progress::class )
+			)
+		);
 		$c->set( Maintenance::class, static fn ( Container $c ): object => new Maintenance( $c->get( EnrollmentRepository::class ) ) );
 		$c->set( Assets::class, static fn (): object => new Assets() );
 		$c->set( Templates::class, static fn (): object => new Templates() );
@@ -177,7 +190,8 @@ final class Plugin {
 		$c->set( Cohorts::class, static fn ( Container $c ): object => new Cohorts( $c->get( Enrollment::class ) ) );
 		$c->set( ObjectCache::class, static fn ( Container $c ): object => new ObjectCache( $c->get( Structure::class ) ) );
 		$c->set( ReportsScreen::class, static fn ( Container $c ): object => new ReportsScreen( $c->get( EnrollmentReport::class ), $c->get( Enrollment::class ) ) );
-		$c->set( GradingScreen::class, static fn ( Container $c ): object => new GradingScreen( $c->get( EnrollmentReport::class ), $c->get( QuizService::class ) ) );
+		$c->set( GradingScreen::class, static fn ( Container $c ): object => new GradingScreen( $c->get( EnrollmentReport::class ), $c->get( QuizService::class ), $c->get( Assignments::class ) ) );
+		$c->set( AssignmentMetaBox::class, static fn (): object => new AssignmentMetaBox() );
 		$c->set( CohortMetaBox::class, static fn ( Container $c ): object => new CohortMetaBox( $c->get( Cohorts::class ) ) );
 		$c->set(
 			ContentDecorator::class,
@@ -185,7 +199,9 @@ final class Plugin {
 				$c->get( Structure::class ),
 				$c->get( Progress::class ),
 				$c->get( Access::class ),
-				$c->get( Shortcodes::class )
+				$c->get( Shortcodes::class ),
+				$c->get( Assignments::class ),
+				$c->get( Templates::class )
 			)
 		);
 		$c->set( AdminMenu::class, static fn ( Container $c ): object => new AdminMenu( $c->get( ReportsScreen::class ), $c->get( GradingScreen::class ) ) );
@@ -215,6 +231,7 @@ final class Plugin {
 			Structure::class,
 			ObjectCache::class,
 			Access::class,
+			Assignments::class,
 			Maintenance::class,
 			QuizService::class,
 			Certificates::class,
@@ -232,6 +249,7 @@ final class Plugin {
 			$services[] = ReportsScreen::class;
 			$services[] = GradingScreen::class;
 			$services[] = CohortMetaBox::class;
+			$services[] = AssignmentMetaBox::class;
 		}
 
 		/**

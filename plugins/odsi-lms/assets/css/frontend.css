@@ -141,3 +141,53 @@
 .odsi-lms-quiz__breakdown .is-incorrect { color: #b91c1c; }
 .odsi-lms-quiz__clock { font-variant-numeric: tabular-nums; font-weight: 600; }
 .odsi-lms-quiz__error { color: #b91c1c; }
+
+/* Assignments */
+.odsi-lms-assignment {
+	margin: 1.5em 0;
+}
+
+.odsi-lms-assignment__status {
+	padding: 0.75em 1em;
+	border-left: 4px solid var(--odsi-lms-border, #d9dce1);
+	background: var(--odsi-lms-surface, #f5f6f8);
+	border-radius: var(--odsi-lms-radius, 6px);
+	margin-bottom: 1em;
+}
+
+.odsi-lms-assignment__status--approved {
+	border-left-color: #16a34a;
+}
+
+.odsi-lms-assignment__status--rejected {
+	border-left-color: #dc2626;
+}
+
+.odsi-lms-assignment__form textarea,
+.odsi-lms-assignment__form input[type="file"] {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+}
+
+.odsi-lms-assignment__error {
+	color: #dc2626;
+}
+
+.odsi-lms-assignment__history {
+	list-style: none;
+	padding: 0;
+	margin: 1em 0 0;
+}
+
+.odsi-lms-assignment__item {
+	padding: 0.75em 0;
+	border-top: 1px solid var(--odsi-lms-border, #d9dce1);
+}
+
+.odsi-lms-assignment__date,
+.odsi-lms-assignment__badge {
+	font-size: 0.875em;
+	color: var(--odsi-lms-muted, #5b6470);
+	margin-right: 0.75em;
+}

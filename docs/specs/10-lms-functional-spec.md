@@ -396,6 +396,62 @@ unhandled custom type fails closed rather than passing.
 
 ---
 
+## 6b. Assignments — `LMS-ASN`
+
+### Stories
+
+- As an instructor I can require a written or uploaded piece of work on a
+  lesson or topic, and review it before the learner moves on.
+- As a learner I hand in text and/or a file, see whether it is waiting,
+  approved or sent back, and read the feedback.
+
+### Criteria
+
+**LMS-ASN-001** A leaf lesson or a topic may require an assignment
+(`_odsi_assignment_required`). A section lesson never does, whatever its meta
+says, because it completes through its topics (`LMS-PRG-003`). Quizzes and
+courses cannot carry one.
+
+**LMS-ASN-002** A submission is text, a file, or both. Text passes through
+`wp_kses_post`. A submission with neither is rejected
+(`odsi_lms_submission_empty`). When the step's `_odsi_assignment_auto_approve`
+flag is set, the submission is approved on receipt with full points.
+
+**LMS-ASN-003** A learner may submit only for a step they can open
+(`LMS-ACC-*`); otherwise `odsi_lms_step_locked`, 403.
+
+**LMS-ASN-004** At most one pending submission per learner per step. A second
+attempt while one is pending is rejected (`odsi_lms_submission_pending`); after
+an approval, any further attempt is rejected (`odsi_lms_already_approved`).
+
+**LMS-ASN-005** A step that requires an assignment cannot be marked complete
+by hand until a submission for it is approved. `Progress::complete_step()`
+consults `odsi_lms_can_complete_step`; the assignments service answers there.
+`POST /steps/{id}/complete` returns 400 in that state.
+
+**LMS-ASN-006** Approving a submission stores points (capped at the step's
+`_odsi_assignment_points`; zero points means approve/reject only), feedback,
+the grader and the time, fires `odsi_lms_submission_graded`, and completes the
+step for the learner with all of `LMS-PRG-*`'s consequences.
+
+**LMS-ASN-007** Rejecting stores feedback and lets the learner submit again.
+Every submission is kept; the history is visible to the learner and the grader.
+
+**LMS-ASN-008** Only a user with `view_odsi_lms_reports` who is the course
+author, or who has `manage_odsi_lms`, may list or grade a course's
+submissions. The grading screen and `GET /submissions` scope to those courses.
+
+**LMS-ASN-009** Resetting a learner's progress on a course (`LMS-ENR-007`)
+deletes their submissions for it. Deleting a step deletes its submissions.
+Uploaded files stay in the media library, owned by the learner.
+
+**LMS-ASN-010** Uploads are checked against `odsi_lms_assignment_mime_types`
+(documents, images, archives, audio and video by default; never executable
+types) and `odsi_lms_assignment_max_bytes` (the site upload limit by default).
+A file that fails either check rejects the whole submission.
+
+---
+
 ## 7. Instructor and admin — `LMS-ADM`
 
 ### Criteria
@@ -434,6 +490,10 @@ at the question's points. Saving applies `LMS-QZ-010`.
 | `POST /attempts/{id}/submit` | logged in | `LMS-QZ-005..009`. 200 with result; 404 not own; 400 closed or timed out. |
 | `GET /quizzes/{id}/questions` | logged in, can open | Questions with options for rendering; never includes which option is correct. |
 | `GET /me/courses` | logged in | Courses the caller is enrolled on with status and percentage. |
+| `GET /steps/{id}/submissions` | logged in | The caller's submissions for a step, newest first, with `approved` and `points_possible`. 404 when the step has no assignment. |
+| `POST /steps/{id}/submissions` | logged in, can open | `LMS-ASN-002..004`. Multipart: `content` and/or `file`. 201 with the submission. |
+| `GET /submissions` | `view_odsi_lms_reports` | Grading queue by `status` (default pending), scoped to the caller's courses (`LMS-ASN-008`); `course` narrows and 403s when not theirs. |
+| `POST /submissions/{id}/grade` | `view_odsi_lms_reports` | `LMS-ASN-006/007`. `status` approved or rejected, `points`, `feedback`. 403 for another author's course; 404 unknown. |
 
 Every error response is a `WP_Error` with a machine code prefixed `odsi_lms_`
 and a translated message.
@@ -468,6 +528,8 @@ actions and renders the quiz player; without it, the quiz page shows a notice.
 | View enrollment report | ✗ | ✗ | ✗ | ✓ | ✗ | ✓ |
 | Enroll / remove others | ✗ | ✗ | ✗ | ✓ | ✗ | ✓ |
 | Grade answers | ✗ | ✗ | ✗ | ✓ | ✗ | ✓ |
+| Hand in an assignment | ✗ | ✓ if openable | ✗ | ✓ | ✗ | ✓ |
+| Grade assignments | ✗ | ✗ | ✗ | ✓ | ✗ | ✓ |
 | Reset another's progress | ✗ | ✗ | ✗ | ✓ | ✗ | ✓ |
 | Change plugin settings | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
 
@@ -493,6 +555,8 @@ hold the `odsi_instructor` role.
 | All topics of a section unpublished | Lesson becomes a leaf; a completion row from its section days stands; it counts complete | OUT-002 |
 | Two attempts submitted for the same in-progress row concurrently | Second is rejected as not `in_progress` | QZ-005 |
 | Essay quiz is the last node of the course | Course does not complete until graded and passing | QZ-009, QZ-010, PRG-007 |
+| Assignment step is the last node of the course | Course does not complete until the submission is approved | ASN-005, ASN-006, PRG-007 |
+| Lesson with an assignment gains a topic | It becomes a section; the assignment flag is ignored and pending submissions stay in the queue but no longer gate anything | ASN-001, OUT-002 |
 
 ---
 

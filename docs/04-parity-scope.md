@@ -56,7 +56,7 @@ matching what users need to do, not how a competitor draws it.
 | Resume where you left off | v1 | `Structure::next_step()` exists; no UI uses it |
 | Drip-fed content by date or days-after-enrollment | v1 | Scaffolded |
 | Video progression (must watch before completing) | v2 | |
-| Assignments: upload, grade, feedback | v2 | Table exists; nothing else |
+| Assignments: upload, grade, feedback | v1 | Text and/or file, approve/reject with points and feedback, gates completion |
 | Notes and bookmarks | Later | |
 | Focus / distraction-free course player mode | v2 | |
 

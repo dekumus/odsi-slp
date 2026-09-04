@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace ODSI\LMS\Frontend;
 
+use ODSI\LMS\Assignments\Assignments;
 use ODSI\LMS\Contracts\Bootable;
 use ODSI\LMS\Courses\Access;
 use ODSI\LMS\Courses\Progress;
@@ -30,16 +31,20 @@ final class ContentDecorator implements Bootable {
 	/**
 	 * Constructor.
 	 *
-	 * @param Structure  $structure Outline.
-	 * @param Progress   $progress  Progress.
-	 * @param Access     $access    Access.
-	 * @param Shortcodes $shortcodes Shortcode renderers.
+	 * @param Structure   $structure Outline.
+	 * @param Progress    $progress  Progress.
+	 * @param Access      $access    Access.
+	 * @param Shortcodes  $shortcodes  Shortcode renderers.
+	 * @param Assignments $assignments Assignments.
+	 * @param Templates   $templates   Template loader.
 	 */
 	public function __construct(
 		private Structure $structure,
 		private Progress $progress,
 		private Access $access,
-		private Shortcodes $shortcodes
+		private Shortcodes $shortcodes,
+		private Assignments $assignments,
+		private Templates $templates
 	) {
 	}
 
@@ -112,17 +117,47 @@ final class ContentDecorator implements Bootable {
 		$controls  = '';
 
 		if ( $user_id > 0 && $course_id > 0 && $this->access->can_access_step( $user_id, $step_id ) && ! $this->structure->is_section( $step_id ) ) {
-			$done      = $this->progress->repository()->is_completed( $user_id, $step_id );
-			$controls  = '<footer class="odsi-lms-lesson__footer">';
-			$controls .= $done
-				? '<button type="button" class="odsi-lms-button odsi-lms-complete is-complete" disabled>' . esc_html__( 'Completed', 'odsi-lms' ) . '</button>'
-				: '<button type="button" class="odsi-lms-button odsi-lms-complete" data-step-id="' . esc_attr( (string) $step_id ) . '">' . esc_html__( 'Mark complete', 'odsi-lms' ) . '</button>';
+			$done     = $this->progress->repository()->is_completed( $user_id, $step_id );
+			$controls = '<footer class="odsi-lms-lesson__footer">';
+
+			if ( $this->assignments->requires_assignment( $step_id ) ) {
+				$controls .= $this->assignment( $user_id, $step_id );
+			} else {
+				$controls .= $done
+					? '<button type="button" class="odsi-lms-button odsi-lms-complete is-complete" disabled>' . esc_html__( 'Completed', 'odsi-lms' ) . '</button>'
+					: '<button type="button" class="odsi-lms-button odsi-lms-complete" data-step-id="' . esc_attr( (string) $step_id ) . '">' . esc_html__( 'Mark complete', 'odsi-lms' ) . '</button>';
+			}
+
 			$controls .= '</footer>';
 		}
 
 		$outline = $course_id > 0 ? '<aside class="odsi-lms-lesson__outline">' . $this->shortcodes->render_outline( array( 'course_id' => (string) $course_id ) ) . '</aside>' : '';
 
 		return $content . $controls . $outline;
+	}
+
+	/**
+	 * Assignment form and history for a step.
+	 *
+	 * @param int $user_id Learner.
+	 * @param int $step_id Step.
+	 */
+	private function assignment( int $user_id, int $step_id ): string {
+		$history = array_map( array( $this->assignments, 'present' ), $this->assignments->repository()->history( $user_id, $step_id ) );
+		$latest  = $history[0] ?? null;
+		$accept  = implode( ',', array_map( static fn ( string $ext ): string => '.' . $ext, explode( '|', implode( '|', array_keys( $this->assignments->allowed_mimes() ) ) ) ) );
+
+		return $this->templates->render(
+			'parts/assignment',
+			array(
+				'step_id'         => $step_id,
+				'points_possible' => $this->assignments->points( $step_id ),
+				'latest'          => $latest,
+				'history'         => $history,
+				'can_submit'      => null === $latest || 'rejected' === $latest['status'],
+				'accept'          => $accept,
+			)
+		);
 	}
 
 	/**
