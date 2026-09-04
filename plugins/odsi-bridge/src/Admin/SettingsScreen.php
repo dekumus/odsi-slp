@@ -55,7 +55,13 @@ final class SettingsScreen implements Bootable {
 			'reset_data_on_uninstall' => __( 'Delete course-to-group links when the plugin is uninstalled', 'odsi-bridge' ),
 		);
 
-		echo '<div class="wrap"><h1>' . esc_html__( 'Community bridge', 'odsi-bridge' ) . '</h1><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		echo '<div class="wrap"><h1>' . esc_html__( 'Community bridge', 'odsi-bridge' ) . '</h1>';
+
+		if ( ! empty( $_GET['updated'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display flag only.
+			echo '<div class="notice notice-success"><p>' . esc_html__( 'Settings saved.', 'odsi-bridge' ) . '</p></div>';
+		}
+
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( self::NONCE );
 		echo '<input type="hidden" name="action" value="odsi_bridge_save" /><table class="form-table">';
 
@@ -64,7 +70,7 @@ final class SettingsScreen implements Bootable {
 				'<tr><th scope="row">%1$s</th><td><label><input type="checkbox" name="%2$s" value="1" %3$s /> %4$s</label></td></tr>',
 				esc_html( ucwords( str_replace( '_', ' ', $key ) ) ),
 				esc_attr( $key ),
-				checked( $this->settings->enabled( $key ), true, false ),
+				checked( 'reset_data_on_uninstall' === $key ? $this->settings->stored( $key ) : $this->settings->enabled( $key ), true, false ),
 				esc_html( $label )
 			);
 		}

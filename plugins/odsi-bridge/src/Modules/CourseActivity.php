@@ -43,18 +43,43 @@ final class CourseActivity implements Bootable, ActivityRenderer {
 	 * Register hooks at priority 20, after the owning plugins' own listeners.
 	 */
 	public function boot(): void {
-		if ( ! $this->settings->enabled( 'course_activity' ) ) {
-			return;
-		}
-
-		add_action( 'odsi_lms_user_enrolled', array( $this, 'on_enrolled' ), 20, 2 );
-		add_action( 'odsi_lms_course_completed', array( $this, 'on_completed' ), 20, 2 );
-		add_action( 'odsi_lms_quiz_completed', array( $this, 'on_quiz_completed' ), 20, 3 );
-
+		// Renderers are always registered: items written while the module was
+		// on must still read properly after it is switched off.
 		$renderers = \ODSI\Social\Plugin::instance()->container()->get( Renderers::class );
 
 		foreach ( array( 'enrolled', 'completed', 'passed_quiz' ) as $type ) {
 			$renderers->register( $type, $this, self::COMPONENT );
+		}
+
+		if ( ! $this->settings->enabled( 'course_activity' ) ) {
+			return;
+		}
+
+		// Priority 25: after GroupLinkage (20) has added the learner to the
+		// linked group, so the item is written by a member, not before.
+		add_action( 'odsi_lms_user_enrolled', array( $this, 'on_enrolled' ), 25, 2 );
+		add_action( 'odsi_lms_course_completed', array( $this, 'on_completed' ), 25, 2 );
+		add_action( 'odsi_lms_quiz_completed', array( $this, 'on_quiz_completed' ), 25, 3 );
+		add_action( 'odsi_lms_answer_graded', array( $this, 'on_answer_graded' ), 25, 4 );
+	}
+
+	/**
+	 * An essay quiz passes only once it is graded; announce that pass too.
+	 *
+	 * @param int   $attempt_id  Attempt.
+	 * @param int   $question_id Question.
+	 * @param float $points      Points.
+	 * @param bool  $passed      Whether the attempt now passes.
+	 */
+	public function on_answer_graded( int $attempt_id, int $question_id, float $points, bool $passed ): void {
+		if ( ! $passed ) {
+			return;
+		}
+
+		$attempt = \ODSI\LMS\Plugin::instance()->container()->get( \ODSI\LMS\Quizzes\QuizService::class )->repository()->find( $attempt_id );
+
+		if ( $attempt ) {
+			$this->post( 'passed_quiz', (int) $attempt->user_id, (int) $attempt->course_id, (int) $attempt->quiz_id );
 		}
 	}
 
@@ -122,6 +147,13 @@ final class CourseActivity implements Bootable, ActivityRenderer {
 		}
 
 		$group_id = $this->settings->enabled( 'group_linkage' ) ? $this->links->group_for( $course_id ) : 0;
+
+		// A learner who is not (or no longer) a member of the linked group,
+		// for instance because they are banned from it, is announced to
+		// members at large instead of inside the group.
+		if ( $group_id > 0 && ! \ODSI\Social\Plugin::instance()->container()->get( \ODSI\Social\Repositories\GroupMemberRepository::class )->is_active( $group_id, $user_id ) ) {
+			$group_id = 0;
+		}
 
 		\ODSI\Social\Plugin::instance()->container()->get( Activity::class )->post(
 			array(

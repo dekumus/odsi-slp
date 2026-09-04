@@ -45,12 +45,15 @@ final class ProgressVisibility implements Bootable {
 	 * Register hooks.
 	 */
 	public function boot(): void {
+		// The shortcode is always known, so a page keeping it does not print
+		// the literal tag when the module is switched off.
+		add_shortcode( 'odsi_group_progress', array( $this, 'render_shortcode' ) );
+
 		if ( ! $this->settings->enabled( 'progress_visibility' ) ) {
 			return;
 		}
 
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
-		add_shortcode( 'odsi_group_progress', array( $this, 'render_shortcode' ) );
 	}
 
 	/**
@@ -96,7 +99,8 @@ final class ProgressVisibility implements Bootable {
 		}
 
 		$progress = \ODSI\LMS\Plugin::instance()->container()->get( Progress::class );
-		$rows     = $members->for_group( $group_id, GroupMemberRepository::STATUS_ACTIVE, null, 200 );
+		$rows     = $members->for_group( $group_id, GroupMemberRepository::STATUS_ACTIVE, null, 500 );
+		$by_user  = $progress->course_percentages( array_map( static fn ( object $r ): int => (int) $r->user_id, $rows ), $course_id );
 
 		/**
 		 * Members with their percentage.
@@ -114,7 +118,7 @@ final class ProgressVisibility implements Bootable {
 				'name'       => $user ? $user->display_name : __( 'A former member', 'odsi-bridge' ),
 				'avatar'     => $user ? get_avatar_url( (int) $row->user_id, array( 'size' => 48 ) ) : '',
 				'role'       => (string) $row->role,
-				'percentage' => $progress->course_percentage( (int) $row->user_id, $course_id ),
+				'percentage' => $by_user[ (int) $row->user_id ] ?? 0.0,
 			);
 		}
 
@@ -146,6 +150,10 @@ final class ProgressVisibility implements Bootable {
 	 * @param array<string, string>|string $atts Attributes.
 	 */
 	public function render_shortcode( array|string $atts = array() ): string {
+		if ( ! $this->settings->enabled( 'progress_visibility' ) ) {
+			return '';
+		}
+
 		$atts     = shortcode_atts( array( 'group_id' => 0 ), (array) $atts, 'odsi_group_progress' );
 		$group_id = (int) $atts['group_id'];
 

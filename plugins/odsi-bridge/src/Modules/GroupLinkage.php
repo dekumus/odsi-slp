@@ -50,11 +50,26 @@ final class GroupLinkage implements Bootable {
 
 		add_action( 'odsi_lms_user_enrolled', array( $this, 'on_enrolled' ), 20, 2 );
 		add_action( 'odsi_lms_user_unenrolled', array( $this, 'on_unenrolled' ), 20, 2 );
+		// Losing access any other way leaves the group too: expiry by cron and
+		// cohort cancellation never fire the unenrolled action.
+		add_action( 'odsi_lms_enrollment_expired', array( $this, 'on_unenrolled' ), 20, 2 );
+		add_action( 'odsi_lms_cohort_enrollment_cancelled', array( $this, 'on_unenrolled' ), 20, 2 );
 		add_action( 'odsi_social_group_deleted', array( $this, 'on_group_deleted' ), 20 );
+		add_action( 'trashed_post', array( $this, 'on_trashed_post' ), 20 );
 		add_action( 'deleted_post', array( $this, 'on_deleted_post' ), 20, 2 );
+		add_action( self::SYNC_HOOK, array( $this, 'sync_page' ), 10, 3 );
 		add_action( 'add_meta_boxes', array( $this, 'register_meta_box' ) );
 		add_action( 'save_post_' . PostTypes::COURSE, array( $this, 'save_meta_box' ), 20 );
+		// The bridge's own enrolled item should not be doubled by a "joined the group" item.
+		add_filter( 'odsi_social_announce_group_join', array( $this, 'silence_course_joins' ), 10, 4 );
 	}
+
+	/**
+	 * Enrollments synced per request when a course is linked; the rest are
+	 * queued through cron so a large cohort never blocks the admin's save.
+	 */
+	public const SYNC_PAGE = 200;
+	public const SYNC_HOOK = 'odsi_bridge_sync_link';
 
 	/**
 	 * Group linked to a course, or 0.
@@ -85,24 +100,24 @@ final class GroupLinkage implements Bootable {
 			return false;
 		}
 
+		// A course or group can carry one link; anything displaced is announced.
+		$displaced = array_filter(
+			array(
+				array( $course_id, $this->links->group_for( $course_id ) ),
+				array( $this->links->course_for( $group_id ), $group_id ),
+			),
+			static fn ( array $pair ): bool => $pair[0] > 0 && $pair[1] > 0 && ( $pair[0] !== $course_id || $pair[1] !== $group_id )
+		);
+
 		if ( ! $this->links->link( $course_id, $group_id ) ) {
 			return false;
 		}
 
-		$offset = 0;
+		foreach ( $displaced as $pair ) {
+			do_action( 'odsi_bridge_course_unlinked', $pair[0], $pair[1] );
+		}
 
-		do {
-			$learners = $this->enrollment()->repository()->for_course( $course_id, 200, $offset );
-
-			foreach ( $learners as $row ) {
-				if ( in_array( (string) $row->status, array( 'active', 'completed' ), true ) ) {
-					$this->membership()->add( $group_id, (int) $row->user_id, 'course_enrollment' );
-				}
-			}
-
-			$offset += 200;
-			$page    = count( $learners );
-		} while ( 200 === $page );
+		$this->sync_page( $course_id, $group_id, 0 );
 
 		/**
 		 * Fires after a course and a group are linked.
@@ -113,6 +128,64 @@ final class GroupLinkage implements Bootable {
 		do_action( 'odsi_bridge_course_linked', $course_id, $group_id );
 
 		return true;
+	}
+
+	/**
+	 * Add one page of a course's learners to its group; queue the next page.
+	 *
+	 * @param int $course_id Course.
+	 * @param int $group_id  Group.
+	 * @param int $offset    Offset into the enrollment list.
+	 */
+	public function sync_page( int $course_id, int $group_id, int $offset = 0 ): void {
+		if ( $this->links->group_for( $course_id ) !== $group_id ) {
+			return;
+			// The link changed while the queue was waiting.
+		}
+
+		$learners = $this->enrollment()->repository()->for_course( $course_id, self::SYNC_PAGE, $offset );
+
+		foreach ( $learners as $row ) {
+			if ( in_array( (string) $row->status, array( 'active', 'completed' ), true ) ) {
+				$this->membership()->add( $group_id, (int) $row->user_id, 'course_enrollment' );
+			}
+		}
+
+		if ( count( $learners ) === self::SYNC_PAGE ) {
+			wp_schedule_single_event( time(), self::SYNC_HOOK, array( $course_id, $group_id, $offset + self::SYNC_PAGE ) );
+		}
+	}
+
+	/**
+	 * A learner added through enrollment already appears as "enrolled".
+	 *
+	 * @param bool   $announce Whether to post the join.
+	 * @param int    $group_id Group.
+	 * @param int    $user_id  Member.
+	 * @param string $via      How they joined.
+	 */
+	public function silence_course_joins( bool $announce, int $group_id, int $user_id, string $via ): bool {
+		return 'course_enrollment' === $via ? false : $announce;
+	}
+
+	/**
+	 * A trashed course or group leaves its link behind; drop it so the group
+	 * stops receiving members and the picker shows the truth.
+	 *
+	 * @param int $post_id Post.
+	 */
+	public function on_trashed_post( int $post_id ): void {
+		$type = (string) get_post_type( $post_id );
+
+		if ( PostTypes::COURSE === $type ) {
+			$this->unlink( $post_id );
+		} elseif ( \ODSI\Social\PostTypes\GroupPostType::NAME === $type ) {
+			$course_id = $this->links->course_for( $post_id );
+
+			if ( $course_id > 0 ) {
+				$this->unlink( $course_id );
+			}
+		}
 	}
 
 	/**

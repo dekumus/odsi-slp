@@ -180,7 +180,7 @@ docblock; this is the index. Signatures are `( $arg1, $arg2, … )`.
 | `odsi_social_group_created` | `int $group_id, int $creator_id` | Post and organiser row exist |
 | `odsi_social_group_updated` | `int $group_id, array $changes` | Settings changed; `changes` names visibility when it changed |
 | `odsi_social_group_deleted` | `int $group_id` | Before cascade |
-| `odsi_social_group_member_joined` | `int $group_id, int $user_id, string $via` | Transition to active; `via` is `join`, `approve`, `accept_invite` |
+| `odsi_social_group_member_joined` | `int $group_id, int $user_id, string $via, int $inviter_id` | Transition to active; `via` is `join`, `approve`, `accept_invite`, or `system` / a bridge-supplied value such as `course_enrollment` for `Membership::add()` |
 | `odsi_social_group_member_requested` | `int $group_id, int $user_id` | Pending row |
 | `odsi_social_group_member_invited` | `int $group_id, int $user_id, int $inviter_id` | Invited row |
 | `odsi_social_group_member_left` | `int $group_id, int $user_id, string $via` | Row removed from active; `via` is `leave`, `remove` |
@@ -287,10 +287,9 @@ the feed indexes serve directly.
 | What | Key | Invalidated by |
 | --- | --- | --- |
 | Member counts (connections, followers, following, activity) | `members` index row | Writes to the respective tables, in the same request |
-| Unread notification count | `odsi_social_unread_{user}` (object cache) | Any write to that user's notifications |
-| Unread message total | `odsi_social_unread_msgs_{user}` | Any write to that user's participant rows |
-| Viewer's group ids | `odsi_social_groups_of_{user}` | Membership change for that user |
-| Viewer's connection ids | `odsi_social_connections_of_{user}` | Connection change involving that user |
+| Unread notification count | `unread_{user}` in cache group `odsi_social` | Any write to that user's notifications |
+| Unread message total | `unread_msgs_{user}` in cache group `odsi_social` | Any write to that user's participant rows |
+| Member index rows for a feed page | `MemberRepository::prime()` per request | Not cached across requests |
 | Rendered activity item | not cached in v1 | — |
 | Feed pages | not cached in v1 | — |
 
@@ -304,7 +303,7 @@ controller per area: `MembersController`, `ActivityController`,
 `GroupsController`, `ConnectionsController`, `NotificationsController`,
 `MessagesController`. Every write route has a real `permission_callback`; every
 "not visible" outcome is a 404 (ADR-011). Response shapes are built by small
-`Rest\Presenters\*` classes so templates and REST show the same fields.
+`present()` methods on each service shape REST output; there is no separate presenter layer
 
 ## 9. Front-end routing
 
@@ -319,7 +318,8 @@ injected via `the_content`, and sets the document title. Base slugs come from
 ## 10. Extension model
 
 - **New activity type**: post through `Activity::post()` with your `component`
-  and `type`; register a renderer with `Activity\Renderers::register()`.
+  and `type`; register a renderer with
+  `Activity\Renderers::register( $type, $renderer, $component = '*' )`.
 - **New notification**: call `Notifications::notify()` or fire your own action
   and listen to it; register a `NotificationRenderer` for your
   `(component, action)`.
@@ -333,4 +333,5 @@ injected via `the_content`, and sets the document title. Base slugs come from
 Media uploads on activity, forums, real-time delivery, email digests, blocking,
 moderation queues, member types. Each has a table or column reserved where it
 was cheap to do so (`activity_meta`, `status` on activity, `reaction` type
-string) and nothing else.
+string), the group index and activity repositories it needs to resolve a
+row's group and parent, and nothing else.

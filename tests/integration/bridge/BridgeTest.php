@@ -108,11 +108,125 @@ final class BridgeTest extends TestCase {
 			$learners[] = $this->lms->enrolled_learner( $course );
 		}
 
-		self::assertTrue( Bridge::instance()->container()->get( GroupLinkage::class )->link( $course, $group ) );
+		$linkage = Bridge::instance()->container()->get( GroupLinkage::class );
+		self::assertTrue( $linkage->link( $course, $group ) );
 
 		$members = $this->social->service( GroupMemberRepository::class );
-		self::assertSame( 206, $members->count( $group ), 'Organiser plus all 205 learners.' );
+		self::assertSame( 201, $members->count( $group ), 'Organiser plus the first page of 200; the rest is queued.' );
+		self::assertNotFalse( wp_next_scheduled( GroupLinkage::SYNC_HOOK, array( $course, $group, 200 ) ), 'The next page is queued through cron.' );
+
+		do_action( GroupLinkage::SYNC_HOOK, $course, $group, 200 );
+		self::assertSame( 206, $members->count( $group ), 'Organiser plus all 205 learners once the queue drains.' );
 		self::assertTrue( $members->is_active( $group, $learners[204] ) );
+
+		// The bridge's own "enrolled" item stands in for a "joined" item.
+		$joined = array_filter( $this->activity->find_many( $this->activity->ids_by_user( $learners[0] ) ), static fn ( object $i ): bool => 'joined_group' === $i->type );
+		self::assertSame( array(), array_values( $joined ) );
+	}
+
+	public function test_expiry_and_cohort_cancellation_leave_the_group(): void {
+		$organiser = $this->social->member();
+		$group     = $this->social->group( $organiser, 'hidden', 'Cohort' );
+		$course    = $this->lms->course();
+		Bridge::instance()->container()->get( GroupLinkage::class )->link( $course, $group );
+		$members = $this->social->service( GroupMemberRepository::class );
+
+		$expiring = $this->lms->enrolled_learner( $course, array( 'expires_at' => gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS ) ) );
+		self::assertTrue( $members->is_active( $group, $expiring ) );
+		do_action( \ODSI\LMS\Installer::CRON_HOOK );
+		self::assertFalse( $members->is_active( $group, $expiring ), 'Expired by cron: out of the group.' );
+
+		$cohort_user = $this->lms->learner();
+		$cohorts     = LMS::instance()->container()->get( \ODSI\LMS\Courses\Cohorts::class );
+		$cohort      = self::factory()->post->create( array( 'post_type' => \ODSI\LMS\PostTypes\PostTypes::COHORT ) );
+		$cohorts->set_courses( $cohort, array( $course ) );
+		$cohorts->add_member( $cohort, $cohort_user );
+		self::assertTrue( $members->is_active( $group, $cohort_user ) );
+		$cohorts->remove_member( $cohort, $cohort_user );
+		self::assertFalse( $members->is_active( $group, $cohort_user ), 'Cohort cancellation: out of the group.' );
+	}
+
+	public function test_trashing_a_group_or_course_drops_the_link(): void {
+		$organiser = $this->social->member();
+		$group     = $this->social->group( $organiser, 'public', 'Trash me' );
+		$course    = $this->lms->course();
+		$linkage   = Bridge::instance()->container()->get( GroupLinkage::class );
+		$linkage->link( $course, $group );
+
+		$unlinked = array();
+		add_action(
+			'odsi_bridge_course_unlinked',
+			static function ( int $c, int $g ) use ( &$unlinked ): void {
+				$unlinked[] = array( $c, $g );
+			},
+			10,
+			2
+		);
+
+		wp_trash_post( $group );
+		self::assertSame( 0, $linkage->group_for( $course ) );
+		self::assertSame( array( array( $course, $group ) ), $unlinked );
+
+		$group2 = $this->social->group( $organiser, 'public', 'Second' );
+		$linkage->link( $course, $group2 );
+		wp_trash_post( $course );
+		self::assertSame( 0, $linkage->course_for( $group2 ) );
+	}
+
+	public function test_relinking_announces_the_displaced_link(): void {
+		$organiser = $this->social->member();
+		$g1        = $this->social->group( $organiser, 'public', 'One' );
+		$g2        = $this->social->group( $organiser, 'public', 'Two' );
+		$course    = $this->lms->course();
+		$linkage   = Bridge::instance()->container()->get( GroupLinkage::class );
+		$linkage->link( $course, $g1 );
+
+		$unlinked = array();
+		add_action(
+			'odsi_bridge_course_unlinked',
+			static function ( int $c, int $g ) use ( &$unlinked ): void {
+				$unlinked[] = array( $c, $g );
+			},
+			10,
+			2
+		);
+		$linkage->link( $course, $g2 );
+		self::assertSame( array( array( $course, $g1 ) ), $unlinked );
+		self::assertSame( $g2, $linkage->group_for( $course ) );
+	}
+
+	public function test_graded_essay_pass_is_announced(): void {
+		$c    = $this->lms->standard_course();
+		$user = $this->lms->enrolled_learner( $c['course'] );
+		$quiz = $this->lms->quiz( $c['course'], 0, array( 'post_title' => 'Essay quiz' ) );
+		$q    = $this->lms->question( $quiz, 'essay', array(), 10 );
+		$svc  = LMS::instance()->container()->get( \ODSI\LMS\Quizzes\QuizService::class );
+
+		$attempt = (int) $svc->start( $user, $quiz );
+		$svc->submit( $attempt, array( $q => 'My essay' ) );
+		self::assertSame( array(), array_filter( $this->learning_items( $user ), static fn ( object $i ): bool => 'passed_quiz' === $i->type ), 'Ungraded: nothing yet.' );
+
+		$svc->grade_answer( $attempt, $q, 10.0 );
+		$passed = array_values( array_filter( $this->learning_items( $user ), static fn ( object $i ): bool => 'passed_quiz' === $i->type ) );
+		self::assertCount( 1, $passed );
+		self::assertSame( $quiz, (int) $passed[0]->primary_item_id );
+	}
+
+	public function test_banned_member_enrolling_is_announced_outside_the_group(): void {
+		$organiser = $this->social->member();
+		$group     = $this->social->group( $organiser, 'private', 'Strict' );
+		$course    = $this->lms->course();
+		Bridge::instance()->container()->get( GroupLinkage::class )->link( $course, $group );
+
+		$banned = $this->social->member();
+		$this->social->add_to_group( $group, $banned );
+		$this->social->service( \ODSI\Social\Groups\Membership::class )->ban( $organiser, $group, $banned );
+
+		$this->lms->enrollment()->enroll( $banned, $course );
+		$items = $this->learning_items( $banned );
+		self::assertCount( 1, $items );
+		self::assertSame( 0, (int) $items[0]->group_id, 'Not written into a group they are banned from.' );
+		self::assertSame( 'members', (string) $items[0]->privacy );
 	}
 
 	public function test_failed_quiz_posts_nothing(): void {

@@ -71,6 +71,18 @@ final class GroupActivity implements Bootable, ActivityRenderer {
 			return;
 		}
 
+		/**
+		 * Filters whether a join is announced in the group feed.
+		 *
+		 * @param bool   $announce Whether to post the item.
+		 * @param int    $group_id Group.
+		 * @param int    $user_id  Member.
+		 * @param string $via      How they joined.
+		 */
+		if ( ! apply_filters( 'odsi_social_announce_group_join', true, $group_id, $user_id, $via ) ) {
+			return;
+		}
+
 		$this->post( 'joined_group', $group_id, $user_id );
 	}
 

@@ -325,8 +325,9 @@ are removed by the daily job; otherwise kept.
 
 ## Post type: `odsi_social_group`
 
-`public => true` (so it has a permalink the router maps to `/groups/{slug}/`),
-`show_in_rest => true`, supports title, editor, thumbnail. Meta:
+`public => false`, `publicly_queryable => false`, `show_in_rest => false`,
+`rewrite => false` (ADR-018: groups are reached only through the router at
+`/groups/{slug}/`), supports title, editor, thumbnail. Meta:
 `_odsi_visibility` (mirrored to the index row), `_odsi_cover_id`,
 `_odsi_creator_id`. Capabilities `edit_odsi_social_group(s)` map to
 `manage_odsi_social` for admins; members create groups through the service,

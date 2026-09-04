@@ -9,7 +9,7 @@ when you change what it describes.
 | --- | --- |
 | `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 107 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens, blocks, profile and group settings pages, notification emails. 123 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
-| `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 8 integration tests. |
+| `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules plus an uninstall data switch (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 8 integration tests. |
 
 Verification so far: the integration suite boots WordPress core with the
 plugin as a must-use plugin, runs activation, and exercises enrollment, outline
@@ -38,13 +38,16 @@ both plugins and neither depends on it; a test scans both for `ODSI\Bridge`.
   removes the link; course-edit meta box.
 - `Modules\ProgressVisibility` — `GET /odsi-bridge/v1/groups/{id}/progress`
   and `[odsi_group_progress]`, members only, 404 otherwise.
-- `Admin\SettingsScreen` — three switches under the Learning menu; the
-  `odsi_bridge_modules` filter does the same in code.
+- `Admin\SettingsScreen` — the three module switches plus the uninstall
+  data switch under the Learning menu; the `odsi_bridge_modules` filter does
+  the same for modules in code.
 
 Known gaps: no front-end control for organisers to link their own group to a
-course (admins only, via the course meta box); the enrollment sync on link is
-capped at 200 learners and does not yet defer larger cohorts to cron; no
-lesson-level activity (deliberately, see the contract).
+course (admins only, via the course meta box); no lesson-level activity
+(deliberately, see the contract). Linking syncs the first 200 enrollments in
+the request and queues the rest through cron (`odsi_bridge_sync_link`);
+expiry and cohort cancellation remove the learner from the group like an
+unenrollment; a graded essay quiz announces its pass when the grade lands.
 
 ## `odsi-social` — what exists
 
@@ -123,7 +126,8 @@ Architecture in `docs/specs/20-social-architecture.md`, tables in
 ### Data layer
 
 `Database\Schema` defines six tables and `Database\Migrator` applies them with
-`dbDelta()`, guarded by a `DB_VERSION` option and re-checked on every request.
+`dbDelta()`, guarded by a `DB_VERSION` option and re-checked on `admin_init`
+and from the daily cron, never on a front-end request.
 
 | Table | Holds | Key indexes |
 | --- | --- | --- |
@@ -135,7 +139,8 @@ Architecture in `docs/specs/20-social-architecture.md`, tables in
 | `odsi_lms_certificates` | issued awards and their public codes | unique `code`, `(user_id, course_id)` |
 
 Repositories: `AbstractRepository` (prepare/insert/update/format plumbing),
-`EnrollmentRepository`, `ProgressRepository`, `QuizAttemptRepository`.
+`EnrollmentRepository`, `ProgressRepository`, `QuizAttemptRepository`,
+`SubmissionRepository`, `CertificateRepository`.
 
 ### Content types
 
@@ -241,6 +246,10 @@ stores `_odsi_lesson_id` and inherits `_odsi_course_id` from it. Ordering is
 `odsi_lms_resume_can_open`, `odsi_lms_required_step_ids`,
 `odsi_lms_enrollment_expired`, `odsi_lms_grade_answer`,
 `odsi_lms_quiz_started`, `odsi_lms_quiz_completed`, `odsi_lms_answer_graded`,
+`odsi_lms_progress_reset`, `odsi_lms_certificate_issued`,
+`odsi_lms_certificate_placeholders`, `odsi_lms_cohort_member_added`,
+`odsi_lms_cohort_member_removed`, `odsi_lms_cohort_enrollment_cancelled`,
+`odsi_lms_decorate_content`, `odsi_lms_pre_course_outline`,
 `odsi_lms_can_complete_step`, `odsi_lms_submission_created`,
 `odsi_lms_submission_graded`, `odsi_lms_assignment_mime_types`,
 `odsi_lms_assignment_max_bytes`, `odsi_lms_email`, `odsi_lms_emails_enabled`,
@@ -315,6 +324,9 @@ courses record an enrollment on first read (published courses only now).
 
 ## Test coverage map
 
+Counts are PHPUnit test cases as the runner reports them (data-provider rows
+count individually), which is why they can exceed the number of methods.
+
 | Spec area | Suite | Tests |
 | --- | --- | --- |
 | Grader, container, capability map | unit | 30 |
@@ -323,8 +335,8 @@ courses record an enrollment on first read (published courses only now).
 | `LMS-OUT-*`, `LMS-AUT-005/006` | integration `StructureTest` | 10 |
 | `LMS-PRG-*` | integration `ProgressTest` | 11 |
 | `LMS-ACC-*` | integration `AccessTest` | 11 |
-| `LMS-QZ-*` | integration `QuizTest` | 15 |
-| `LMS-IF` REST, `LMS-ACC-007` | integration `RestTest` | 9 |
+| `LMS-QZ-*` | integration `QuizTest` | 14 |
+| `LMS-IF` REST, `LMS-ACC-007` | integration `RestTest` | 8 |
 | `LMS-ADM-*`, `LMS-ENR-007/012`, certificates, cache, CSV, batched percentages | integration `HardeningTest` | 10 |
 | `LMS-ADM-007` learner emails | integration `EmailsTest` | 4 |
 | Builder routes: tree, add, reorder, detach, ownership | integration `BuilderTest` | 2 |
@@ -337,11 +349,11 @@ courses record an enrollment on first read (published courses only now).
 | Blocks on a page and in the editor | e2e `blocks` | 1, passing |
 | Profile edit and group manage forms in a browser | e2e `social-settings` | 1, passing |
 | Member flow in a browser | e2e `social-member-flow` | 1, passing |
-| Social schema, ADR-005 scan | integration `social/SchemaTest` | 20 |
-| Privacy decision table, both representations | integration `social/PrivacyTest` | 42 |
+| Social schema, ADR-005 scan | integration `social/SchemaTest` | 20 (5 methods with providers) |
+| Privacy decision table, both representations | integration `social/PrivacyTest` | 41 (3 methods, 19-row table twice) |
 | `SOC-ACT-*` | integration `social/ActivityTest` | 14 |
 | `SOC-CON-*` | integration `social/ConnectionsTest` | 5 |
-| `SOC-GRP-*` | integration `social/GroupsTest` | 9 |
+| `SOC-GRP-*` | integration `social/GroupsTest` | 10 |
 | `SOC-NOT-*` | integration `social/NotificationsTest` | 8 |
 | `SOC-NOT-008` notification emails | integration `social/EmailsTest` | 1 |
 | `SOC-MSG-*` | integration `social/MessagesTest` | 5 |
@@ -350,7 +362,7 @@ courses record an enrollment on first read (published courses only now).
 | Uploads, profile and group forms, image REST routes | integration `social/SettingsFormsTest` | 5 |
 | `SOC-IF-004` blocks | integration `social/BlocksTest` | 2 |
 | ADR-018, `SOC-ABUSE-*`, `SOC-MEM-004b`, `SOC-NOT-009` | integration `social/SecurityTest` | 9 |
-| Integration contract end to end, unpublished courses, full link sync | integration `bridge/BridgeTest` | 10 |
+| Integration contract end to end, unpublished courses, queued link sync, expiry, cohorts, trash, relink, essay passes, banned members | integration `bridge/BridgeTest` | 15 |
 
 ## Open questions
 

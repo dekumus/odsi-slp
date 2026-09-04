@@ -61,6 +61,18 @@ final class Settings {
 	}
 
 	/**
+	 * A stored value as written, without the module filter (the uninstall
+	 * switch must show what uninstall.php will actually do).
+	 *
+	 * @param string $key Key.
+	 */
+	public function stored( string $key ): bool {
+		$all = array_merge( self::defaults(), (array) get_option( self::OPTION, array() ) );
+
+		return ! empty( $all[ $key ] );
+	}
+
+	/**
 	 * Persist.
 	 *
 	 * @param array<string, bool> $values Values.

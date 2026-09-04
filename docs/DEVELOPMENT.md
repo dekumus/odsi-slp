@@ -73,7 +73,7 @@ Extend `ODSI\Tests\Integration\TestCase`. It gives you:
 - `$this->rest( 'POST', '/odsi-lms/v1/...', $params )` — dispatch a REST request
   in-process and get the `WP_REST_Response`.
 
-Name tests after the spec criterion they prove: `test_enr_003_...` proves
+Where a test proves one criterion, name it after it (`test_enr_003_...` proves
 `LMS-ENR-003`. A failure then names the requirement, not just the method.
 
 The bootstrap loads all three plugins as must-use plugins and runs each

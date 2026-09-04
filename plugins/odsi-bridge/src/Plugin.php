@@ -22,7 +22,10 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Wires the three integration modules. Each resolves the other plugins'
- * services from their own containers at boot, never earlier.
+ * services from their containers lazily, at first use inside a hook, never
+ * at construction: both plugins are guaranteed loaded by then, and the
+ * bridge stays free of hard references at boot (the documented exception
+ * to the no-service-locator rule in docs/02-conventions.md).
  */
 final class Plugin {
 

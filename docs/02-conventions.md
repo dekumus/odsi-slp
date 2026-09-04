@@ -97,3 +97,7 @@ one.
 - Subject line in the imperative, under ~72 characters.
 - Body explains why the change is shaped the way it is. Assume the reader has
   the diff and lacks the context.
+
+One documented exception: `odsi-bridge` modules resolve the two plugins'
+services from their containers lazily inside hook callbacks, because the
+bridge must not hold references to either plugin at boot.

@@ -7,7 +7,7 @@ independent GPL plugins plus an optional bridge.
 | --- | --- | --- |
 | [`odsi-lms`](plugins/odsi-lms) | Courses, lessons, topics, quizzes, assignments, enrollment, progress, reports, certificates, cohorts, course builder, learner emails | 137 tests + browser E2E passing |
 | [`odsi-social`](plugins/odsi-social) | Profiles, activity, groups, connections, notifications, emails, messaging, blocks | 123 tests + browser E2E passing |
-| [`odsi-bridge`](plugins/odsi-bridge) | Course activity in the feed, groups linked to courses, shared progress | Built and tested (8 tests) |
+| [`odsi-bridge`](plugins/odsi-bridge) | Course activity in the feed, groups linked to courses, shared progress | Built and tested (15 tests) |
 
 Each plugin installs and works alone. The bridge activates only when both are
 present.
@@ -39,16 +39,11 @@ Read
 
 ## Next steps
 
-The work is queued as five briefs in [`docs/briefs/`](docs/briefs), ordered by
-what unblocks the most downstream work:
-
-1. **Functional spec** — write down v1 behaviour and close the open questions.
-2. **Test harness** — make the repository executable and verifiable.
-3. **Social architecture** — design and scaffold `odsi-social`.
-4. **Bridge contract** — define and build the seam between the two.
-5. **LMS hardening** — close the fourteen known gaps in the scaffold.
-
-Briefs 1 and 2 are independent and can run in parallel.
+The five briefs in [`docs/briefs/`](docs/briefs) are complete. What remains is
+listed as numbered gaps in
+[`docs/03-current-state.md`](docs/03-current-state.md); the largest are a
+commerce integration for paid courses and the v2 items in
+[`docs/04-parity-scope.md`](docs/04-parity-scope.md).
 
 ## Licence and provenance
 

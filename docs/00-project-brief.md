@@ -68,4 +68,4 @@ as a standalone assignment.
 | Postmeta blowup in the LMS. | Progress in postmeta is the single most common reason LearnDash sites fall over. | Custom tables for enrollment, progress and attempts. Already decided; see ADR-002. |
 | Coupling the two plugins. | A hard dependency makes both unshippable alone and untestable apart. | Hooks-only communication, enforced by a CI check. |
 | IP contamination. | Copying a paid plugin's code is a legal problem, not a style problem. | Reimplement from behaviour. Never paste from a commercial plugin. |
-| Theme compatibility. | LMS plugins that fight themes get uninstalled. | Template overrides in `theme/odsi-lms/`, tokens-based CSS, no global selectors. |
+| Theme compatibility. | LMS plugins that fight themes get uninstalled. | Template overrides in `wp-content/themes/{theme}/odsi-lms/`, tokens-based CSS, no global selectors. |

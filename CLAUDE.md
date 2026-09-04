@@ -63,9 +63,9 @@ Full detail in `docs/02-conventions.md`. The short version:
 ```
 docs/                    Specs, decisions and agent briefs
   briefs/                Task briefs written to be handed to an agent
-plugins/odsi-lms/        LMS plugin (scaffolded, see docs/03-current-state.md)
-plugins/odsi-social/     Social plugin (not yet built)
-plugins/odsi-bridge/     Integration plugin (not yet built)
+plugins/odsi-lms/        LMS plugin (built and tested, see docs/03-current-state.md)
+plugins/odsi-social/     Community plugin (built and tested)
+plugins/odsi-bridge/     Integration plugin (built and tested; needs both others)
 ```
 
 ## Working agreements
