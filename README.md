@@ -1,0 +1,55 @@
+# ODSI Social Learning Platform
+
+A WordPress social learning platform: courses people take together. Two
+independent GPL plugins plus an optional bridge.
+
+| Plugin | Role | Status |
+| --- | --- | --- |
+| [`odsi-lms`](plugins/odsi-lms) | Courses, lessons, topics, quizzes, enrollment, progress | Scaffolded, untested |
+| [`odsi-social`](plugins/odsi-social) | Profiles, activity, groups, connections, notifications, messaging | Not started |
+| [`odsi-bridge`](plugins/odsi-bridge) | Course activity in the feed, groups linked to courses | Not started |
+
+Each plugin installs and works alone. The bridge activates only when both are
+present.
+
+## Status
+
+Early. `odsi-lms` has a complete kernel, data layer, content model, service
+layer and REST API — roughly 5,300 lines — but **nothing here has been run
+against a live WordPress install**, and there are no tests yet. Read
+[`docs/03-current-state.md`](docs/03-current-state.md) for an honest inventory
+of what exists and what is still a placeholder.
+
+## Start here
+
+| Document | What it covers |
+| --- | --- |
+| [`CLAUDE.md`](CLAUDE.md) | Repository context, constraints, conventions — loaded automatically by Claude Code |
+| [`docs/00-project-brief.md`](docs/00-project-brief.md) | What we are building, for whom, and what success looks like |
+| [`docs/01-decisions.md`](docs/01-decisions.md) | Architecture decision record |
+| [`docs/02-conventions.md`](docs/02-conventions.md) | Naming, code style, security and hook conventions |
+| [`docs/03-current-state.md`](docs/03-current-state.md) | What exists at HEAD, and every known gap |
+| [`docs/04-parity-scope.md`](docs/04-parity-scope.md) | Capability matrix with v1 / v2 / later tiers |
+| [`docs/briefs/`](docs/briefs) | Self-contained assignments, ready to hand to an agent |
+
+## Next steps
+
+The work is queued as five briefs in [`docs/briefs/`](docs/briefs), ordered by
+what unblocks the most downstream work:
+
+1. **Functional spec** — write down v1 behaviour and close the open questions.
+2. **Test harness** — make the repository executable and verifiable.
+3. **Social architecture** — design and scaffold `odsi-social`.
+4. **Bridge contract** — define and build the seam between the two.
+5. **LMS hardening** — close the fourteen known gaps in the scaffold.
+
+Briefs 1 and 2 are independent and can run in parallel.
+
+## Licence and provenance
+
+GPL-2.0-or-later.
+
+This is an independent implementation. It contains no code from LearnDash,
+BuddyBoss or any other commercial plugin, and uses none of their trademarks.
+Where those products are mentioned in the documentation it is to describe a
+capability area, not to claim any association with them.
