@@ -21,8 +21,9 @@ defined( 'ABSPATH' ) || exit;
  */
 final class ReportsScreen implements Bootable {
 
-	public const SLUG   = 'odsi-lms-reports';
-	private const NONCE = 'odsi_lms_report_action';
+	public const SLUG          = 'odsi-lms-reports';
+	private const NONCE        = 'odsi_lms_report_action';
+	private const EXPORT_NONCE = 'odsi_lms_report_export';
 
 	/**
 	 * Constructor.
@@ -41,6 +42,7 @@ final class ReportsScreen implements Bootable {
 	 */
 	public function boot(): void {
 		add_action( 'admin_post_odsi_lms_report_action', array( $this, 'handle_action' ) );
+		add_action( 'admin_post_odsi_lms_report_export', array( $this, 'handle_export' ) );
 	}
 
 	/**
@@ -72,6 +74,7 @@ final class ReportsScreen implements Bootable {
 		}
 
 		$this->render_summary( $course_id );
+		$this->render_export_link( $course_id );
 
 		$table = new EnrollmentListTable( $this->report, $course_id );
 		$table->prepare_items();
@@ -119,6 +122,58 @@ final class ReportsScreen implements Bootable {
 		printf( '<li><strong>%d</strong> %s</li>', (int) $s['completed'], esc_html__( 'completed', 'odsi-lms' ) );
 		printf( '<li><strong>%s%%</strong> %s</li>', esc_html( (string) $s['completion_rate'] ), esc_html__( 'completion rate', 'odsi-lms' ) );
 		echo '</ul>';
+	}
+
+	/**
+	 * Export button, carrying the current status filter (LMS-ADM-006).
+	 *
+	 * @param int $course_id Course.
+	 */
+	private function render_export_link( int $course_id ): void {
+		$status = sanitize_key( (string) ( $_GET['status'] ?? '' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only filter.
+		$url    = wp_nonce_url(
+			add_query_arg(
+				array(
+					'action'    => 'odsi_lms_report_export',
+					'course_id' => $course_id,
+					'status'    => $status,
+				),
+				admin_url( 'admin-post.php' )
+			),
+			self::EXPORT_NONCE
+		);
+
+		printf( '<p><a class="button" href="%s">%s</a></p>', esc_url( $url ), esc_html__( 'Export CSV', 'odsi-lms' ) );
+	}
+
+	/**
+	 * Stream the enrollment report as a CSV download (LMS-ADM-006).
+	 */
+	public function handle_export(): void {
+		check_admin_referer( self::EXPORT_NONCE );
+
+		$course_id = absint( $_GET['course_id'] ?? 0 );
+		$status    = sanitize_key( (string) ( $_GET['status'] ?? '' ) );
+
+		if ( ! $this->report->can_report( get_current_user_id(), $course_id ) ) {
+			wp_die( esc_html__( 'You cannot export this course.', 'odsi-lms' ) );
+		}
+
+		$filename = sanitize_file_name( 'enrollments-' . sanitize_title( (string) get_the_title( $course_id ) ) . '-' . gmdate( 'Y-m-d' ) . '.csv' );
+
+		nocache_headers();
+		header( 'Content-Type: text/csv; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+
+		$handle = fopen( 'php://output', 'w' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- streaming a download.
+
+		if ( false !== $handle ) {
+			fwrite( $handle, "\xEF\xBB\xBF" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- BOM so spreadsheets read UTF-8.
+			$this->report->export_csv( $course_id, $status, $handle );
+			fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+		}
+
+		exit;
 	}
 
 	/**

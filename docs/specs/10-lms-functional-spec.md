@@ -475,6 +475,14 @@ at the question's points. Saving applies `LMS-QZ-010`.
 **LMS-ADM-005** The daily maintenance job runs `LMS-ENR-011` and any registered
 `odsi_lms_daily_maintenance` listeners. It must be safe to run twice in a day.
 
+**LMS-ADM-006** The enrollment report exports as CSV (UTF-8 with BOM), one row
+per enrollment with name, email, status, source, dates and percentage,
+honouring the status filter, nonce- and capability-checked like every other
+report action. Rows are fetched in pages, so the export never loads a course's
+roster into memory at once, and cells beginning with `=`, `+`, `-` or `@` are
+prefixed with an apostrophe so a display name cannot become a spreadsheet
+formula. `odsi_lms_report_csv_columns` and `odsi_lms_report_csv_row` extend it.
+
 ---
 
 ## 8. Interfaces — `LMS-IF`

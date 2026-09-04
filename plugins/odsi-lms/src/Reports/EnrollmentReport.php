@@ -168,6 +168,90 @@ final class EnrollmentReport {
 	}
 
 	/**
+	 * Write a course's enrollment report as CSV to an open stream (LMS-ADM-006).
+	 *
+	 * Rows are fetched in pages so a large course never lands in memory at
+	 * once. Cells that start with a formula character are prefixed with an
+	 * apostrophe so a spreadsheet does not execute a learner's display name.
+	 *
+	 * @param int      $course_id Course.
+	 * @param string   $status    Restrict to a status; empty for all.
+	 * @param resource $handle    Writable stream.
+	 *
+	 * @return int Rows written, excluding the header.
+	 */
+	public function export_csv( int $course_id, string $status, $handle ): int {
+		$columns = array(
+			'user_id'      => 'user_id',
+			'display_name' => __( 'Name', 'odsi-lms' ),
+			'email'        => __( 'Email', 'odsi-lms' ),
+			'status'       => __( 'Status', 'odsi-lms' ),
+			'source'       => __( 'Source', 'odsi-lms' ),
+			'enrolled_at'  => __( 'Enrolled', 'odsi-lms' ),
+			'completed_at' => __( 'Completed', 'odsi-lms' ),
+			'expires_at'   => __( 'Expires', 'odsi-lms' ),
+			'percentage'   => __( 'Progress %', 'odsi-lms' ),
+		);
+
+		/**
+		 * Filters the columns of the enrollment CSV export.
+		 *
+		 * @param array<string, string> $columns   Row key => header label.
+		 * @param int                   $course_id Course.
+		 */
+		$columns = (array) apply_filters( 'odsi_lms_report_csv_columns', $columns, $course_id );
+
+		fputcsv( $handle, array_values( $columns ) );
+
+		$page    = 1;
+		$written = 0;
+
+		do {
+			$result = $this->rows(
+				$course_id,
+				array(
+					'status'   => $status,
+					'orderby'  => 'enrolled_at',
+					'order'    => 'ASC',
+					'page'     => $page,
+					'per_page' => 200,
+				)
+			);
+
+			foreach ( $result['rows'] as $row ) {
+				/**
+				 * Filters one row of the enrollment CSV export.
+				 *
+				 * @param array<string, mixed> $row       Row.
+				 * @param int                  $course_id Course.
+				 */
+				$row  = (array) apply_filters( 'odsi_lms_report_csv_row', $row, $course_id );
+				$cell = array();
+
+				foreach ( array_keys( $columns ) as $key ) {
+					$cell[] = self::csv_safe( (string) ( $row[ $key ] ?? '' ) );
+				}
+
+				fputcsv( $handle, $cell );
+				++$written;
+			}
+
+			++$page;
+		} while ( array() !== $result['rows'] && $written < $result['total'] );
+
+		return $written;
+	}
+
+	/**
+	 * Neutralise spreadsheet formula injection.
+	 *
+	 * @param string $value Cell.
+	 */
+	private static function csv_safe( string $value ): string {
+		return '' !== $value && str_contains( '=+-@', $value[0] ) ? "'" . $value : $value;
+	}
+
+	/**
 	 * Headline numbers for a course.
 	 *
 	 * @param int $course_id Course.

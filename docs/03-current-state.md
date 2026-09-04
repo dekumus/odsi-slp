@@ -7,7 +7,7 @@ when you change what it describes.
 
 | Plugin | State |
 | --- | --- |
-| `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 98 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
+| `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 99 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens. 114 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 8 integration tests. |
 
@@ -174,7 +174,8 @@ stores `_odsi_lesson_id` and inherits `_odsi_course_id` from it. Ordering is
   template, readable unguessable codes, `/certificate/{code}/` rendering with
   placeholders, public verification, revocation.
 - `Reports\EnrollmentReport` — enrollment rows with progress (paginated,
-  sortable, filterable), course summary, the manual grading queue.
+  sortable, filterable), course summary, the manual grading queue, paged CSV
+  export.
 - `Support\ObjectCache` — outlines in the persistent object cache, invalidated
   on the same events as the per-request cache.
 - `Frontend\ContentDecorator` — every piece of front-end LMS UI, through
@@ -252,7 +253,8 @@ Numbering is kept from the original list. Struck-through items are closed.
 14. ~~No `Structure` cache invalidation on post save.~~ Closed.
 15. ~~Cohort behaviour is unimplemented.~~ Closed.
 16. ~~No enrollment or grading admin actions.~~ Closed.
-17. **Reports have no CSV export** and no per-question quiz breakdown (v2).
+17. ~~Reports have no CSV export~~ Closed: paged, formula-safe export from the
+    Reports screen (LMS-ADM-006). A per-question quiz breakdown stays v2.
 18. **The enrollment report loads percentages per row** (one outline
     intersection each); fine at report page sizes, worth a batched query if
     pages grow.
@@ -269,7 +271,7 @@ Numbering is kept from the original list. Struck-through items are closed.
 | `LMS-ACC-*` | integration `AccessTest` | 11 |
 | `LMS-QZ-*` | integration `QuizTest` | 15 |
 | `LMS-IF` REST, `LMS-ACC-007` | integration `RestTest` | 9 |
-| `LMS-ADM-*`, `LMS-ENR-007/012`, certificates, cache | integration `HardeningTest` | 8 |
+| `LMS-ADM-*`, `LMS-ENR-007/012`, certificates, cache, CSV | integration `HardeningTest` | 9 |
 | Builder routes: tree, add, reorder, detach, ownership | integration `BuilderTest` | 2 |
 | `LMS-ASN-*` service, uploads, REST, grading scope | integration `AssignmentsTest` | 9 |
 | Learner flow in a browser | e2e `lms-learner-flow` | 1, passing |

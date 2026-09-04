@@ -244,4 +244,38 @@ final class HardeningTest extends TestCase {
 		$new = $this->lms->lesson( $c['course'], array( 'menu_order' => 9 ) );
 		self::assertContains( $new, $structure->step_ids( $c['course'] ), 'Invalidated on save.' );
 	}
+
+	public function test_adm_006_csv_export_pages_through_and_neutralises_formulas(): void {
+		$c = $this->lms->standard_course();
+		$a = $this->lms->enrolled_learner( $c['course'] );
+		$b = $this->lms->enrolled_learner( $c['course'] );
+		wp_update_user(
+			array(
+				'ID'           => $b,
+				'display_name' => '=HYPERLINK("https://evil.example")',
+			)
+		);
+		$this->progress->complete_step( $a, $c['lesson1'] );
+
+		add_filter( 'odsi_lms_report_csv_columns', static fn ( array $columns ): array => $columns + array( 'source' => 'Source' ) );
+
+		$handle = fopen( 'php://temp', 'w+' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
+		$count  = $this->report->export_csv( $c['course'], '', $handle );
+		rewind( $handle );
+		$lines = array_map( 'str_getcsv', array_filter( explode( "\n", (string) stream_get_contents( $handle ) ) ) );
+		fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+
+		self::assertSame( 2, $count );
+		self::assertCount( 3, $lines );
+		self::assertSame( 'user_id', $lines[0][0] );
+		self::assertSame( 'Progress %', $lines[0][8] );
+		$by_user = array_column( array_slice( $lines, 1 ), null, 0 );
+		self::assertEqualsCanonicalizing( array( $a, $b ), array_keys( $by_user ) );
+		self::assertSame( '16.67', $by_user[ $a ][8] );
+		self::assertSame( "'=HYPERLINK(\"https://evil.example\")", $by_user[ $b ][1], 'Formula characters are neutralised.' );
+
+		$handle = fopen( 'php://temp', 'w+' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
+		self::assertSame( 0, $this->report->export_csv( $c['course'], 'completed', $handle ) );
+		fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+	}
 }
