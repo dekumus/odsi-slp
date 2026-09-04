@@ -180,7 +180,11 @@ final class MembersController {
 	public function update_me( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$user_id = get_current_user_id();
 
-		if ( is_array( $request['fields'] ) ) {
+		if ( null !== $request['fields'] ) {
+			if ( ! is_array( $request['fields'] ) ) {
+				return new WP_Error( 'odsi_social_invalid_field', __( 'Fields must be an object keyed by field id.', 'odsi-social' ), array( 'status' => 400 ) );
+			}
+
 			$result = $this->profiles->update_fields( $user_id, $request['fields'] );
 
 			if ( $result instanceof WP_Error ) {

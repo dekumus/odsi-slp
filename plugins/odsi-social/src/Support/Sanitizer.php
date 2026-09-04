@@ -19,13 +19,17 @@ final class Sanitizer {
 	/**
 	 * Clean submitted text for storage.
 	 *
-	 * @param string $content    Raw content.
+	 * Callers pass unslashed text (REST parameters already are; the form
+	 * handlers unslash `$_POST` themselves), so nothing is unslashed here: a
+	 * second pass would eat the member's own backslashes.
+	 *
+	 * @param string $content    Raw, unslashed content.
 	 * @param int    $max_length Maximum characters after cleaning.
 	 *
 	 * @return string Cleaned content; empty when nothing meaningful remains.
 	 */
 	public static function content( string $content, int $max_length ): string {
-		$clean = trim( wp_kses( wp_unslash( $content ), wp_kses_allowed_html( 'post' ) ) );
+		$clean = trim( wp_kses( $content, wp_kses_allowed_html( 'post' ) ) );
 
 		if ( '' === wp_strip_all_tags( $clean ) ) {
 			return '';
@@ -41,9 +45,13 @@ final class Sanitizer {
 	/**
 	 * Render stored content for display: paragraphs, autolinks, mention links.
 	 *
-	 * @param string $content Stored content.
+	 * A mentioned member who cannot see the content stays plain text
+	 * (SOC-ACT-007); the caller says who can through `$can_see`.
+	 *
+	 * @param string                   $content Stored content.
+	 * @param callable(int): bool|null $can_see Whether a mentioned member may see this content; null links everyone.
 	 */
-	public static function render( string $content ): string {
+	public static function render( string $content, ?callable $can_see = null ): string {
 		$html = wpautop( make_clickable( $content ) );
 
 		// Rewrite mentions in text nodes only. Inside a tag an @nick would sit
@@ -61,10 +69,10 @@ final class Sanitizer {
 
 			$parts[ $i ] = (string) preg_replace_callback(
 				'/(?<![\w\/])@([A-Za-z0-9_\-\.]+)/u',
-				static function ( array $m ): string {
+				static function ( array $m ) use ( $can_see ): string {
 					$user = get_user_by( 'slug', $m[1] );
 
-					if ( ! $user ) {
+					if ( ! $user || ( null !== $can_see && ! $can_see( (int) $user->ID ) ) ) {
 						return $m[0];
 					}
 

@@ -12,6 +12,7 @@ namespace ODSI\Social\Rest;
 use ODSI\Social\Activity\Activity;
 use ODSI\Social\Activity\Feed;
 use ODSI\Social\Activity\Reactions;
+use ODSI\Social\Frontend\Templates;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -30,11 +31,13 @@ final class ActivityController {
 	 * @param Activity  $activity  Writer.
 	 * @param Feed      $feed      Reader.
 	 * @param Reactions $reactions Reactions.
+	 * @param Templates $templates Template loader, for server-rendered items.
 	 */
 	public function __construct(
 		private Activity $activity,
 		private Feed $feed,
-		private Reactions $reactions
+		private Reactions $reactions,
+		private Templates $templates
 	) {
 	}
 
@@ -69,6 +72,10 @@ final class ActivityController {
 							'default' => '',
 						),
 						'per_page'  => array( 'type' => 'integer' ),
+						'render'    => array(
+							'type'    => 'boolean',
+							'default' => false,
+						),
 					),
 				),
 				array(
@@ -176,23 +183,40 @@ final class ActivityController {
 	/**
 	 * `GET /activity`
 	 *
+	 * With `render=1` every item also carries `html`: the same
+	 * `parts/activity-item` template the page renders (theme overrides
+	 * included), so "Load more" appends items identical to the first page.
+	 *
 	 * @param WP_REST_Request $request Request.
 	 */
 	public function feed( WP_REST_Request $request ): WP_REST_Response {
-		return new WP_REST_Response(
-			$this->feed->page(
-				get_current_user_id(),
-				(string) $request['scope'],
-				array(
-					'group_id'  => (int) $request['group_id'],
-					'user_id'   => (int) $request['user_id'],
-					'type'      => (string) $request['type'],
-					'component' => (string) $request['component'],
-					'cursor'    => (string) $request['cursor'],
-					'per_page'  => (int) $request['per_page'],
-				)
+		$viewer = get_current_user_id();
+		$page   = $this->feed->page(
+			$viewer,
+			(string) $request['scope'],
+			array(
+				'group_id'  => (int) $request['group_id'],
+				'user_id'   => (int) $request['user_id'],
+				'type'      => (string) $request['type'],
+				'component' => (string) $request['component'],
+				'cursor'    => (string) $request['cursor'],
+				'per_page'  => (int) $request['per_page'],
 			)
 		);
+
+		if ( $request['render'] ) {
+			foreach ( $page['items'] as $i => $item ) {
+				$page['items'][ $i ]['html'] = $this->templates->render(
+					'parts/activity-item',
+					array(
+						'item'      => $item,
+						'viewer_id' => $viewer,
+					)
+				);
+			}
+		}
+
+		return new WP_REST_Response( $page );
 	}
 
 	/**
@@ -296,7 +320,7 @@ final class ActivityController {
 	}
 
 	/**
-	 * `GET /activity/{id}/reactions` — who reacted. 404 when not visible.
+	 * `GET /activity/{id}/reactions` — who reacted (SOC-ACT-037). 404 when not visible.
 	 *
 	 * @param WP_REST_Request $request Request.
 	 */

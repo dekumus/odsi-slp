@@ -162,7 +162,7 @@ final class Plugin {
 		$c->set( GroupPostType::class, static fn (): object => new GroupPostType() );
 
 		// Activity.
-		$c->set( ActivityRenderers::class, static fn (): object => new ActivityRenderers() );
+		$c->set( ActivityRenderers::class, static fn ( Container $c ): object => new ActivityRenderers( $c->get( Privacy::class ) ) );
 		$c->set(
 			Privacy::class,
 			static fn ( Container $c ): object => new Privacy(
@@ -193,7 +193,8 @@ final class Plugin {
 				$c->get( MemberRepository::class ),
 				$c->get( Privacy::class ),
 				$c->get( ActivityRenderers::class ),
-				$c->get( Settings::class )
+				$c->get( Settings::class ),
+				$c->get( Activity::class )
 			)
 		);
 		$c->set(
@@ -233,7 +234,7 @@ final class Plugin {
 
 		// Notifications.
 		$c->set( NotificationRenderers::class, static fn (): object => new NotificationRenderers() );
-		$c->set( Notifications::class, static fn ( Container $c ): object => new Notifications( $c->get( NotificationRepository::class ), $c->get( NotificationRenderers::class ) ) );
+		$c->set( Notifications::class, static fn ( Container $c ): object => new Notifications( $c->get( NotificationRepository::class ), $c->get( NotificationRenderers::class ), $c->get( MemberRepository::class ) ) );
 		$c->set(
 			Listeners::class,
 			static fn ( Container $c ): object => new Listeners(
@@ -296,13 +297,24 @@ final class Plugin {
 				$c->get( Groups::class ),
 				$c->get( Membership::class ),
 				$c->get( GroupMemberRepository::class ),
-				$c->get( Router::class )
+				$c->get( Router::class ),
+				$c->get( MemberRepository::class )
 			)
 		);
 		$c->set( Blocks::class, static fn ( Container $c ): object => new Blocks( $c->get( Shortcodes::class ) ) );
 		$c->set( RestServiceProvider::class, static fn ( Container $c ): object => new RestServiceProvider( $c ) );
 		$c->set( AdminMenu::class, static fn ( Container $c ): object => new AdminMenu( $c->get( Settings::class ), $c->get( ProfileFields::class ) ) );
-		$c->set( Maintenance::class, static fn ( Container $c ): object => new Maintenance( $c->get( Notifications::class ), $c->get( Messages::class ), $c->get( Settings::class ) ) );
+		$c->set(
+			Maintenance::class,
+			static fn ( Container $c ): object => new Maintenance(
+				$c->get( Notifications::class ),
+				$c->get( Messages::class ),
+				$c->get( Settings::class ),
+				$c->get( ActivityRepository::class ),
+				$c->get( GroupRepository::class ),
+				$c->get( MemberRepository::class )
+			)
+		);
 
 		/**
 		 * Fires after the plugin's own services are registered.

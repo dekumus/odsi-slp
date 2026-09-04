@@ -79,7 +79,34 @@ final class Profiles implements Bootable {
 	}
 
 	/**
+	 * Warm every cache `view()` reads for a list of members — users, index
+	 * rows, avatars and covers, field values, field definitions and the
+	 * viewer's connections — in a fixed number of queries.
+	 *
+	 * @param int   $viewer_id Viewer.
+	 * @param int[] $user_ids  Members.
+	 */
+	public function prime( int $viewer_id, array $user_ids ): void {
+		$user_ids = array_values( array_unique( array_filter( array_map( 'intval', $user_ids ) ) ) );
+
+		if ( array() === $user_ids ) {
+			return;
+		}
+
+		$this->members->prime_display( $user_ids );
+		$this->data->prime( $user_ids );
+		$this->fields->structure();
+
+		if ( $viewer_id > 0 ) {
+			$this->connections->prime_pairs( $viewer_id, $user_ids );
+		}
+	}
+
+	/**
 	 * A member's profile as the viewer may see it (SOC-MEM-006).
+	 *
+	 * Reading a profile never writes: a member who has not logged in yet has
+	 * no index row and is shown with zero counts (SOC-MEM-001/008).
 	 *
 	 * @param int $viewer_id Viewer.
 	 * @param int $user_id   Member.
@@ -93,7 +120,15 @@ final class Profiles implements Bootable {
 			return null;
 		}
 
-		$row     = $this->members->ensure( $user_id );
+		$row     = $this->members->find( $user_id ) ?? (object) array(
+			'last_active'      => '',
+			'activity_count'   => 0,
+			'connection_count' => 0,
+			'follower_count'   => 0,
+			'following_count'  => 0,
+			'avatar_id'        => 0,
+			'cover_id'         => 0,
+		);
 		$values  = $this->data->for_user( $user_id );
 		$visible = array();
 
@@ -103,7 +138,7 @@ final class Profiles implements Bootable {
 			foreach ( $section['fields'] as $field ) {
 				$value = $values[ (int) $field->id ] ?? null;
 
-				if ( ! $value || '' === (string) $value->value ) {
+				if ( ! $value || self::is_empty( $field, (string) $value->value ) ) {
 					continue;
 				}
 
@@ -222,6 +257,12 @@ final class Profiles implements Bootable {
 	 * @return true|WP_Error An error naming the first missing required field.
 	 */
 	public function update_fields( int $user_id, array $fields ): bool|WP_Error {
+		foreach ( $fields as $submitted ) {
+			if ( ! is_array( $submitted ) ) {
+				return new WP_Error( 'odsi_social_invalid_field', __( 'Each field must be an object with a value and/or a visibility.', 'odsi-social' ), array( 'status' => 400 ) );
+			}
+		}
+
 		$definitions = $this->fields->all();
 		$current     = $this->data->for_user( $user_id );
 
@@ -229,7 +270,7 @@ final class Profiles implements Bootable {
 			$submitted = $fields[ $id ] ?? null;
 			$value     = null === $submitted || ! array_key_exists( 'value', $submitted ) ? ( isset( $current[ $id ] ) ? (string) $current[ $id ]->value : '' ) : self::encode_value( $field, $submitted['value'] );
 
-			if ( (int) $field->required && '' === trim( $value ) ) {
+			if ( (int) $field->required && self::is_empty( $field, $value ) ) {
 				return new WP_Error(
 					'odsi_social_required_field',
 					sprintf(
@@ -245,7 +286,7 @@ final class Profiles implements Bootable {
 		foreach ( $fields as $id => $submitted ) {
 			$field = $definitions[ (int) $id ] ?? null;
 
-			if ( ! $field || ! is_array( $submitted ) ) {
+			if ( ! $field ) {
 				continue;
 			}
 
@@ -295,6 +336,8 @@ final class Profiles implements Bootable {
 		if ( ! in_array( $setting, array( 'anyone', 'connections', 'no_one' ), true ) ) {
 			return false;
 		}
+
+		$this->members->ensure( $user_id );
 
 		return $this->members->update( $user_id, array( 'message_setting' => $setting ) );
 	}
@@ -418,6 +461,20 @@ final class Profiles implements Bootable {
 			default:
 				return sanitize_text_field( (string) $value );
 		}//end switch
+	}
+
+	/**
+	 * Whether a stored value counts as empty: nothing, or no selection.
+	 *
+	 * @param object $field Field row.
+	 * @param string $value Stored value.
+	 */
+	private static function is_empty( object $field, string $value ): bool {
+		if ( '' === trim( $value ) ) {
+			return true;
+		}
+
+		return 'multiselect' === (string) $field->type && array() === (array) json_decode( $value, true );
 	}
 
 	/**

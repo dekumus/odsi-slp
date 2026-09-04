@@ -74,7 +74,7 @@ final class Directory {
 
 		$result = $this->members->directory( $args );
 
-		cache_users( $result['ids'] );
+		$this->profiles->prime( $viewer_id, $result['ids'] );
 
 		$members = array();
 

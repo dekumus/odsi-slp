@@ -63,14 +63,18 @@ member may change that visibility.
 `only_me`. When a member may not change it, the admin default applies and the
 member's stored preference, if any, is ignored.
 
-**SOC-MEM-007** A required field with no value blocks saving the profile edit
-form with a message naming the field, but never blocks any other action on the
-site. Registration is not gated by profile fields in v1.
+**SOC-MEM-007** A required field with no value (for a multiselect, no
+selection) blocks saving the profile edit form with a message naming the
+field, but never blocks any other action on the site. A malformed field entry
+is rejected with a 400. Registration is not gated by profile fields in v1.
 
 **SOC-MEM-008** The member directory at `/members/` lists members who have
-logged in at least once, newest first by default, with alternative orderings of
-alphabetical (display name) and recently active. Searchable by display name and
-`user_nicename` substring. Paginated at an admin-set size, default 20.
+logged in at least once (those with a recorded "last active"), newest first by
+default, with alternative orderings of alphabetical (display name) and recently
+active. Searchable by display name and `user_nicename` substring. Paginated at
+an admin-set size, default 20. Reading a profile never creates the member's
+index row; only the member's own presence or settings do, and a purged
+member's row is never recreated by a counter adjustment.
 
 **SOC-MEM-009** The directory is visible to visitors when the admin setting
 "public directory" is on (default on). A visitor sees only fields whose
@@ -139,10 +143,6 @@ member and invalidated on any change to that member's edges. A count that is
 stale after a change is a bug.
 
 
-**SOC-ACT-012** Who reacted to an item is listable, newest first, by anyone
-who may view the item (`GET /activity/{id}/reactions`, and on the single item
-page); a viewer who cannot see the item gets 404, never an empty list.
-
 ---
 
 ## 3. Activity — `SOC-ACT`
@@ -171,13 +171,16 @@ and rendered with autolinking of URLs and mentions.
 
 **SOC-ACT-003** Privacy on an update is chosen by the author from `public`,
 `members`, `connections`, `only_me`. The admin sets the default (default
-`members`) and may restrict the choices. An update posted in a group has privacy
-`group` and no other choice.
+`members`) and may restrict the choices; the post form offers only the allowed
+levels with the default preselected, and the default is always one of the
+allowed set. An update posted in a group has privacy `group` and no other
+choice.
 
 **SOC-ACT-004** A comment is an activity with `type = comment` and a `parent`
 that is a non-comment activity. A comment posted with a parent that is itself a
 comment is re-parented to that comment's parent. Comments inherit the parent's
-privacy and group and cannot set their own.
+privacy and group and cannot set their own. The single item view carries up to
+500 comments, oldest first; feeds carry the three most recent (`SOC-ACT-035`).
 
 **SOC-ACT-005** A reaction is one row per (member, activity). Reacting again
 with the same type is a no-op; with a different type replaces. Removing a
@@ -189,8 +192,9 @@ who can no longer see the item.
 
 **SOC-ACT-007** `@{user_nicename}` in an update or comment is a mention. On
 save, each mentioned member who can see the item is notified once per item;
-mentions of members who cannot see it (privacy) are rendered as plain text and
-send nothing. Self-mentions send nothing.
+mentions of members who cannot see it (privacy) are rendered as plain text
+(the renderer asks the privacy rule per mentioned member) and send nothing.
+Self-mentions send nothing.
 
 **SOC-ACT-008** The author may edit an update's content within an admin-set
 window (default 60 minutes, 0 disables editing). Edits mark the item as edited
@@ -260,17 +264,27 @@ see, newest first, excluding items in hidden groups V does not belong to (the
 privacy rule already ensures this; stated for clarity).
 
 **SOC-ACT-034** Every feed paginates by an opaque cursor derived from
-(recorded timestamp, id). Fetching the next page after new items were posted
-never repeats or skips an item. Page size is admin-set, default 20, maximum 50.
+(recorded timestamp, id) of the last row *fetched*, not the last row shown:
+a page that a visibility filter empties still leads to the next page.
+Fetching the next page after new items were posted never repeats or skips an
+item. Page size is admin-set, default 20, maximum 50; a request without a
+size (or with 0) gets the admin default.
 
 **SOC-ACT-035** Each feed item carries its three most recent visible comments
-and total comment count, whether V has reacted and the reaction count, and the
-author's display data. The cost of a page of 20 is bounded: no per-item
-database query for comments, reactions or authors.
+and total comment count, whether V has reacted and the reaction count, the
+author's display data, and whether V may delete it (`SOC-ACT-009`). The cost of
+a page of 20 is bounded and independent of what is on it: no per-item database
+query for comments, reactions, authors, avatars, groups, the viewer's
+memberships or the viewer's connections. Everything the privacy rule and the
+renderers read for a page is primed in a fixed number of queries first.
 
 **SOC-ACT-036** Feeds may be filtered by `type` and, on the site feed, by
 `component`. A filter for a type that has no items returns an empty page, not an
 error.
+
+**SOC-ACT-037** Who reacted to an item is listable, newest first, by anyone
+who may view the item (`GET /activity/{id}/reactions`, and on the single item
+page); a viewer who cannot see the item gets 404, never an empty list.
 
 ---
 
@@ -303,14 +317,17 @@ One row per (group, member).
 Rejected: join on a private or hidden group; request on a hidden group; any
 transition that would leave the group with zero organisers; a moderator acting
 on an organiser; a member acting on themselves except leave, withdraw, decline,
-accept.
+accept. A member holding an invitation accepts it by joining or requesting,
+whatever the group's visibility, and declines it by removing themselves.
 
 ### Criteria
 
 **SOC-GRP-001** A group is a post of type `odsi_social_group` with a name,
 description, avatar, cover image, visibility and a slug used at
 `/groups/{slug}/`. Its creator becomes its first organiser as part of creation,
-atomically: a group with no organiser must not be observable.
+atomically: a group with no organiser must not be observable. A group
+published from wp-admin gets its post author as organiser on save, and every
+save recounts the member count from the membership table.
 
 **SOC-GRP-002** Any member may create a group when the admin setting "members
 may create groups" is on (default on); otherwise only admins.
@@ -326,7 +343,10 @@ by newest, most members and recently active; searchable by name.
 **SOC-GRP-005** A visitor may see a public group's page, feed and member list.
 A logged-in non-member may see a private group's page (name, description, member
 count) and a join-request button, but not its feed or member list. A non-member
-requesting a hidden group's page receives 404.
+requesting a hidden group's page receives 404, unless they hold an invitation:
+an invitee may see a hidden group's page (with accept and decline controls),
+but not its feed or member list until they accept. The group page shows the
+first 50 active members whenever the member list is visible.
 
 **SOC-GRP-006** Roles: `organiser`, `moderator`, `member`. Organisers may do
 everything, including change settings, promote, demote and delete the group.
@@ -343,8 +363,8 @@ run shortcodes or dynamic blocks.
 
 **SOC-GRP-006a** Organisers manage a group at `/groups/{slug}/manage/`: name,
 description, visibility, photo and cover through a multipart form, and the
-member lists (approve or decline requests; promote, demote, remove, ban,
-unban) through per-row forms. Anyone else gets a 404 there. Every action
+member lists (approve or decline requests; promote to moderator or organiser,
+demote an organiser or moderator, remove, ban, unban) through per-row forms. Anyone else gets a 404 there. Every action
 re-runs the same service checks as the REST routes; the page is never the
 authority.
 
@@ -358,11 +378,14 @@ posted), group created. Requests, invitations, bans and removals post nothing.
 
 **SOC-GRP-009** Notifications: request → each organiser and moderator;
 approval → the requester; invitation → the invitee; acceptance of an invitation
-→ the inviter; promotion → the promoted member; ban and removal → no one.
+→ the inviter; promotion (a role change to a higher rank) → the promoted
+member; demotion, ban and removal → no one.
 
 **SOC-GRP-010** A member's list of groups shows every group they are `active`
 in, plus their `pending` requests and `invited` invitations in separate
-sections. Hidden groups they are active in are shown to them.
+sections. Hidden groups they are active in or invited to are shown to them.
+The list appears as "Your groups" at the top of the group directory for a
+logged-in member, and at `GET /groups/mine`.
 
 ---
 
@@ -403,13 +426,15 @@ a second row. Once read, the next event creates a new row. The rendered sentence
 for a collapsed notification names the most recent actor and the count of others
 ("Ana and 3 others liked your post").
 
-**SOC-NOT-005** A member may mark one, or all, notifications read. Unread count
-is exact, cached per member, invalidated on any write to that member's
-notifications.
+**SOC-NOT-005** A member may mark one, or all, notifications read; opening a
+message thread marks that thread's "new message" notification read. Unread
+count is exact, cached per member, invalidated on any write to that member's
+notifications. The notifications page paginates at 20.
 
-**SOC-NOT-006** A notification whose item has been deleted is deleted with it.
-A notification whose actor has been deleted is retained and renders the actor as
-"a former member".
+**SOC-NOT-006** A notification whose item has been deleted is deleted with it,
+including notifications about the comments that go with a deleted update (a
+like on a comment is keyed on the comment). A notification whose actor has
+been deleted is retained and renders the actor as "a former member".
 
 **SOC-NOT-007** Notifications are delivered in-app only in v1. Email delivery
 is a v2 concern and must be implementable as a listener on
@@ -464,6 +489,20 @@ participants and to no admin screen in v1. Admins may see thread metadata
 (`Privacy::can_view`), so someone removed from a private group hears nothing
 more about its posts.
 
+### Housekeeping — `SOC-OPS`
+
+**SOC-OPS-001** The daily maintenance job also recounts every denormalised
+counter — an item's comment and reaction counts, a group's member count, a
+member's activity, connection, follower and following counts — from the rows
+they summarise, so an interrupted request or a direct database edit never
+leaves a count wrong for more than a day.
+
+**SOC-OPS-002** Uninstalling with "delete all community data" enabled removes
+the plugin's tables, capabilities and settings, and also its group posts and
+their meta, the avatars and covers it stored, members' email preferences, its
+transients, the rewrite flag and the cron event. Without the opt-in nothing is
+removed.
+
 ### Abuse limits — `SOC-ABUSE`
 
 **SOC-ABUSE-001** Per-member sliding-window limits (filter
@@ -490,19 +529,20 @@ text nodes only, never inside a tag.
 | `PATCH /members/me` | logged in | Update own fields and visibilities. |
 | `POST /members/me/{avatar\|cover}` | logged in | Multipart `file`; `SOC-MEM-004a`. 201 with the profile. `DELETE` clears it. |
 | `POST /groups/{id}/{avatar\|cover}` | organiser | Multipart `file`. 403 for others; `DELETE` clears it. |
-| `GET /activity` | any | Feed. `scope` in `site\|personal\|group\|profile`, plus `group_id` / `user_id`, `type`, `cursor`. |
+| `GET /activity` | any | Feed. `scope` in `site\|personal\|group\|profile`, plus `group_id` / `user_id`, `type`, `cursor`, `per_page` (0 or absent: the admin default); `render=1` adds each item's server-rendered `html`. |
 | `POST /activity` | logged in | Post an update. `content`, `privacy`, optional `group_id`. |
 | `GET /activity/{id}` | any | Single item with all comments the caller may see. 404 when not visible. |
 | `DELETE /activity/{id}` | logged in | `SOC-ACT-009`. 403 or 404. |
 | `POST /activity/{id}/comments` | logged in | Comment. 404 when the parent is not visible. |
 | `PUT /activity/{id}/reaction` | logged in | Set reaction, body `type`. 404 when not visible. |
 | `DELETE /activity/{id}/reaction` | logged in | Remove. |
-| `GET /activity/{id}/reactions` | any | Who reacted, newest first (`SOC-ACT-012`). 404 when not visible. |
-| `GET /groups`, `GET /groups/{id}` | any | `SOC-GRP-004/005`. Hidden → 404 for non-members. |
+| `GET /activity/{id}/reactions` | any | Who reacted, newest first (`SOC-ACT-037`). 404 when not visible. |
+| `GET /groups`, `GET /groups/{id}` | any | `SOC-GRP-004/005`. Hidden → 404 for non-members who are not invited. |
+| `GET /groups/mine` | logged in | `SOC-GRP-010`: `active`, `pending`, `invited`. |
 | `POST /groups` | logged in | Create. `SOC-GRP-002`. |
 | `PATCH /groups/{id}` | organiser | Settings. |
-| `POST /groups/{id}/membership` | logged in | join / request per visibility. |
-| `DELETE /groups/{id}/membership` | logged in | leave / withdraw. |
+| `POST /groups/{id}/membership` | logged in | accept an invitation, else join / request per visibility. |
+| `DELETE /groups/{id}/membership` | logged in | leave / withdraw / decline. |
 | `POST /groups/{id}/members/{user}` | organiser/moderator | invite, approve, promote, demote, ban, unban, remove via `action`. |
 | `GET /connections`, `POST /connections/{user}`, `DELETE /connections/{user}`, `POST /connections/{user}/accept` | logged in | State machine § 2. |
 | `PUT /follows/{user}`, `DELETE /follows/{user}` | logged in | `SOC-CON-002`. |
@@ -518,9 +558,10 @@ not disclosed by a 403.
 group, site feed, notifications, messages — are PHP templates under
 `templates/`, overridable at `wp-content/themes/{theme}/odsi-social/`.
 
-**SOC-IF-002** Each renders its complete first page without JavaScript.
-JavaScript adds in-page posting, commenting, reacting, infinite scroll and
-unread badges.
+**SOC-IF-002** Each renders its complete first page without JavaScript;
+lists (directories, inbox, notifications) carry pagination links. JavaScript
+adds in-page posting, commenting, reacting, "load more" (which appends items
+rendered by the same template as the first page) and unread badges.
 
 **SOC-IF-004** Blocks `odsi-social/activity-feed`, `member-directory` and
 `group-directory` are dynamic and render through the matching shortcode code
@@ -530,7 +571,12 @@ front-end assets load on any singular post containing one of them.
 **SOC-IF-003** Routing uses rewrite rules for `/members/`, `/members/{nicename}/`,
 `/groups/`, `/groups/{slug}/`, `/activity/`, `/notifications/`, `/messages/`,
 each mapped to a virtual page rendered through the theme's page template. The
-base slugs are admin settings.
+base slugs are admin settings; templates obtain section URLs through
+`odsi_social_page_url` rather than hard-coding a slug. Whether the routed
+object exists for the viewer (member, visible group, visible item, own
+thread) is resolved through `odsi_social_page_exists` before any output, so a
+missing or invisible page is served with HTTP 404 and no-cache headers, never
+a 200 carrying a "not found" message.
 
 ---
 

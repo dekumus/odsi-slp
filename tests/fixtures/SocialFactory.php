@@ -28,6 +28,17 @@ final class SocialFactory {
 	 * @param WP_UnitTest_Factory $factory Core factory.
 	 */
 	public function __construct( private WP_UnitTest_Factory $factory ) {
+		// Repositories memoise rows per request; a test is a fresh request.
+		foreach ( array(
+			\ODSI\Social\Repositories\MemberRepository::class,
+			\ODSI\Social\Repositories\GroupRepository::class,
+			\ODSI\Social\Repositories\GroupMemberRepository::class,
+			\ODSI\Social\Repositories\ConnectionRepository::class,
+			\ODSI\Social\Repositories\ProfileDataRepository::class,
+			\ODSI\Social\Members\ProfileFields::class,
+		) as $id ) {
+			$this->service( $id )->flush();
+		}
 	}
 
 	/**
@@ -42,9 +53,10 @@ final class SocialFactory {
 	}
 
 	/**
-	 * A subscriber.
+	 * A subscriber who has logged in once, so their member index row exists
+	 * (SOC-MEM-008). Pass `$logged_in = false` for a never-seen account.
 	 */
-	public function member( string $nicename = '' ): int {
+	public function member( string $nicename = '', bool $logged_in = true ): int {
 		$args = array( 'role' => 'subscriber' );
 
 		if ( '' !== $nicename ) {
@@ -52,14 +64,23 @@ final class SocialFactory {
 			$args['user_nicename'] = $nicename;
 		}
 
-		return $this->factory->user->create( $args );
+		$id = $this->factory->user->create( $args );
+
+		if ( $logged_in ) {
+			$this->service( \ODSI\Social\Members\Presence::class )->touch( $id, true );
+		}
+
+		return $id;
 	}
 
 	/**
-	 * An administrator.
+	 * An administrator who has logged in once.
 	 */
 	public function admin(): int {
-		return $this->factory->user->create( array( 'role' => 'administrator' ) );
+		$id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		$this->service( \ODSI\Social\Members\Presence::class )->touch( $id, true );
+
+		return $id;
 	}
 
 	/**
@@ -104,6 +125,29 @@ final class SocialFactory {
 		$repo = $this->service( \ODSI\Social\Repositories\GroupMemberRepository::class );
 		$repo->put( $group_id, $user_id, $role, 'active' );
 		$this->service( \ODSI\Social\Repositories\GroupRepository::class )->adjust( $group_id, 'member_count', 1 );
+	}
+
+	/**
+	 * Invite a member into a group (organiser action).
+	 */
+	public function invite( int $group_id, int $organiser, int $user_id ): void {
+		$result = $this->service( Membership::class )->invite( $organiser, $group_id, $user_id );
+
+		if ( $result instanceof \WP_Error ) {
+			throw new \RuntimeException( $result->get_error_message() );
+		}
+	}
+
+	/**
+	 * Queries run by a callback.
+	 */
+	public function count_queries( callable $callback ): int {
+		global $wpdb;
+
+		$before = $wpdb->num_queries;
+		$callback();
+
+		return $wpdb->num_queries - $before;
 	}
 
 	/**

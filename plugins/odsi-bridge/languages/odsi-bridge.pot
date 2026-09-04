@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-04T09:06:24+00:00\n"
+"POT-Creation-Date: 2026-09-04T12:07:48+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: odsi-bridge\n"
@@ -71,7 +71,7 @@ msgid "ODSI Bridge has been deactivated; activate it again once both are availab
 msgstr ""
 
 #: src/Admin/SettingsScreen.php:44
-#: src/Admin/SettingsScreen.php:57
+#: src/Admin/SettingsScreen.php:58
 msgid "Community bridge"
 msgstr ""
 
@@ -87,55 +87,67 @@ msgstr ""
 msgid "Let members of a linked group see each other's progress"
 msgstr ""
 
-#: src/Admin/SettingsScreen.php:83
+#: src/Admin/SettingsScreen.php:55
+msgid "Delete course-to-group links when the plugin is uninstalled"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:61
+msgid "Settings saved."
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:90
 msgid "You cannot change these settings."
 msgstr ""
 
-#: src/Modules/CourseActivity.php:152
-#: src/Modules/ProgressVisibility.php:114
+#: src/Modules/CourseActivity.php:190
+#: src/Modules/ProgressVisibility.php:118
 msgid "A former member"
 msgstr ""
 
-#: src/Modules/CourseActivity.php:154
+#: src/Modules/CourseActivity.php:192
 msgid "a course"
 msgstr ""
 
 #. translators: 1: member name, 2: course link.
-#: src/Modules/CourseActivity.php:159
+#: src/Modules/CourseActivity.php:197
 #, php-format
 msgid "%1$s completed the course %2$s"
 msgstr ""
 
 #. translators: 1: member name, 2: quiz link.
-#: src/Modules/CourseActivity.php:161
+#: src/Modules/CourseActivity.php:199
 #, php-format
 msgid "%1$s passed the quiz %2$s"
 msgstr ""
 
 #. translators: 1: member name, 2: course link.
-#: src/Modules/CourseActivity.php:163
+#: src/Modules/CourseActivity.php:201
 #, php-format
 msgid "%1$s enrolled on %2$s"
 msgstr ""
 
-#: src/Modules/GroupLinkage.php:183
+#: src/Modules/GroupLinkage.php:269
 msgid "Community group"
 msgstr ""
 
-#: src/Modules/GroupLinkage.php:205
+#: src/Modules/GroupLinkage.php:291
 msgid "Members of the linked group see each other's progress; enrolling adds learners to it."
 msgstr ""
 
-#: src/Modules/GroupLinkage.php:206
+#: src/Modules/GroupLinkage.php:292
+msgid "Anyone who can enroll on this course joins the group, so a private or hidden group linked to an open or free course is effectively open."
+msgstr ""
+
+#: src/Modules/GroupLinkage.php:293
 msgid "— No group —"
 msgstr ""
 
-#: src/Modules/ProgressVisibility.php:95
+#: src/Modules/ProgressVisibility.php:98
 msgid "That group does not exist."
 msgstr ""
 
 #. translators: %s: course title.
-#: src/Modules/ProgressVisibility.php:164
+#: src/Modules/ProgressVisibility.php:172
 #, php-format
 msgid "Progress on %s"
 msgstr ""

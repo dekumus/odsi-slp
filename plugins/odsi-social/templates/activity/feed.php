@@ -9,7 +9,8 @@
  * @var string                            $next_cursor     Cursor.
  * @var int                               $viewer_id       Viewer.
  * @var bool                              $can_post        Whether to show the post box.
- * @var string[]                          $privacy_choices Privacy options.
+ * @var string[]                          $privacy_choices Privacy levels the viewer may choose (SOC-ACT-003).
+ * @var string                            $default_privacy Preselected level.
  * @var bool                              $show_tabs       Whether to show the site / following switch.
  *
  * @package ODSI\Social
@@ -18,7 +19,8 @@
 defined( 'ABSPATH' ) || exit;
 
 // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- sub-template output is escaped inside the sub-template.
-$odsi_templates = \ODSI\Social\Plugin::instance()->container()->get( \ODSI\Social\Frontend\Templates::class );
+$odsi_templates  = \ODSI\Social\Plugin::instance()->container()->get( \ODSI\Social\Frontend\Templates::class );
+$default_privacy = isset( $default_privacy ) ? (string) $default_privacy : '';
 ?>
 <?php if ( ! empty( $show_tabs ) ) : ?>
 	<nav class="odsi-social-feed__tabs">
@@ -31,10 +33,10 @@ $odsi_templates = \ODSI\Social\Plugin::instance()->container()->get( \ODSI\Socia
 		<form class="odsi-social-post-form" data-group-id="<?php echo esc_attr( (string) $group_id ); ?>">
 			<textarea name="content" rows="3" required placeholder="<?php esc_attr_e( 'What is on your mind?', 'odsi-social' ); ?>"></textarea>
 			<div class="odsi-social-post-form__controls">
-				<?php if ( $group_id <= 0 ) : ?>
+				<?php if ( $group_id <= 0 && count( $privacy_choices ) > 0 ) : ?>
 					<select name="privacy">
 						<?php foreach ( $privacy_choices as $choice ) : ?>
-							<option value="<?php echo esc_attr( $choice ); ?>"><?php echo esc_html( ucwords( str_replace( '_', ' ', $choice ) ) ); ?></option>
+							<option value="<?php echo esc_attr( $choice ); ?>" <?php selected( $default_privacy, $choice ); ?>><?php echo esc_html( ucwords( str_replace( '_', ' ', $choice ) ) ); ?></option>
 						<?php endforeach; ?>
 					</select>
 				<?php endif; ?>

@@ -200,7 +200,8 @@ final class ActivityRepository extends AbstractRepository {
 	}
 
 	/**
-	 * All comments of an item, oldest first.
+	 * All comments of an item, oldest first. The single-item page shows up
+	 * to 500 (SOC-ACT-004); older threads paginate with `$offset`.
 	 *
 	 * @param int $parent_id Item id.
 	 * @param int $limit     Limit.
@@ -208,7 +209,7 @@ final class ActivityRepository extends AbstractRepository {
 	 *
 	 * @return object[]
 	 */
-	public function comments( int $parent_id, int $limit = 100, int $offset = 0 ): array {
+	public function comments( int $parent_id, int $limit = 500, int $offset = 0 ): array {
 		$table = $this->table();
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -254,6 +255,25 @@ final class ActivityRepository extends AbstractRepository {
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$this->db->query( $this->db->prepare( "UPDATE {$table} SET {$column} = GREATEST(0, CAST({$column} AS SIGNED) + %d) WHERE id = %d", $delta, $id ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
+	/**
+	 * Recount `comment_count` and `reaction_count` from their source rows (maintenance).
+	 */
+	public function recount(): void {
+		$table     = $this->table();
+		$reactions = Schema::table( 'reactions' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$this->db->query(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$this->db->prepare(
+				"UPDATE {$table} a SET
+					comment_count = (SELECT COUNT(*) FROM (SELECT id, parent_id, status FROM {$table}) c WHERE c.parent_id = a.id AND c.status = %s),
+					reaction_count = (SELECT COUNT(*) FROM {$reactions} r WHERE r.activity_id = a.id)",
+				self::STATUS_PUBLISHED
+			)
+		);
 	}
 
 	/**

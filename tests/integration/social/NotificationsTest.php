@@ -101,6 +101,55 @@ final class NotificationsTest extends TestCase {
 		self::assertSame( 0, $this->notifications->unread_count( $author ) );
 	}
 
+	public function test_not_006_a_like_on_a_comment_goes_with_the_parent(): void {
+		$author    = $this->social->member();
+		$commenter = $this->social->member();
+		$item      = $this->social->update( $author );
+		$comment   = $this->social->comment( $commenter, $item );
+		$this->notifications->mark_read( $author );
+
+		$this->social->service( Reactions::class )->set( $author, $comment );
+		self::assertSame( 1, $this->notifications->unread_count( $commenter ), 'A like on a comment notifies the commenter.' );
+
+		$this->social->service( \ODSI\Social\Activity\Activity::class )->delete( $author, $item );
+		self::assertSame( 0, $this->notifications->unread_count( $commenter ), 'SOC-NOT-006: gone with the parent.' );
+		self::assertCount( 0, $this->repo->for_user( $commenter ) );
+	}
+
+	public function test_grp_009_only_promotions_notify(): void {
+		$owner = $this->social->member();
+		$u     = $this->social->member();
+		$g     = $this->social->group( $owner, 'public' );
+		$m     = $this->social->service( \ODSI\Social\Groups\Membership::class );
+		$m->join( $u, $g );
+		$this->notifications->mark_read( $u );
+
+		$m->set_role( $owner, $g, $u, 'moderator' );
+		self::assertSame( 'promoted', $this->notifications->list( $u, true )[0]['action'] );
+		$this->notifications->mark_read( $u );
+
+		$m->set_role( $owner, $g, $u, 'member' );
+		self::assertSame( 0, $this->notifications->unread_count( $u ), 'A demotion notifies no one.' );
+
+		$m->set_role( $owner, $g, $u, 'organiser' );
+		self::assertSame( 1, $this->notifications->unread_count( $u ) );
+	}
+
+	public function test_opening_a_thread_reads_its_message_notification(): void {
+		$a        = $this->social->member();
+		$b        = $this->social->member();
+		$messages = $this->social->service( \ODSI\Social\Messages\Messages::class );
+		$sent     = $messages->send( $a, $b, 'ping' );
+		$this->notifications->notify( $b, $a, 'connections', 'requested', $a );
+
+		self::assertSame( 2, $this->notifications->unread_count( $b ) );
+
+		$messages->thread( $b, (int) $sent->thread_id );
+
+		self::assertSame( 1, $this->notifications->unread_count( $b ), 'Only the thread\'s notification is read.' );
+		self::assertSame( 'requested', $this->notifications->list( $b, true )[0]['action'] );
+	}
+
 	public function test_not_003_mention_and_group_triggers(): void {
 		$author = $this->social->member( 'mentioner' );
 		$target = $this->social->member( 'target' );

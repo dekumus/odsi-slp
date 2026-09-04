@@ -82,6 +82,13 @@ final class Membership {
 	 * @return true|WP_Error
 	 */
 	public function request( int $actor_id, int $group_id ): bool|WP_Error {
+		$existing = $this->members->find_for( $group_id, $actor_id );
+
+		// An invitation, hidden group or not, is accepted by joining.
+		if ( $existing && Members::STATUS_INVITED === $existing->status ) {
+			return $this->join( $actor_id, $group_id );
+		}
+
 		if ( ! $this->service->can_view( $actor_id, $group_id ) || 'hidden' === $this->service->visibility( $group_id ) ) {
 			return $this->not_found();
 		}
@@ -90,13 +97,7 @@ final class Membership {
 			return $this->join( $actor_id, $group_id );
 		}
 
-		$existing = $this->members->find_for( $group_id, $actor_id );
-
 		if ( $existing ) {
-			if ( Members::STATUS_INVITED === $existing->status ) {
-				return $this->join( $actor_id, $group_id );
-			}
-
 			if ( Members::STATUS_BANNED === $existing->status ) {
 				return new WP_Error( 'odsi_social_banned', __( 'You cannot join this group.', 'odsi-social' ), array( 'status' => 403 ) );
 			}
@@ -455,6 +456,59 @@ final class Membership {
 	 */
 	public function groups_of( int $user_id ): array {
 		return $this->members->group_ids_for( $user_id );
+	}
+
+	/**
+	 * Whether the member holds an open invitation to the group.
+	 *
+	 * @param int $user_id  Member.
+	 * @param int $group_id Group.
+	 */
+	public function is_invited( int $user_id, int $group_id ): bool {
+		$row = $this->members->find_for( $group_id, $user_id );
+
+		return $row && Members::STATUS_INVITED === (string) $row->status;
+	}
+
+	/**
+	 * A member's own groups (SOC-GRP-010): active memberships, pending
+	 * requests and open invitations, each presented for the member, hidden
+	 * groups included.
+	 *
+	 * @param int $user_id Member.
+	 *
+	 * @return array{active: array<int, array<string, mixed>>, pending: array<int, array<string, mixed>>, invited: array<int, array<string, mixed>>}
+	 */
+	public function mine( int $user_id ): array {
+		$out = array(
+			'active'  => array(),
+			'pending' => array(),
+			'invited' => array(),
+		);
+
+		if ( $user_id <= 0 ) {
+			return $out;
+		}
+
+		$rows = array();
+
+		foreach ( array_keys( $out ) as $status ) {
+			$rows[ $status ] = $this->members->for_user( $user_id, $status );
+		}
+
+		$this->service->prime( $user_id, array_map( static fn ( object $r ): int => (int) $r->group_id, array_merge( ...array_values( $rows ) ) ) );
+
+		foreach ( $rows as $status => $list ) {
+			foreach ( $list as $row ) {
+				$group = $this->service->present( $user_id, (int) $row->group_id );
+
+				if ( $group ) {
+					$out[ $status ][] = $group;
+				}
+			}
+		}
+
+		return $out;
 	}
 
 	/**

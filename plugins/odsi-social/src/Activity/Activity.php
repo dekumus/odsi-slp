@@ -390,7 +390,15 @@ final class Activity {
 		 */
 		do_action( 'odsi_social_activity_deleted', $item );
 
-		$ids = array_merge( array( $id ), $this->activity->comment_ids( $id ) );
+		$comment_ids = $this->activity->comment_ids( $id );
+
+		// Comments carry their own notifications (a like on a comment is keyed
+		// on the comment's id), so each one is announced before it goes.
+		foreach ( $this->activity->find_many( $comment_ids ) as $comment ) {
+			do_action( 'odsi_social_activity_deleted', $comment );
+		}
+
+		$ids = array_merge( array( $id ), $comment_ids );
 
 		$this->reactions->delete_for_items( $ids );
 
@@ -424,15 +432,15 @@ final class Activity {
 	}
 
 	/**
-	 * Validate a chosen privacy against the allowed set.
+	 * The privacy levels a member may choose for a non-group update
+	 * (SOC-ACT-003): the admin's allowed set, filtered.
 	 *
-	 * @param int    $user_id User.
-	 * @param string $privacy Requested privacy, or '' for the default.
+	 * @param int $user_id Member.
 	 *
-	 * @return string|WP_Error
+	 * @return string[]
 	 */
-	private function resolve_privacy( int $user_id, string $privacy ): string|WP_Error {
-		$allowed = array_values( array_intersect( Privacy::choices(), (array) $this->settings->get( 'allowed_privacy' ) ) );
+	public function privacy_choices( int $user_id ): array {
+		$allowed = array_values( array_intersect( Privacy::choices(), array_map( 'strval', (array) $this->settings->get( 'allowed_privacy' ) ) ) );
 
 		/**
 		 * Filters the privacy levels a member may choose.
@@ -441,7 +449,32 @@ final class Activity {
 		 * @param int      $user_id  Member.
 		 * @param int      $group_id Group, 0 here.
 		 */
-		$allowed = (array) apply_filters( 'odsi_social_activity_privacy_choices', $allowed, $user_id, 0 );
+		return array_values( array_map( 'strval', (array) apply_filters( 'odsi_social_activity_privacy_choices', $allowed, $user_id, 0 ) ) );
+	}
+
+	/**
+	 * The level preselected for a member: the admin default when allowed,
+	 * else the first allowed level.
+	 *
+	 * @param int $user_id Member.
+	 */
+	public function default_privacy( int $user_id ): string {
+		$allowed = $this->privacy_choices( $user_id );
+		$default = $this->settings->string( 'default_privacy' );
+
+		return in_array( $default, $allowed, true ) ? $default : (string) ( $allowed[0] ?? $default );
+	}
+
+	/**
+	 * Validate a chosen privacy against the allowed set.
+	 *
+	 * @param int    $user_id User.
+	 * @param string $privacy Requested privacy, or '' for the default.
+	 *
+	 * @return string|WP_Error
+	 */
+	private function resolve_privacy( int $user_id, string $privacy ): string|WP_Error {
+		$allowed = $this->privacy_choices( $user_id );
 
 		if ( '' === $privacy ) {
 			$privacy = $this->settings->string( 'default_privacy' );

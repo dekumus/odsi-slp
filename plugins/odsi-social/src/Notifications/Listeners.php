@@ -55,6 +55,7 @@ final class Listeners implements Bootable {
 		add_action( 'odsi_social_group_role_changed', array( $this, 'on_group_role_changed' ), 10, 4 );
 		add_action( 'odsi_social_group_deleted', array( $this, 'on_group_deleted' ) );
 		add_action( 'odsi_social_message_sent', array( $this, 'on_message_sent' ), 10, 2 );
+		add_action( 'odsi_social_thread_opened', array( $this, 'on_thread_opened' ), 10, 2 );
 	}
 
 	/**
@@ -189,7 +190,7 @@ final class Listeners implements Bootable {
 	}
 
 	/**
-	 * Role change → the member.
+	 * Promotion → the member (SOC-GRP-009). A demotion notifies no one.
 	 *
 	 * @param int    $group_id Group.
 	 * @param int    $user_id  Member.
@@ -197,6 +198,16 @@ final class Listeners implements Bootable {
 	 * @param string $previous Previous role.
 	 */
 	public function on_group_role_changed( int $group_id, int $user_id, string $role, string $previous ): void {
+		$rank = array(
+			Members::ROLE_MEMBER    => 0,
+			Members::ROLE_MODERATOR => 1,
+			Members::ROLE_ORGANISER => 2,
+		);
+
+		if ( ( $rank[ $role ] ?? 0 ) <= ( $rank[ $previous ] ?? 0 ) ) {
+			return;
+		}
+
 		$this->notifications->notify( $user_id, get_current_user_id(), 'groups', 'promoted', $group_id );
 	}
 
@@ -217,5 +228,15 @@ final class Listeners implements Bootable {
 	 */
 	public function on_message_sent( object $message, array $recipient_ids ): void {
 		$this->notifications->notify_many( $recipient_ids, (int) $message->sender_id, 'messages', 'new', (int) $message->thread_id, (int) $message->id, true );
+	}
+
+	/**
+	 * Thread opened → its "new message" notification is read.
+	 *
+	 * @param int $thread_id Thread.
+	 * @param int $user_id   Reader.
+	 */
+	public function on_thread_opened( int $thread_id, int $user_id ): void {
+		$this->notifications->mark_read_for_item( $user_id, 'messages', 'new', $thread_id );
 	}
 }

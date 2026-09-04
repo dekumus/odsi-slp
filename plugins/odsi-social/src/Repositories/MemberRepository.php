@@ -99,6 +99,48 @@ final class MemberRepository extends AbstractRepository {
 	}
 
 	/**
+	 * Warm everything a member card needs — the user object, the index row and
+	 * the uploaded avatar and cover attachments — in at most four queries, so a
+	 * list of members costs no lookup per row.
+	 *
+	 * @param int[] $ids User ids.
+	 */
+	public function prime_display( array $ids ): void {
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', $ids ) ) ) );
+
+		if ( array() === $ids ) {
+			return;
+		}
+
+		cache_users( $ids );
+		$this->prime( $ids );
+
+		$attachments = array();
+
+		foreach ( $ids as $id ) {
+			$row = $this->cache[ $id ] ?? null;
+
+			if ( $row ) {
+				$attachments[] = (int) $row->avatar_id;
+				$attachments[] = (int) $row->cover_id;
+			}
+		}
+
+		$attachments = array_values( array_unique( array_filter( $attachments ) ) );
+
+		if ( array() !== $attachments ) {
+			_prime_post_caches( $attachments, false, true );
+		}
+	}
+
+	/**
+	 * Drop the per-request cache.
+	 */
+	public function flush(): void {
+		$this->cache = array();
+	}
+
+	/**
 	 * Forget a cached row.
 	 *
 	 * @param int $id User id.
@@ -153,13 +195,14 @@ final class MemberRepository extends AbstractRepository {
 	}
 
 	/**
-	 * Update columns for a user.
+	 * Update columns for a user. A row that does not exist is not created:
+	 * callers that need one (a member editing their own settings) call
+	 * `ensure()` first, so a purged member is never resurrected by a count.
 	 *
 	 * @param int                  $user_id User id.
 	 * @param array<string, mixed> $data    Column => value.
 	 */
 	public function update( int $user_id, array $data ): bool {
-		$this->ensure( $user_id );
 		$this->forget( $user_id );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -180,7 +223,6 @@ final class MemberRepository extends AbstractRepository {
 			return;
 		}
 
-		$this->ensure( $user_id );
 		$this->forget( $user_id );
 		$table = $this->table();
 
@@ -196,7 +238,34 @@ final class MemberRepository extends AbstractRepository {
 	}
 
 	/**
-	 * Directory query.
+	 * Recount every denormalised counter from its source table (maintenance).
+	 */
+	public function recount(): void {
+		$table       = $this->table();
+		$activity    = \ODSI\Social\Database\Schema::table( 'activity' );
+		$connections = \ODSI\Social\Database\Schema::table( 'connections' );
+		$follows     = \ODSI\Social\Database\Schema::table( 'follows' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$this->db->query(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$this->db->prepare(
+				"UPDATE {$table} m SET
+					activity_count = (SELECT COUNT(*) FROM {$activity} a WHERE a.user_id = m.user_id AND a.parent_id = 0 AND a.status = %s),
+					connection_count = (SELECT COUNT(*) FROM {$connections} c WHERE (c.user_low = m.user_id OR c.user_high = m.user_id) AND c.status = %s),
+					follower_count = (SELECT COUNT(*) FROM {$follows} f WHERE f.following_id = m.user_id),
+					following_count = (SELECT COUNT(*) FROM {$follows} f WHERE f.follower_id = m.user_id)",
+				ActivityRepository::STATUS_PUBLISHED,
+				ConnectionRepository::STATUS_ACCEPTED
+			)
+		);
+
+		$this->flush();
+	}
+
+	/**
+	 * Directory query. Only members who have been active at least once are
+	 * listed (SOC-MEM-008); an index row alone is not enough.
 	 *
 	 * @param array<string, mixed> $args `search`, `orderby` (newest|active|alphabetical), `per_page`, `page`, `include` ids.
 	 *
@@ -207,7 +276,7 @@ final class MemberRepository extends AbstractRepository {
 		$users    = $this->db->users;
 		$per_page = max( 1, min( 100, (int) ( $args['per_page'] ?? 20 ) ) );
 		$offset   = max( 0, ( (int) ( $args['page'] ?? 1 ) - 1 ) * $per_page );
-		$where    = array( '1=1' );
+		$where    = array( "m.last_active > '0000-00-00 00:00:00'" );
 		$params   = array();
 
 		if ( ! empty( $args['search'] ) ) {

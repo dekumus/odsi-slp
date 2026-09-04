@@ -108,6 +108,87 @@ final class GroupsTest extends TestCase {
 		self::assertNull( $this->rows->find_for( $private, $u ) );
 	}
 
+	public function test_invitations_to_hidden_groups_can_be_accepted_or_declined(): void {
+		$owner    = $this->social->member();
+		$accepter = $this->social->member();
+		$decliner = $this->social->member();
+		$hidden   = $this->social->group( $owner, 'hidden' );
+
+		self::assertFalse( $this->groups->can_view( $accepter, $hidden ) );
+		$this->social->invite( $hidden, $owner, $accepter );
+		$this->social->invite( $hidden, $owner, $decliner );
+
+		self::assertTrue( $this->groups->can_view( $accepter, $hidden ), 'An invitation is permission to see the group.' );
+		self::assertFalse( $this->groups->can_view_content( $accepter, $hidden ), 'But not its content yet.' );
+		self::assertSame( 'invited', $this->groups->present( $accepter, $hidden )['viewer']['status'] );
+		self::assertTrue( $this->membership->is_invited( $accepter, $hidden ) );
+
+		self::assertTrue( $this->membership->request( $accepter, $hidden ), 'Requesting with an invitation in hand accepts it.' );
+		self::assertSame( 'active', $this->rows->find_for( $hidden, $accepter )->status );
+
+		self::assertTrue( $this->membership->remove( $decliner, $hidden, $decliner ), 'Declining is a self-removal.' );
+		self::assertNull( $this->rows->find_for( $hidden, $decliner ) );
+		self::assertFalse( $this->groups->can_view( $decliner, $hidden ) );
+
+		$stranger = $this->social->member();
+		self::assertSame( 404, $this->membership->request( $stranger, $hidden )->get_error_data()['status'], 'Nothing changes for the uninvited.' );
+	}
+
+	public function test_grp_001_a_group_saved_from_wp_admin_gets_its_author_as_organiser(): void {
+		$admin = $this->social->admin();
+		$id    = wp_insert_post(
+			array(
+				'post_type'   => \ODSI\Social\PostTypes\GroupPostType::NAME,
+				'post_status' => 'publish',
+				'post_title'  => 'Made in wp-admin',
+				'post_author' => $admin,
+			)
+		);
+
+		self::assertSame( 'organiser', $this->rows->role_of( $id, $admin ) );
+		self::assertSame( 1, (int) $this->social->service( GroupRepository::class )->find( $id )->member_count );
+
+		wp_update_post(
+			array(
+				'ID'         => $id,
+				'post_title' => 'Renamed in wp-admin',
+			)
+		);
+		self::assertSame( 1, (int) $this->social->service( GroupRepository::class )->find( $id )->member_count, 'Saving again does not double count.' );
+
+		$other = $this->social->member();
+		$this->membership->join( $other, $id );
+		self::assertSame( 2, (int) $this->social->service( GroupRepository::class )->find( $id )->member_count );
+	}
+
+	public function test_grp_010_my_groups_lists_active_pending_and_invited(): void {
+		$me      = $this->social->member();
+		$owner   = $this->social->member();
+		$active  = $this->social->group( $owner, 'public', 'Active one' );
+		$pending = $this->social->group( $owner, 'private', 'Pending one' );
+		$invited = $this->social->group( $owner, 'hidden', 'Invited one' );
+		$this->social->group( $owner, 'public', 'Unrelated' );
+
+		$this->membership->join( $me, $active );
+		$this->membership->request( $me, $pending );
+		$this->social->invite( $invited, $owner, $me );
+
+		$mine = $this->membership->mine( $me );
+
+		self::assertSame( array( $active ), array_column( $mine['active'], 'id' ) );
+		self::assertSame( array( $pending ), array_column( $mine['pending'], 'id' ) );
+		self::assertSame( array( $invited ), array_column( $mine['invited'], 'id' ), 'Hidden groups appear to their invitees.' );
+		self::assertSame( 'Invited one', $mine['invited'][0]['name'] );
+		self::assertSame(
+			array(
+				'active' => array(),
+				'pending' => array(),
+				'invited' => array(),
+			),
+			$this->membership->mine( 0 )
+		);
+	}
+
 	public function test_last_organiser_invariant(): void {
 		$owner = $this->social->member();
 		$other = $this->social->member();

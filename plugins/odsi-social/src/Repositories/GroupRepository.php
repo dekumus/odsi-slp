@@ -17,10 +17,61 @@ defined( 'ABSPATH' ) || exit;
 final class GroupRepository extends AbstractRepository {
 
 	/**
+	 * Per-request row cache keyed by post id. The privacy rule reads the
+	 * group's visibility for every group item on a page.
+	 *
+	 * @var array<int, object|null>
+	 */
+	private array $cache = array();
+
+	/**
 	 * Short schema key for the backing table.
 	 */
 	protected function table_key(): string {
 		return 'groups';
+	}
+
+	/**
+	 * Warm the cache for several groups in one query.
+	 *
+	 * @param int[] $ids Group post ids.
+	 */
+	public function prime( array $ids ): void {
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', $ids ), fn ( int $id ): bool => $id > 0 && ! array_key_exists( $id, $this->cache ) ) ) );
+
+		if ( array() === $ids ) {
+			return;
+		}
+
+		$table = $this->table();
+		$in    = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = (array) $this->db->get_results( $this->db->prepare( "SELECT * FROM {$table} WHERE post_id IN ({$in})", $ids ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		foreach ( $ids as $id ) {
+			$this->cache[ $id ] = null;
+		}
+
+		foreach ( $rows as $row ) {
+			$this->cache[ (int) $row->post_id ] = $row;
+		}
+	}
+
+	/**
+	 * Drop the per-request cache.
+	 */
+	public function flush(): void {
+		$this->cache = array();
+	}
+
+	/**
+	 * Forget a cached row.
+	 *
+	 * @param int $id Group post id.
+	 */
+	private function forget( int $id ): void {
+		unset( $this->cache[ $id ] );
 	}
 
 	/**
@@ -46,12 +97,18 @@ final class GroupRepository extends AbstractRepository {
 	 * @param int $id Group post id.
 	 */
 	public function find( int $id ): ?object {
+		if ( array_key_exists( $id, $this->cache ) ) {
+			return $this->cache[ $id ];
+		}
+
 		$table = $this->table();
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$row = $this->db->get_row( $this->db->prepare( "SELECT * FROM {$table} WHERE post_id = %d", $id ) );
 
-		return $row ?: null;
+		$this->cache[ $id ] = $row ?: null;
+
+		return $this->cache[ $id ];
 	}
 
 	/**
@@ -65,6 +122,10 @@ final class GroupRepository extends AbstractRepository {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$row = $this->db->get_row( $this->db->prepare( "SELECT * FROM {$table} WHERE slug = %s", $slug ) );
 
+		if ( $row ) {
+			$this->cache[ (int) $row->post_id ] = $row;
+		}
+
 		return $row ?: null;
 	}
 
@@ -74,6 +135,8 @@ final class GroupRepository extends AbstractRepository {
 	 * @param int $id Group post id.
 	 */
 	public function delete( int $id ): bool {
+		$this->forget( $id );
+
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		return (bool) $this->db->delete( $this->table(), array( 'post_id' => $id ), array( '%d' ) );
 	}
@@ -86,6 +149,7 @@ final class GroupRepository extends AbstractRepository {
 	 */
 	public function mirror( int $post_id, array $data ): void {
 		$existing = $this->find( $post_id );
+		$this->forget( $post_id );
 
 		if ( $existing ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -116,6 +180,7 @@ final class GroupRepository extends AbstractRepository {
 			return;
 		}
 
+		$this->forget( $post_id );
 		$table = $this->table();
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -128,6 +193,29 @@ final class GroupRepository extends AbstractRepository {
 				$post_id
 			)
 		);
+	}
+
+	/**
+	 * Recount `member_count` from the membership table (maintenance), for one
+	 * group or for all.
+	 *
+	 * @param int $post_id Group post id, or 0 for every group.
+	 */
+	public function recount_members( int $post_id = 0 ): void {
+		$table   = $this->table();
+		$members = \ODSI\Social\Database\Schema::table( 'group_members' );
+		$sql     = "UPDATE {$table} g SET member_count = (SELECT COUNT(*) FROM {$members} gm WHERE gm.group_id = g.post_id AND gm.status = %s)";
+		$params  = array( GroupMemberRepository::STATUS_ACTIVE );
+
+		if ( $post_id > 0 ) {
+			$sql     .= ' WHERE g.post_id = %d';
+			$params[] = $post_id;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$this->db->query( $this->db->prepare( $sql, $params ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$this->flush();
 	}
 
 	/**

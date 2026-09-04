@@ -15,6 +15,7 @@ use ODSI\Social\Groups\Membership;
 use ODSI\Social\Members\Profiles;
 use ODSI\Social\Members\Uploads;
 use ODSI\Social\Repositories\GroupMemberRepository;
+use ODSI\Social\Repositories\MemberRepository;
 use WP_Error;
 
 defined( 'ABSPATH' ) || exit;
@@ -40,6 +41,7 @@ final class Forms implements Bootable {
 	 * @param Membership            $membership Membership actions.
 	 * @param GroupMemberRepository $members    Membership rows.
 	 * @param Router                $router     URLs.
+	 * @param MemberRepository      $index      Member index, for avatars.
 	 */
 	public function __construct(
 		private Profiles $profiles,
@@ -47,7 +49,8 @@ final class Forms implements Bootable {
 		private Groups $groups,
 		private Membership $membership,
 		private GroupMemberRepository $members,
-		private Router $router
+		private Router $router,
+		private MemberRepository $index
 	) {
 	}
 
@@ -221,7 +224,8 @@ final class Forms implements Bootable {
 	 * @param int    $actor_id Who submits.
 	 * @param int    $group_id Group.
 	 * @param int    $user_id  Member acted on.
-	 * @param string $action   approve, reject, remove, ban, unban, promote, demote.
+	 * @param string $action   approve, reject, remove, ban, unban, promote, demote,
+	 *                         promote_organiser, demote_organiser (organiser → moderator).
 	 *
 	 * @return true|WP_Error
 	 */
@@ -233,6 +237,8 @@ final class Forms implements Bootable {
 			'unban'   => $this->membership->unban( $actor_id, $group_id, $user_id ),
 			'promote' => $this->membership->set_role( $actor_id, $group_id, $user_id, GroupMemberRepository::ROLE_MODERATOR ),
 			'demote'  => $this->membership->set_role( $actor_id, $group_id, $user_id, GroupMemberRepository::ROLE_MEMBER ),
+			'promote_organiser' => $this->membership->set_role( $actor_id, $group_id, $user_id, GroupMemberRepository::ROLE_ORGANISER ),
+			'demote_organiser'  => $this->membership->set_role( $actor_id, $group_id, $user_id, GroupMemberRepository::ROLE_MODERATOR ),
 			default   => new WP_Error( 'odsi_social_invalid_action', __( 'Unknown action.', 'odsi-social' ), array( 'status' => 400 ) ),
 		};
 	}
@@ -253,7 +259,7 @@ final class Forms implements Bootable {
 			'banned'  => GroupMemberRepository::STATUS_BANNED,
 		) as $key => $status ) {
 			$rows = $this->members->for_group( $group_id, $status, null, 200, 0 );
-			cache_users( array_map( static fn ( object $r ): int => (int) $r->user_id, $rows ) );
+			$this->index->prime_display( array_map( static fn ( object $r ): int => (int) $r->user_id, $rows ) );
 
 			$lists[ $key ] = array_map(
 				static function ( object $r ): array {

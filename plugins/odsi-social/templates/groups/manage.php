@@ -15,7 +15,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$odsi_gid = (int) $group['id'];
+$odsi_gid        = (int) $group['id'];
+$odsi_organisers = count( array_filter( $members, static fn ( array $m ): bool => 'organiser' === $m['role'] ) );
 
 /**
  * One member action button.
@@ -117,7 +118,12 @@ $odsi_member_button = static function ( int $group_id, int $user_id, string $act
 					<img class="odsi-social-avatar" src="<?php echo esc_url( (string) $odsi_member['avatar'] ); ?>" alt="" width="32" height="32" />
 					<span class="odsi-social-member-list__name"><?php echo esc_html( (string) $odsi_member['name'] ); ?></span>
 					<span class="odsi-social-member-list__role"><?php echo esc_html( ucfirst( (string) $odsi_member['role'] ) ); ?></span>
-					<?php if ( 'organiser' !== $odsi_member['role'] && (int) $odsi_member['id'] !== $viewer_id ) : ?>
+					<?php if ( 'organiser' === $odsi_member['role'] ) : ?>
+						<?php if ( $odsi_organisers > 1 ) : ?>
+							<?php $odsi_member_button( $odsi_gid, (int) $odsi_member['id'], 'demote_organiser', __( 'Make moderator', 'odsi-social' ) ); ?>
+						<?php endif; ?>
+					<?php elseif ( (int) $odsi_member['id'] !== $viewer_id ) : ?>
+						<?php $odsi_member_button( $odsi_gid, (int) $odsi_member['id'], 'promote_organiser', __( 'Make organiser', 'odsi-social' ) ); ?>
 						<?php if ( 'moderator' === $odsi_member['role'] ) : ?>
 							<?php $odsi_member_button( $odsi_gid, (int) $odsi_member['id'], 'demote', __( 'Make member', 'odsi-social' ) ); ?>
 						<?php else : ?>

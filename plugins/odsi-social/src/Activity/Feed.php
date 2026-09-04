@@ -39,6 +39,7 @@ final class Feed {
 	 * @param Privacy            $privacy   Privacy rule.
 	 * @param Renderers          $renderers Type renderers.
 	 * @param Settings           $settings  Settings.
+	 * @param Activity           $writer    Activity writer, for the delete rule (SOC-ACT-009).
 	 */
 	public function __construct(
 		private ActivityRepository $activity,
@@ -46,7 +47,8 @@ final class Feed {
 		private MemberRepository $members,
 		private Privacy $privacy,
 		private Renderers $renderers,
-		private Settings $settings
+		private Settings $settings,
+		private Activity $writer
 	) {
 	}
 
@@ -55,13 +57,14 @@ final class Feed {
 	 *
 	 * @param int                  $viewer_id Viewer, 0 for a visitor.
 	 * @param string               $scope     One of the SCOPE_* constants.
-	 * @param array<string, mixed> $args      `group_id`, `user_id`, `type`, `component`, `cursor`, `per_page`.
+	 * @param array<string, mixed> $args      `group_id`, `user_id`, `type`, `component`, `cursor`, `per_page` (0 or absent for the site default).
 	 *
 	 * @return array{items: array<int, array<string, mixed>>, next_cursor: string}
 	 */
 	public function page( int $viewer_id, string $scope, array $args = array() ): array {
-		$per_page = (int) apply_filters( 'odsi_social_feed_per_page', $this->settings->int( 'feed_per_page' ) );
-		$per_page = max( 1, min( 50, (int) ( $args['per_page'] ?? $per_page ) ) );
+		$requested = (int) ( $args['per_page'] ?? 0 );
+		$per_page  = $requested > 0 ? $requested : (int) apply_filters( 'odsi_social_feed_per_page', $this->settings->int( 'feed_per_page' ) );
+		$per_page  = max( 1, min( 50, $per_page ) );
 
 		[ $where, $params ] = $this->scope_predicate( $viewer_id, $scope, $args );
 
@@ -108,11 +111,15 @@ final class Feed {
 		$has_more = count( $rows ) > $per_page;
 		$rows     = array_slice( $rows, 0, $per_page );
 
-		// Grant-style overrides from the single-item filter cannot be expressed
-		// in SQL; deny-style ones are honoured here by post-filtering the page.
-		$rows = array_values( array_filter( $rows, fn ( object $row ): bool => $this->privacy->can_view( $viewer_id, $row ) ) );
-
+		// The cursor continues from the last row fetched, not the last row
+		// shown: a page the filter empties must still lead to the next one.
 		$last = end( $rows );
+
+		// Grant-style overrides from the single-item filter cannot be expressed
+		// in SQL; deny-style ones are honoured here by post-filtering the page,
+		// with every lookup the rule needs primed first.
+		$this->privacy->prime( $viewer_id, $rows );
+		$rows = array_values( array_filter( $rows, fn ( object $row ): bool => $this->privacy->can_view( $viewer_id, $row ) ) );
 
 		return array(
 			'items'       => $this->hydrate( $rows, $viewer_id ),
@@ -121,7 +128,7 @@ final class Feed {
 	}
 
 	/**
-	 * A single item with all its comments, or null when not visible.
+	 * A single item with all its comments (up to 500), or null when not visible.
 	 *
 	 * @param int $viewer_id Viewer.
 	 * @param int $id        Activity id.
@@ -146,15 +153,17 @@ final class Feed {
 		$hydrated = $this->hydrate( array( $row ), $viewer_id, false );
 		$item     = $hydrated[0];
 
-		$comments         = $this->activity->comments( (int) $row->id );
-		$item['comments'] = array_map( fn ( object $c ): array => $this->present( $c, $viewer_id, array() ), $comments );
+		$comments = $this->activity->comments( (int) $row->id, 500 );
+		$this->members->prime_display( array_map( static fn ( object $c ): int => (int) $c->user_id, $comments ) );
+		$reacted          = $this->reactions->for_viewer( array_map( static fn ( object $c ): int => (int) $c->id, $comments ), $viewer_id );
+		$item['comments'] = array_map( fn ( object $c ): array => $this->present( $c, $viewer_id, $reacted ), $comments );
 		$item['reactors'] = $this->reactors( $viewer_id, (int) $row->id );
 
 		return $item;
 	}
 
 	/**
-	 * Who reacted to an item, newest first (SOC-ACT-012).
+	 * Who reacted to an item, newest first (SOC-ACT-037).
 	 *
 	 * @param int $viewer_id   Viewer.
 	 * @param int $activity_id Item.
@@ -170,7 +179,7 @@ final class Feed {
 		}
 
 		$ids = $this->reactions->user_ids_for( $activity_id, $limit );
-		cache_users( $ids );
+		$this->members->prime_display( $ids );
 
 		$out = array();
 
@@ -217,10 +226,16 @@ final class Feed {
 
 		$reacted = $this->reactions->for_viewer( array_map( static fn ( object $r ): int => (int) $r->id, $all_rows ), $viewer_id );
 
-		// Prime the user cache for every author in one query.
-		$author_ids = array_values( array_unique( array_map( static fn ( object $r ): int => (int) $r->user_id, $all_rows ) ) );
-		cache_users( $author_ids );
-		$this->members->prime( $author_ids );
+		// Prime the user, member-row and avatar caches for every author, and
+		// the posts of every group mentioned, so rendering costs no query per row.
+		$this->members->prime_display( array_map( static fn ( object $r ): int => (int) $r->user_id, $all_rows ) );
+		$this->privacy->prime( $viewer_id, $rows );
+
+		$group_ids = array_values( array_unique( array_filter( array_map( static fn ( object $r ): int => (int) $r->group_id, $rows ) ) ) );
+
+		if ( array() !== $group_ids ) {
+			_prime_post_caches( $group_ids, false, false );
+		}
 
 		$out = array();
 
@@ -267,7 +282,7 @@ final class Feed {
 			'reaction_count'  => (int) $row->reaction_count,
 			'viewer_reaction' => $reacted[ (int) $row->id ] ?? '',
 			'is_edited'       => (bool) $row->is_edited,
-			'can_delete'      => $viewer_id > 0 && ( (int) $row->user_id === $viewer_id || user_can( $viewer_id, \ODSI\Social\Support\Capabilities::MANAGE ) ),
+			'can_delete'      => $this->writer->can_delete( $viewer_id, $row ),
 			'date'            => (string) $row->date_recorded,
 			'date_relative'   => sprintf(
 				/* translators: %s: human time difference. */

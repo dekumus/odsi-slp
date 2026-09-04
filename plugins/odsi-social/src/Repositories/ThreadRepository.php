@@ -128,6 +128,35 @@ final class ThreadRepository extends AbstractRepository {
 	}
 
 	/**
+	 * Participant rows of several threads in one query, keyed by thread id.
+	 *
+	 * @param int[] $thread_ids Thread ids.
+	 *
+	 * @return array<int, object[]>
+	 */
+	public function participants_for( array $thread_ids ): array {
+		$thread_ids = array_values( array_unique( array_map( 'intval', $thread_ids ) ) );
+
+		if ( array() === $thread_ids ) {
+			return array();
+		}
+
+		$table = Schema::table( 'thread_participants' );
+		$in    = implode( ',', array_fill( 0, count( $thread_ids ), '%d' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = (array) $this->db->get_results( $this->db->prepare( "SELECT * FROM {$table} WHERE thread_id IN ({$in})", $thread_ids ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$grouped = array_fill_keys( $thread_ids, array() );
+
+		foreach ( $rows as $row ) {
+			$grouped[ (int) $row->thread_id ][] = $row;
+		}
+
+		return $grouped;
+	}
+
+	/**
 	 * Record a new message: bump thread and every other participant's unread
 	 * count; restore the thread for participants who had deleted it.
 	 *
@@ -223,6 +252,18 @@ final class ThreadRepository extends AbstractRepository {
 				$offset
 			)
 		);
+	}
+
+	/**
+	 * Number of live threads for a user, for pagination.
+	 *
+	 * @param int $user_id User id.
+	 */
+	public function inbox_count( int $user_id ): int {
+		$participants = Schema::table( 'thread_participants' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (int) $this->db->get_var( $this->db->prepare( "SELECT COUNT(*) FROM {$participants} WHERE user_id = %d AND is_deleted = 0", $user_id ) );
 	}
 
 	/**

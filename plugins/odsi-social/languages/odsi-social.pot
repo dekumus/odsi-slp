@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-04T09:06:23+00:00\n"
+"POT-Creation-Date: 2026-09-04T12:12:46+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: odsi-social\n"
@@ -31,6 +31,7 @@ msgstr ""
 
 #. Author of the plugin
 #: odsi-social.php
+#: src/Blocks/Blocks.php:125
 msgid "ODSI"
 msgstr ""
 
@@ -70,7 +71,7 @@ msgstr ""
 #: src/Activity/Activity.php:366
 #: src/Activity/Reactions.php:52
 #: src/Activity/Reactions.php:99
-#: src/Rest/ActivityController.php:211
+#: src/Rest/ActivityController.php:252
 msgid "That activity does not exist."
 msgstr ""
 
@@ -90,23 +91,24 @@ msgstr ""
 msgid "You cannot delete this."
 msgstr ""
 
-#: src/Activity/Activity.php:451
+#: src/Activity/Activity.php:484
 msgid "That privacy setting is not available."
 msgstr ""
 
-#: src/Activity/Feed.php:218
-#: src/Activity/Renderers.php:54
-#: src/Groups/GroupActivity.php:106
-#: src/Messages/Messages.php:163
-#: src/Messages/Messages.php:209
-#: src/Notifications/Notifications.php:172
+#: src/Activity/Feed.php:273
+#: src/Activity/Renderers.php:62
+#: src/Frontend/Forms.php:270
+#: src/Groups/GroupActivity.php:118
+#: src/Messages/Messages.php:175
+#: src/Messages/Messages.php:241
+#: src/Notifications/Notifications.php:185
 #: src/Notifications/Renderers.php:52
-#: src/Rest/GroupsController.php:321
+#: src/Rest/GroupsController.php:420
 msgid "A former member"
 msgstr ""
 
 #. translators: %s: human time difference.
-#: src/Activity/Feed.php:234
+#: src/Activity/Feed.php:289
 #, php-format
 msgid "%s ago"
 msgstr ""
@@ -116,174 +118,221 @@ msgid "That reaction is not available."
 msgstr ""
 
 #. translators: %s: member name.
-#: src/Activity/Renderers.php:58
+#: src/Activity/Renderers.php:66
 #, php-format
 msgid "%s commented"
 msgstr ""
 
 #. translators: %s: member name.
-#: src/Activity/Renderers.php:62
+#: src/Activity/Renderers.php:70
 #, php-format
 msgid "%s posted an update"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:54
 #: src/Admin/AdminMenu.php:55
+#: src/Admin/AdminMenu.php:56
 msgid "Community"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:63
+#: src/Admin/AdminMenu.php:64
+#: templates/groups/manage.php:51
 msgid "Settings"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:64
+#: src/Admin/AdminMenu.php:65
 msgid "Profile Fields"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:72
+#: src/Admin/AdminMenu.php:76
 msgid "Members base slug"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:73
+#: src/Admin/AdminMenu.php:77
 msgid "Groups base slug"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:74
+#: src/Admin/AdminMenu.php:78
 msgid "Activity base slug"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:75
+#: src/Admin/AdminMenu.php:79
 msgid "Notifications base slug"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:76
+#: src/Admin/AdminMenu.php:80
 msgid "Messages base slug"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:77
+#: src/Admin/AdminMenu.php:81
 msgid "Visitors may see the member directory"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:78
+#: src/Admin/AdminMenu.php:82
 msgid "Members may create groups"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:79
-msgid "Default post privacy"
-msgstr ""
-
-#: src/Admin/AdminMenu.php:80
-msgid "Maximum post length"
-msgstr ""
-
-#: src/Admin/AdminMenu.php:81
-msgid "Edit window (minutes, 0 disables)"
-msgstr ""
-
-#: src/Admin/AdminMenu.php:82
-msgid "Feed items per page"
-msgstr ""
-
 #: src/Admin/AdminMenu.php:83
-msgid "Keep read notifications for (days)"
+msgid "Privacy levels members may choose"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:84
-msgid "Delete a member's posts when their account is deleted"
+msgid "Default post privacy"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:85
-msgid "Delete all community data when the plugin is uninstalled"
+msgid "Maximum post length"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:86
+msgid "Maximum message length"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:87
+msgid "Edit window (minutes, 0 disables)"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:88
+msgid "Feed items per page"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:89
+msgid "Members per directory page"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:90
+msgid "Maximum image size (pixels a side)"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:91
+msgid "Allowed image types (comma separated: jpg, jpeg, png, gif, webp)"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:92
+msgid "Keep read notifications for (days)"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:93
+msgid "Delete a member's posts when their account is deleted"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:94
+msgid "Delete all community data when the plugin is uninstalled"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:102
 msgid "Community settings"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:118
-msgid "You cannot change these settings."
+#: src/Admin/AdminMenu.php:155
+#: src/Frontend/Shortcodes.php:307
+#: templates/activity/feed.php:27
+msgid "Everyone"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:156
+#: src/Frontend/Router.php:211
+#: src/Frontend/Shortcodes.php:308
+#: templates/groups/single.php:62
+msgid "Members"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:157
+msgid "Connections"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:158
+#: src/Frontend/Shortcodes.php:310
+msgid "Only me"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:234
+msgid "You cannot change these settings."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:256
 msgid "Profile fields"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:161
+#: src/Admin/AdminMenu.php:259
 msgid "Field"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:161
+#: src/Admin/AdminMenu.php:259
 msgid "Type"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:161
-#: src/Admin/AdminMenu.php:204
+#: src/Admin/AdminMenu.php:259
+#: src/Admin/AdminMenu.php:302
 msgid "Required"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:161
+#: src/Admin/AdminMenu.php:259
 msgid "Default visibility"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:164
-#: templates/members/profile.php:62
+#: src/Admin/AdminMenu.php:262
+#: templates/members/profile.php:68
 msgid "Yes"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:164
+#: src/Admin/AdminMenu.php:262
 msgid "No"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:165
+#: src/Admin/AdminMenu.php:263
 #: templates/parts/activity-item.php:40
 msgid "Delete"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:171
+#: src/Admin/AdminMenu.php:269
 msgid "Delete group"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:174
+#: src/Admin/AdminMenu.php:272
 msgid "Add a field group"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:178
+#: src/Admin/AdminMenu.php:276
 msgid "Group name"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:179
+#: src/Admin/AdminMenu.php:277
 msgid "Add group"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:192
+#: src/Admin/AdminMenu.php:290
 msgid "Field name"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:205
+#: src/Admin/AdminMenu.php:303
 msgid "Options, comma separated"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:206
+#: src/Admin/AdminMenu.php:304
 msgid "Add field"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:237
+#: src/Admin/AdminMenu.php:335
 msgid "You cannot manage profile fields."
 msgstr ""
 
-#: src/Connections/Connections.php:92
+#: src/Connections/Connections.php:103
 msgid "You cannot connect with that member."
 msgstr ""
 
-#: src/Connections/Connections.php:96
+#: src/Connections/Connections.php:107
 msgid "A connection or request already exists."
 msgstr ""
 
-#: src/Connections/Connections.php:124
+#: src/Connections/Connections.php:113
+msgid "You recently withdrew a request to this member. Try again later."
+msgstr ""
+
+#: src/Connections/Connections.php:141
 msgid "There is no request to accept."
 msgstr ""
 
-#: src/Connections/Connections.php:154
+#: src/Connections/Connections.php:171
 msgid "There is nothing to remove."
 msgstr ""
 
@@ -291,75 +340,98 @@ msgstr ""
 msgid "You cannot follow that member."
 msgstr ""
 
-#: src/Frontend/Router.php:173
-msgid "Members"
+#: src/Frontend/Forms.php:120
+msgid "You cannot edit this profile."
 msgstr ""
 
-#: src/Frontend/Router.php:174
+#: src/Frontend/Forms.php:205
+#: src/Groups/Groups.php:160
+#: src/Rest/GroupsController.php:339
+msgid "Only organisers can change group settings."
+msgstr ""
+
+#: src/Frontend/Forms.php:242
+#: src/Rest/GroupsController.php:490
+msgid "Unknown action."
+msgstr ""
+
+#: src/Frontend/Router.php:212
 #: src/PostTypes/GroupPostType.php:36
 #: src/PostTypes/GroupPostType.php:38
 #: src/PostTypes/GroupPostType.php:39
 msgid "Groups"
 msgstr ""
 
-#: src/Frontend/Router.php:175
+#: src/Frontend/Router.php:213
 msgid "Activity"
 msgstr ""
 
-#: src/Frontend/Router.php:176
+#: src/Frontend/Router.php:214
+#: templates/members/edit.php:128
 msgid "Notifications"
 msgstr ""
 
-#: src/Frontend/Router.php:177
+#: src/Frontend/Router.php:215
+#: templates/members/edit.php:134
 msgid "Messages"
 msgstr ""
 
-#: src/Groups/GroupActivity.php:108
+#: src/Frontend/Shortcodes.php:309
+#: templates/members/edit.php:138
+msgid "My connections"
+msgstr ""
+
+#: src/Frontend/Shortcodes.php:371
+msgid "Saved."
+msgstr ""
+
+#: src/Frontend/Shortcodes.php:378
+msgid "Something went wrong."
+msgstr ""
+
+#: src/Groups/GroupActivity.php:120
 msgid "a group"
 msgstr ""
 
 #. translators: 1: member name, 2: group link.
-#: src/Groups/GroupActivity.php:114
+#: src/Groups/GroupActivity.php:126
 #, php-format
 msgid "%1$s created the group %2$s"
 msgstr ""
 
 #. translators: 1: member name, 2: group link.
-#: src/Groups/GroupActivity.php:118
+#: src/Groups/GroupActivity.php:130
 #, php-format
 msgid "%1$s joined the group %2$s"
 msgstr ""
 
-#: src/Groups/Groups.php:87
+#: src/Groups/Groups.php:88
 msgid "You cannot create groups."
 msgstr ""
 
-#: src/Groups/Groups.php:93
+#: src/Groups/Groups.php:94
 msgid "A group needs a name."
 msgstr ""
 
-#: src/Groups/Groups.php:99
-#: src/Groups/Groups.php:176
+#: src/Groups/Groups.php:100
+#: src/Groups/Groups.php:178
 msgid "That visibility is not valid."
 msgstr ""
 
-#: src/Groups/Groups.php:158
-msgid "Only organisers can change group settings."
-msgstr ""
-
-#: src/Groups/Groups.php:229
+#: src/Groups/Groups.php:243
 msgid "Only organisers can delete a group."
 msgstr ""
 
-#: src/Groups/Groups.php:422
-#: src/Groups/Membership.php:540
-#: src/Rest/GroupsController.php:243
-#: src/Rest/GroupsController.php:297
+#: src/Groups/Groups.php:511
+#: src/Groups/Membership.php:600
+#: src/Rest/GroupsController.php:292
+#: src/Rest/GroupsController.php:335
+#: src/Rest/GroupsController.php:396
 msgid "That group does not exist."
 msgstr ""
 
 #: src/Groups/Membership.php:56
-#: src/Groups/Membership.php:101
+#: src/Groups/Membership.php:102
 msgid "You cannot join this group."
 msgstr ""
 
@@ -367,42 +439,76 @@ msgstr ""
 msgid "This group requires a request to join."
 msgstr ""
 
-#: src/Groups/Membership.php:139
+#: src/Groups/Membership.php:146
 msgid "That member cannot be invited."
 msgstr ""
 
-#: src/Groups/Membership.php:187
+#: src/Groups/Membership.php:194
 msgid "There is no request to approve."
 msgstr ""
 
-#: src/Groups/Membership.php:216
+#: src/Groups/Membership.php:223
 msgid "There is no membership to remove."
 msgstr ""
 
-#: src/Groups/Membership.php:230
+#: src/Groups/Membership.php:237
 msgid "Promote another organiser before leaving."
 msgstr ""
 
-#: src/Groups/Membership.php:356
+#: src/Groups/Membership.php:363
 msgid "That role does not exist."
 msgstr ""
 
-#: src/Groups/Membership.php:362
+#: src/Groups/Membership.php:369
 msgid "That member is not in the group."
 msgstr ""
 
-#: src/Groups/Membership.php:372
+#: src/Groups/Membership.php:379
 msgid "A group must keep at least one organiser."
 msgstr ""
 
-#: src/Groups/Membership.php:547
+#: src/Groups/Membership.php:607
 msgid "You cannot do that in this group."
 msgstr ""
 
+#: src/Members/Profiles.php:262
+msgid "Each field must be an object with a value and/or a visibility."
+msgstr ""
+
 #. translators: %s: field name.
-#: src/Members/Profiles.php:176
+#: src/Members/Profiles.php:278
 #, php-format
 msgid "%s is required."
+msgstr ""
+
+#: src/Members/Uploads.php:99
+msgid "Choose an image first."
+msgstr ""
+
+#: src/Members/Uploads.php:103
+msgid "The upload did not complete."
+msgstr ""
+
+#. translators: %s: size.
+#: src/Members/Uploads.php:117
+#, php-format
+msgid "Images must be smaller than %s."
+msgstr ""
+
+#: src/Members/Uploads.php:128
+msgid "Sorry, this file type is not permitted for security reasons."
+msgstr ""
+
+#: src/Members/Uploads.php:134
+msgid "That file is not an image we can use."
+msgstr ""
+
+#: src/Members/Uploads.php:166
+msgid "The image could not be uploaded."
+msgstr ""
+
+#: src/Members/Uploads.php:176
+msgid "That file is not an image."
 msgstr ""
 
 #: src/Messages/Messages.php:92
@@ -413,7 +519,7 @@ msgstr ""
 msgid "Please write a message first."
 msgstr ""
 
-#: src/Messages/Messages.php:305
+#: src/Messages/Messages.php:355
 msgid "That conversation does not exist."
 msgstr ""
 
@@ -528,7 +634,7 @@ msgid "Search Groups"
 msgstr ""
 
 #: src/PostTypes/GroupPostType.php:45
-#: templates/groups/directory.php:62
+#: templates/groups/directory.php:99
 msgid "No groups found."
 msgstr ""
 
@@ -536,24 +642,28 @@ msgstr ""
 msgid "No groups found in Trash."
 msgstr ""
 
-#: src/Rest/ActivityController.php:243
+#: src/Rest/ActivityController.php:284
 msgid "Nothing to change."
 msgstr ""
 
-#: src/Rest/GroupsController.php:301
+#: src/Rest/ActivityController.php:331
+msgid "That post does not exist."
+msgstr ""
+
+#: src/Rest/GroupsController.php:400
 msgid "Join this group to see its members."
 msgstr ""
 
-#: src/Rest/GroupsController.php:305
+#: src/Rest/GroupsController.php:404
 msgid "Only moderators can see that list."
 msgstr ""
 
-#: src/Rest/GroupsController.php:386
-msgid "Unknown action."
+#: src/Rest/MembersController.php:169
+msgid "That member does not exist."
 msgstr ""
 
-#: src/Rest/MembersController.php:116
-msgid "That member does not exist."
+#: src/Rest/MembersController.php:185
+msgid "Fields must be an object keyed by field id."
 msgstr ""
 
 #: src/Support/Assets.php:69
@@ -569,77 +679,40 @@ msgid "Delete this?"
 msgstr ""
 
 #: src/Support/Assets.php:72
-#: templates/activity/feed.php:64
+#: templates/activity/feed.php:66
 msgid "Load more"
 msgstr ""
 
-#: templates/activity/feed.php:25
-msgid "Everyone"
+#: src/Support/RateLimiter.php:75
+msgid "You are doing that too often. Please wait a while and try again."
 msgstr ""
 
-#: templates/activity/feed.php:26
+#: templates/activity/feed.php:28
 msgid "Following"
 msgstr ""
 
-#: templates/activity/feed.php:32
+#: templates/activity/feed.php:34
 msgid "What is on your mind?"
 msgstr ""
 
-#: templates/activity/feed.php:41
+#: templates/activity/feed.php:43
 msgid "Post"
 msgstr ""
 
-#: templates/activity/feed.php:48
+#: templates/activity/feed.php:50
 msgid "Nothing here yet."
 msgstr ""
 
-#: templates/groups/directory.php:17
-msgid "Search groups"
-msgstr ""
-
-#: templates/groups/directory.php:21
-#: templates/members/directory.php:22
-msgid "Newest"
-msgstr ""
-
-#: templates/groups/directory.php:22
-msgid "Most members"
-msgstr ""
-
-#: templates/groups/directory.php:23
-#: templates/members/directory.php:23
-msgid "Recently active"
-msgstr ""
-
-#: templates/groups/directory.php:29
-#: templates/members/directory.php:30
-msgid "Filter"
-msgstr ""
-
-#: templates/groups/directory.php:34
-msgid "New group name"
-msgstr ""
-
-#: templates/groups/directory.php:36
-msgid "Public"
-msgstr ""
-
-#: templates/groups/directory.php:37
-msgid "Private"
-msgstr ""
-
-#: templates/groups/directory.php:38
-msgid "Hidden"
-msgstr ""
-
-#: templates/groups/directory.php:40
-msgid "Create group"
+#: templates/activity/single.php:28
+msgid "Liked by"
 msgstr ""
 
 #. translators: %d: members.
+#. translators: %d: count.
 #. translators: %d: member count.
-#: templates/groups/directory.php:55
-#: templates/groups/single.php:31
+#: templates/groups/directory.php:34
+#: templates/groups/manage.php:114
+#: templates/groups/single.php:33
 #: templates/members/directory.php:34
 #, php-format
 msgid "%d member"
@@ -647,28 +720,198 @@ msgid_plural "%d members"
 msgstr[0] ""
 msgstr[1] ""
 
-#: templates/groups/single.php:36
-msgid "Leave group"
+#: templates/groups/directory.php:43
+msgid "Your groups"
+msgstr ""
+
+#: templates/groups/directory.php:46
+msgid "Member of"
+msgstr ""
+
+#: templates/groups/directory.php:47
+msgid "Requests awaiting approval"
+msgstr ""
+
+#: templates/groups/directory.php:48
+msgid "Invitations"
+msgstr ""
+
+#: templates/groups/directory.php:65
+msgid "Search groups"
+msgstr ""
+
+#: templates/groups/directory.php:69
+#: templates/members/directory.php:22
+msgid "Newest"
+msgstr ""
+
+#: templates/groups/directory.php:70
+msgid "Most members"
+msgstr ""
+
+#: templates/groups/directory.php:71
+#: templates/members/directory.php:23
+msgid "Recently active"
+msgstr ""
+
+#: templates/groups/directory.php:77
+#: templates/members/directory.php:30
+msgid "Filter"
+msgstr ""
+
+#: templates/groups/directory.php:82
+msgid "New group name"
+msgstr ""
+
+#: templates/groups/directory.php:84
+msgid "Public"
+msgstr ""
+
+#: templates/groups/directory.php:85
+msgid "Private"
+msgstr ""
+
+#: templates/groups/directory.php:86
+msgid "Hidden"
+msgstr ""
+
+#: templates/groups/directory.php:88
+msgid "Create group"
+msgstr ""
+
+#. translators: %s: group name.
+#: templates/groups/manage.php:38
+#, php-format
+msgid "Manage %s"
+msgstr ""
+
+#. translators: %s: group name.
+#: templates/groups/manage.php:39
+msgid "Back to group"
+msgstr ""
+
+#: templates/groups/manage.php:53
+msgid "Name"
+msgstr ""
+
+#: templates/groups/manage.php:57
+msgid "Description"
+msgstr ""
+
+#: templates/groups/manage.php:61
+msgid "Visibility"
+msgstr ""
+
+#: templates/groups/manage.php:63
+msgid "Public — anyone can see and join"
+msgstr ""
+
+#: templates/groups/manage.php:64
+msgid "Private — listed, members approved"
+msgstr ""
+
+#: templates/groups/manage.php:65
+msgid "Hidden — invitation only"
+msgstr ""
+
+#: templates/groups/manage.php:71
+msgid "Images"
+msgstr ""
+
+#: templates/groups/manage.php:77
+msgid "Group photo"
+msgstr ""
+
+#: templates/groups/manage.php:80
+msgid "Remove group photo"
+msgstr ""
+
+#: templates/groups/manage.php:87
+#: templates/members/edit.php:48
+msgid "Cover image"
+msgstr ""
+
+#: templates/groups/manage.php:90
+#: templates/members/edit.php:51
+msgid "Remove cover image"
+msgstr ""
+
+#: templates/groups/manage.php:94
+msgid "Save settings"
+msgstr ""
+
+#. translators: %d: count.
+#: templates/groups/manage.php:99
+#, php-format
+msgid "%d request to join"
+msgid_plural "%d requests to join"
+msgstr[0] ""
+msgstr[1] ""
+
+#: templates/groups/manage.php:105
+msgid "Approve"
+msgstr ""
+
+#: templates/groups/manage.php:106
+#: templates/groups/single.php:46
+msgid "Decline"
+msgstr ""
+
+#: templates/groups/manage.php:123
+#: templates/groups/manage.php:130
+msgid "Make moderator"
+msgstr ""
+
+#: templates/groups/manage.php:126
+msgid "Make organiser"
+msgstr ""
+
+#: templates/groups/manage.php:128
+msgid "Make member"
+msgstr ""
+
+#: templates/groups/manage.php:132
+msgid "Remove"
+msgstr ""
+
+#: templates/groups/manage.php:133
+msgid "Ban"
+msgstr ""
+
+#: templates/groups/manage.php:142
+msgid "Banned"
+msgstr ""
+
+#: templates/groups/manage.php:147
+msgid "Unban"
 msgstr ""
 
 #: templates/groups/single.php:38
-#: templates/members/profile.php:37
+msgid "Manage group"
+msgstr ""
+
+#: templates/groups/single.php:41
+msgid "Leave group"
+msgstr ""
+
+#: templates/groups/single.php:43
+#: templates/members/profile.php:43
 msgid "Withdraw request"
 msgstr ""
 
-#: templates/groups/single.php:40
+#: templates/groups/single.php:45
 msgid "Accept invitation"
 msgstr ""
 
-#: templates/groups/single.php:43
+#: templates/groups/single.php:49
 msgid "Join group"
 msgstr ""
 
-#: templates/groups/single.php:43
+#: templates/groups/single.php:49
 msgid "Request to join"
 msgstr ""
 
-#: templates/groups/single.php:56
+#: templates/groups/single.php:78
 msgid "Join this group to see its activity."
 msgstr ""
 
@@ -688,6 +931,61 @@ msgid_plural "%d connections"
 msgstr[0] ""
 msgstr[1] ""
 
+#: templates/members/edit.php:21
+#: templates/members/profile.php:33
+msgid "Edit profile"
+msgstr ""
+
+#: templates/members/edit.php:22
+msgid "Back to profile"
+msgstr ""
+
+#: templates/members/edit.php:34
+msgid "Photos"
+msgstr ""
+
+#: templates/members/edit.php:38
+msgid "Profile photo"
+msgstr ""
+
+#: templates/members/edit.php:41
+msgid "Remove photo and use Gravatar"
+msgstr ""
+
+#: templates/members/edit.php:79
+msgid "— Choose —"
+msgstr ""
+
+#: templates/members/edit.php:112
+msgid "Visible to"
+msgstr ""
+
+#. translators: %s: visibility label.
+#: templates/members/edit.php:120
+#, php-format
+msgid "Visible to: %s"
+msgstr ""
+
+#: templates/members/edit.php:130
+msgid "Email me when something happens that I would want to know about"
+msgstr ""
+
+#: templates/members/edit.php:135
+msgid "Who may message me"
+msgstr ""
+
+#: templates/members/edit.php:137
+msgid "Anyone"
+msgstr ""
+
+#: templates/members/edit.php:139
+msgid "No one"
+msgstr ""
+
+#: templates/members/edit.php:143
+msgid "Save changes"
+msgstr ""
+
 #. translators: %d: count.
 #: templates/members/profile.php:27
 #, php-format
@@ -700,42 +998,42 @@ msgstr ""
 msgid "%d followers"
 msgstr ""
 
-#: templates/members/profile.php:36
+#: templates/members/profile.php:42
 msgid "Remove connection"
 msgstr ""
 
-#: templates/members/profile.php:38
+#: templates/members/profile.php:44
 msgid "Accept request"
 msgstr ""
 
-#: templates/members/profile.php:39
+#: templates/members/profile.php:45
 msgid "Connect"
 msgstr ""
 
-#: templates/members/profile.php:43
+#: templates/members/profile.php:49
 msgid "Unfollow"
 msgstr ""
 
-#: templates/members/profile.php:43
+#: templates/members/profile.php:49
 msgid "Follow"
 msgstr ""
 
-#: templates/members/profile.php:44
+#: templates/members/profile.php:50
 msgid "Message"
 msgstr ""
 
 #. translators: %s: name.
-#: templates/messages/inbox.php:18
+#: templates/messages/inbox.php:21
 #, php-format
 msgid "New message to %s"
 msgstr ""
 
-#: templates/messages/inbox.php:20
+#: templates/messages/inbox.php:23
 #: templates/messages/thread.php:25
 msgid "Send"
 msgstr ""
 
-#: templates/messages/inbox.php:39
+#: templates/messages/inbox.php:42
 msgid "No conversations yet."
 msgstr ""
 
@@ -744,16 +1042,16 @@ msgid "Write a reply…"
 msgstr ""
 
 #. translators: %d: count.
-#: templates/notifications/list.php:15
+#: templates/notifications/list.php:18
 #, php-format
 msgid "%d unread"
 msgstr ""
 
-#: templates/notifications/list.php:17
+#: templates/notifications/list.php:20
 msgid "Mark all read"
 msgstr ""
 
-#: templates/notifications/list.php:30
+#: templates/notifications/list.php:33
 msgid "No notifications yet."
 msgstr ""
 
@@ -791,4 +1089,48 @@ msgstr ""
 
 #: templates/parts/not-found.php:10
 msgid "That page does not exist."
+msgstr ""
+
+#: assets/src/blocks/index.js:27
+msgid "Nothing to show yet. Members will see the live community here."
+msgstr ""
+
+#: assets/src/blocks/index.js:38
+msgid "Feed"
+msgstr ""
+
+#: assets/src/blocks/index.js:40
+msgid "Scope"
+msgstr ""
+
+#: assets/src/blocks/index.js:43
+msgid "Whole site"
+msgstr ""
+
+#: assets/src/blocks/index.js:44
+msgid "People the viewer follows"
+msgstr ""
+
+#: assets/src/blocks/index.js:49
+msgid "Items per page"
+msgstr ""
+
+#: assets/src/blocks/index.js:50
+msgid "Zero uses the community setting."
+msgstr ""
+
+#: assets/src/blocks/index.js:57
+msgid "Show the All / Following tabs"
+msgstr ""
+
+#: assets/src/blocks/index.js:63
+msgid "Activity feed"
+msgstr ""
+
+#: assets/src/blocks/index.js:70
+msgid "Member directory"
+msgstr ""
+
+#: assets/src/blocks/index.js:75
+msgid "Group directory"
 msgstr ""

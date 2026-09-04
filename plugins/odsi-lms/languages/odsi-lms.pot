@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-04T09:06:23+00:00\n"
+"POT-Creation-Date: 2026-09-04T12:07:58+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: odsi-lms\n"
@@ -31,6 +31,7 @@ msgstr ""
 
 #. Author of the plugin
 #: odsi-lms.php
+#: src/Blocks/Blocks.php:131
 msgid "ODSI"
 msgstr ""
 
@@ -46,24 +47,57 @@ msgstr ""
 msgid "ODSI LMS requires WordPress %1$s or newer. This site runs WordPress %2$s."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:51
-#: src/Admin/AdminMenu.php:52
+#: src/Admin/AdminMenu.php:53
+#: src/Admin/AdminMenu.php:54
 msgid "Learning"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:60
-#: src/Admin/ReportsScreen.php:54
+#: src/Admin/AdminMenu.php:62
+#: src/Admin/ReportsScreen.php:56
 msgid "Reports"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:61
-#: src/Admin/GradingScreen.php:55
-#: src/Admin/GradingScreen.php:62
+#: src/Admin/AdminMenu.php:63
+#: src/Admin/GradingScreen.php:61
+#: src/Admin/GradingScreen.php:69
 msgid "Grading"
 msgstr ""
 
+#: src/Admin/AdminMenu.php:64
+msgid "Settings"
+msgstr ""
+
+#: src/Admin/AssignmentMetaBox.php:41
+#: templates/parts/assignment.php:24
+msgid "Assignment"
+msgstr ""
+
+#: src/Admin/AssignmentMetaBox.php:61
+msgid "Learners must hand in an assignment"
+msgstr ""
+
+#: src/Admin/AssignmentMetaBox.php:65
+#: src/Admin/GradingScreen.php:103
+#: src/Admin/GradingScreen.php:179
+#: src/Admin/QuestionMetaBox.php:80
+msgid "Points"
+msgstr ""
+
+#: src/Admin/AssignmentMetaBox.php:68
+msgid "Zero means approve or reject only."
+msgstr ""
+
+#: src/Admin/AssignmentMetaBox.php:74
+msgid "Approve automatically on receipt"
+msgstr ""
+
+#: src/Admin/AssignmentMetaBox.php:76
+msgid "The step completes once a submission is approved. A lesson with topics cannot carry one."
+msgstr ""
+
 #: src/Admin/CohortMetaBox.php:47
-#: src/PostTypes/PostTypes.php:66
+#: src/PostTypes/PostTypes.php:71
+#: assets/src/blocks/index.js:125
 msgid "Courses"
 msgstr ""
 
@@ -80,7 +114,7 @@ msgid "Member"
 msgstr ""
 
 #: src/Admin/CohortMetaBox.php:101
-#: src/Admin/EnrollmentListTable.php:152
+#: src/Admin/EnrollmentListTable.php:167
 msgid "Remove"
 msgstr ""
 
@@ -93,26 +127,36 @@ msgid "Course placement"
 msgstr ""
 
 #: src/Admin/CourseBuilder.php:79
-#: src/PostTypes/PostTypes.php:108
+#: src/PostTypes/PostTypes.php:113
+#: assets/src/course-builder/index.js:189
+#: assets/src/course-builder/index.js:196
+#: assets/src/course-builder/index.js:204
 msgid "Quiz"
 msgstr ""
 
 #: src/Admin/CourseBuilder.php:89
-#: src/Admin/ReportsScreen.php:99
-#: src/PostTypes/PostTypes.php:67
+#: src/Admin/ReportsScreen.php:102
+#: src/PostTypes/PostTypes.php:72
+#: assets/src/blocks/index.js:37
+#: assets/src/blocks/index.js:87
 msgid "Course"
 msgstr ""
 
 #: src/Admin/CourseBuilder.php:97
-#: src/PostTypes/PostTypes.php:82
+#: src/PostTypes/PostTypes.php:87
+#: assets/src/course-builder/index.js:182
 msgid "Lesson"
 msgstr ""
 
 #: src/Admin/CourseBuilder.php:105
+msgid "Lesson or topic"
+msgstr ""
+
+#: src/Admin/CourseBuilder.php:113
 msgid "Ordering follows the Order field under Page Attributes."
 msgstr ""
 
-#: src/Admin/CourseBuilder.php:180
+#: src/Admin/CourseBuilder.php:208
 msgid "— None —"
 msgstr ""
 
@@ -121,6 +165,7 @@ msgid "Learner"
 msgstr ""
 
 #: src/Admin/EnrollmentListTable.php:49
+#: src/Reports/EnrollmentReport.php:199
 msgid "Status"
 msgstr ""
 
@@ -129,13 +174,17 @@ msgid "Progress"
 msgstr ""
 
 #: src/Admin/EnrollmentListTable.php:51
+#: src/Reports/EnrollmentReport.php:201
 msgid "Enrolled"
 msgstr ""
 
 #: src/Admin/EnrollmentListTable.php:52
-#: src/Frontend/ContentDecorator.php:118
+#: src/Admin/EnrollmentListTable.php:150
+#: src/Frontend/ContentDecorator.php:132
+#: src/Reports/EnrollmentReport.php:202
 #: src/Support/Assets.php:72
 #: templates/parts/course-outline.php:54
+#: assets/src/blocks/index.js:109
 msgid "Completed"
 msgstr ""
 
@@ -144,172 +193,531 @@ msgid "All statuses"
 msgstr ""
 
 #: src/Admin/EnrollmentListTable.php:122
+#: assets/src/blocks/index.js:102
 msgid "Filter"
 msgstr ""
 
+#: src/Admin/EnrollmentListTable.php:149
+msgid "Active"
+msgstr ""
+
 #: src/Admin/EnrollmentListTable.php:151
+msgid "Expired"
+msgstr ""
+
+#: src/Admin/EnrollmentListTable.php:152
+msgid "Cancelled"
+msgstr ""
+
+#: src/Admin/EnrollmentListTable.php:153
+msgid "Pending"
+msgstr ""
+
+#: src/Admin/EnrollmentListTable.php:166
 msgid "Reset progress"
 msgstr ""
 
-#: src/Admin/GradingScreen.php:55
+#: src/Admin/GradingScreen.php:61
 msgid "Nothing to grade."
 msgstr ""
 
+#: src/Admin/GradingScreen.php:73
+msgid "Essay answers"
+msgstr ""
+
 #. translators: %d: count.
-#: src/Admin/GradingScreen.php:63
+#: src/Admin/GradingScreen.php:74
 #, php-format
 msgid "%d answer waiting"
 msgid_plural "%d answers waiting"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Admin/GradingScreen.php:86
-msgid "Points"
-msgstr ""
-
-#: src/Admin/GradingScreen.php:87
+#: src/Admin/GradingScreen.php:104
 msgid "Save grade"
 msgstr ""
 
-#: src/Admin/GradingScreen.php:106
+#: src/Admin/GradingScreen.php:150
+msgid "Assignments"
+msgstr ""
+
+#. translators: %d: count.
+#: src/Admin/GradingScreen.php:151
+#, php-format
+msgid "%d submission waiting"
+msgid_plural "%d submissions waiting"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Admin/GradingScreen.php:182
+msgid "Feedback"
+msgstr ""
+
+#: src/Admin/GradingScreen.php:183
+msgid "Approve"
+msgstr ""
+
+#: src/Admin/GradingScreen.php:185
+msgid "Reject"
+msgstr ""
+
+#: src/Admin/GradingScreen.php:202
+#: src/Rest/SubmissionController.php:230
+msgid "You cannot grade this submission."
+msgstr ""
+
+#: src/Admin/GradingScreen.php:227
 msgid "You cannot grade this attempt."
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:57
+#: src/Admin/QuestionMetaBox.php:42
+msgid "Answers"
+msgstr ""
+
+#: src/Admin/QuestionMetaBox.php:52
+msgid "Single choice"
+msgstr ""
+
+#: src/Admin/QuestionMetaBox.php:53
+msgid "Multiple choice"
+msgstr ""
+
+#: src/Admin/QuestionMetaBox.php:54
+msgid "True or false"
+msgstr ""
+
+#: src/Admin/QuestionMetaBox.php:55
+msgid "Fill in the blank"
+msgstr ""
+
+#: src/Admin/QuestionMetaBox.php:56
+msgid "Essay (graded by hand)"
+msgstr ""
+
+#: src/Admin/QuestionMetaBox.php:72
+msgid "Type"
+msgstr ""
+
+#: src/Admin/QuestionMetaBox.php:87
+msgid "True/false answer"
+msgstr ""
+
+#: src/Admin/QuestionMetaBox.php:89
+#: src/Admin/QuestionMetaBox.php:146
+msgid "True"
+msgstr ""
+
+#: src/Admin/QuestionMetaBox.php:90
+#: src/Admin/QuestionMetaBox.php:150
+msgid "False"
+msgstr ""
+
+#: src/Admin/QuestionMetaBox.php:91
+msgid "Used only by true/false questions."
+msgstr ""
+
+#: src/Admin/QuestionMetaBox.php:95
+msgid "Options"
+msgstr ""
+
+#: src/Admin/QuestionMetaBox.php:97
+msgid "One option per line. Start a line with * to mark it correct (single or multiple choice). For fill-in-the-blank, list every accepted answer, one per line. Leave empty for essays."
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:59
 msgid "No courses to report on yet."
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:82
+#: src/Admin/ReportsScreen.php:85
 msgid "Search learners"
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:117
+#: src/Admin/ReportsScreen.php:120
 msgid "enrolled"
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:118
+#: src/Admin/ReportsScreen.php:121
 msgid "active"
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:119
+#: src/Admin/ReportsScreen.php:122
 msgid "completed"
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:120
+#: src/Admin/ReportsScreen.php:123
 msgid "completion rate"
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:130
+#: src/Admin/ReportsScreen.php:146
+msgid "Export CSV"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:159
+msgid "You cannot export this course."
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:185
 msgid "Enroll a learner"
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:135
+#: src/Admin/ReportsScreen.php:190
+#: src/Admin/ReportsScreen.php:191
 msgid "Username or email"
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:136
+#: src/Admin/ReportsScreen.php:192
 msgid "Enroll"
 msgstr ""
 
-#: src/Admin/ReportsScreen.php:150
+#: src/Admin/ReportsScreen.php:206
 msgid "You cannot manage this course."
 msgstr ""
 
-#: src/Certificates/Certificates.php:117
-msgid "A former member"
+#: src/Admin/SettingsMetaBoxes.php:51
+msgid "Course settings"
 msgstr ""
 
-#: src/Certificates/Certificates.php:165
-#: src/PostTypes/PostTypes.php:138
+#: src/Admin/SettingsMetaBoxes.php:52
+msgid "Release and duration"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:53
+msgid "Quiz settings"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:66
+msgid "Open: anyone may view, visitors are enrolled on first visit"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:67
+msgid "Free: logged-in learners enroll themselves"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:68
+msgid "Paid: enrollment through a commerce integration"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:69
+msgid "Closed: an administrator enrolls learners"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:72
+msgid "Access mode"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:79
+msgid "Price"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:79
+msgid "Shown on paid courses; charged by the integration."
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:80
+msgid "Access expires after (days)"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:80
+msgid "Zero keeps access indefinitely."
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:81
+#: src/Admin/SettingsMetaBoxes.php:142
+msgid "Duration (minutes)"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:87
+msgid "Steps must be completed in order"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:104
+#: src/Certificates/Certificates.php:170
+#: src/PostTypes/PostTypes.php:143
 msgid "Certificate"
 msgstr ""
 
-#: src/Courses/Access.php:304
+#: src/Admin/SettingsMetaBoxes.php:106
+msgid "None"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:124
+msgid "Available immediately"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:125
+msgid "Days after enrollment"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:126
+msgid "On a fixed date"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:129
+msgid "Release"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:137
+msgid "Release value"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:140
+msgid "A number of days, or a date such as 2026-09-30 (site timezone)."
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:156
+msgid "Pass mark (%)"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:157
+msgid "Maximum attempts"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:157
+msgid "Zero means unlimited."
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:158
+msgid "Time limit (minutes)"
+msgstr ""
+
+#: src/Admin/SettingsMetaBoxes.php:158
+msgid "Zero means no limit."
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:48
+msgid "Course archive slug"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:50
+msgid "Default access mode for new courses"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:53
+msgid "Open"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:54
+msgid "Free"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:55
+msgid "Paid"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:56
+msgid "Closed"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:59
+msgid "Default quiz pass mark (%)"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:60
+msgid "Issue certificates on completion"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:61
+msgid "Email learners on enrollment, completion and assignment results"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:62
+msgid "Delete all learning data when the plugin is uninstalled"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:72
+msgid "Learning settings"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:75
+msgid "Settings saved."
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:105
+msgid "Save settings"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:116
+msgid "You cannot change these settings."
+msgstr ""
+
+#: src/Assignments/Assignments.php:99
+#: src/Rest/SubmissionController.php:143
+msgid "This step has no assignment."
+msgstr ""
+
+#: src/Assignments/Assignments.php:103
+#: src/Rest/ProgressController.php:79
+msgid "This step is not available to you yet."
+msgstr ""
+
+#: src/Assignments/Assignments.php:109
+msgid "Your assignment has already been approved."
+msgstr ""
+
+#: src/Assignments/Assignments.php:113
+msgid "Your previous submission is still waiting to be reviewed."
+msgstr ""
+
+#: src/Assignments/Assignments.php:130
+msgid "Write something or attach a file."
+msgstr ""
+
+#: src/Assignments/Assignments.php:137
+msgid "The submission could not be saved."
+msgstr ""
+
+#. translators: %s: size.
+#: src/Assignments/Assignments.php:371
+#, php-format
+msgid "The file is larger than the %s limit."
+msgstr ""
+
+#: src/Assignments/Assignments.php:398
+msgid "The file could not be uploaded."
+msgstr ""
+
+#: src/Certificates/Certificates.php:122
+msgid "A former member"
+msgstr ""
+
+#: src/Courses/Access.php:390
 msgid "This lesson is not available yet."
 msgstr ""
 
 #. translators: %s: formatted date.
-#: src/Courses/Access.php:309
+#: src/Courses/Access.php:395
 #, php-format
 msgid "This lesson will be available on %s."
 msgstr ""
 
-#: src/Courses/Access.php:316
+#: src/Courses/Access.php:402
 msgid "Complete the previous step to unlock this one."
 msgstr ""
 
-#: src/Courses/Access.php:321
+#: src/Courses/Access.php:407
 msgid "Enroll on this course to view this lesson."
 msgstr ""
 
-#: src/Courses/Access.php:322
+#: src/Courses/Access.php:408
 msgid "Please log in and enroll on this course to view this lesson."
 msgstr ""
 
-#: src/Courses/Access.php:335
+#: src/Courses/Access.php:421
 msgid "Back to the course"
 msgstr ""
 
-#: src/Frontend/ContentDecorator.php:100
+#: src/Frontend/ContentDecorator.php:109
 msgid "Course content"
 msgstr ""
 
-#: src/Frontend/ContentDecorator.php:119
+#: src/Frontend/ContentDecorator.php:133
 msgid "Mark complete"
 msgstr ""
 
-#: src/Frontend/ContentDecorator.php:138
+#: src/Frontend/ContentDecorator.php:178
 msgid "Log in to take this quiz."
 msgstr ""
 
-#: src/Frontend/ContentDecorator.php:145
+#: src/Frontend/ContentDecorator.php:185
 #: src/Support/Assets.php:74
 msgid "Start quiz"
 msgstr ""
 
-#: src/Frontend/ContentDecorator.php:145
+#: src/Frontend/ContentDecorator.php:185
 msgid "JavaScript is required to take this quiz."
 msgstr ""
 
-#: src/PostTypes/PostTypes.php:81
+#. translators: %s: course title.
+#: src/Notifications/Emails.php:81
+#, php-format
+msgid "You are enrolled on %s"
+msgstr ""
+
+#. translators: 1: course title, 2: course URL.
+#: src/Notifications/Emails.php:84
+#, php-format
+msgid ""
+"You now have access to %1$s.\n"
+"\n"
+"Start here: %2$s"
+msgstr ""
+
+#. translators: %s: course title.
+#: src/Notifications/Emails.php:103
+#, php-format
+msgid "Congratulations, you have completed %s."
+msgstr ""
+
+#. translators: %s: certificate URL.
+#: src/Notifications/Emails.php:110
+#, php-format
+msgid "Your certificate: %s"
+msgstr ""
+
+#. translators: %s: course title.
+#: src/Notifications/Emails.php:119
+#, php-format
+msgid "You completed %s"
+msgstr ""
+
+#. translators: %s: step title.
+#: src/Notifications/Emails.php:142
+#, php-format
+msgid "Your assignment for %s was approved"
+msgstr ""
+
+#. translators: %s: step title.
+#: src/Notifications/Emails.php:144
+#, php-format
+msgid "Your assignment for %s needs another look"
+msgstr ""
+
+#. translators: %s: step URL.
+#: src/Notifications/Emails.php:147
+#, php-format
+msgid "See the feedback and your result here: %s"
+msgstr ""
+
+#: src/PostTypes/PostTypes.php:86
 msgid "Lessons"
 msgstr ""
 
-#: src/PostTypes/PostTypes.php:94
+#: src/PostTypes/PostTypes.php:99
 msgid "Topics"
 msgstr ""
 
-#: src/PostTypes/PostTypes.php:95
+#: src/PostTypes/PostTypes.php:100
+#: assets/src/course-builder/index.js:186
 msgid "Topic"
 msgstr ""
 
-#: src/PostTypes/PostTypes.php:107
+#: src/PostTypes/PostTypes.php:112
 msgid "Quizzes"
 msgstr ""
 
-#: src/PostTypes/PostTypes.php:120
+#: src/PostTypes/PostTypes.php:125
 msgid "Questions"
 msgstr ""
 
-#: src/PostTypes/PostTypes.php:121
+#: src/PostTypes/PostTypes.php:126
 msgid "Question"
 msgstr ""
 
-#: src/PostTypes/PostTypes.php:137
+#: src/PostTypes/PostTypes.php:142
 msgid "Certificates"
 msgstr ""
 
-#: src/PostTypes/PostTypes.php:151
+#: src/PostTypes/PostTypes.php:156
 msgid "Course Groups"
 msgstr ""
 
-#: src/PostTypes/PostTypes.php:152
+#: src/PostTypes/PostTypes.php:157
 msgid "Course Group"
 msgstr ""
 
 #. translators: %s: singular content type label.
 #. translators: %s: singular taxonomy label.
-#: src/PostTypes/PostTypes.php:218
+#: src/PostTypes/PostTypes.php:229
 #: src/PostTypes/Taxonomies.php:112
 #, php-format
 msgid "Add New %s"
@@ -317,40 +725,40 @@ msgstr ""
 
 #. translators: %s: singular content type label.
 #. translators: %s: singular taxonomy label.
-#: src/PostTypes/PostTypes.php:220
+#: src/PostTypes/PostTypes.php:231
 #: src/PostTypes/Taxonomies.php:110
 #, php-format
 msgid "Edit %s"
 msgstr ""
 
 #. translators: %s: singular content type label.
-#: src/PostTypes/PostTypes.php:222
+#: src/PostTypes/PostTypes.php:233
 #, php-format
 msgid "New %s"
 msgstr ""
 
 #. translators: %s: singular content type label.
-#: src/PostTypes/PostTypes.php:224
+#: src/PostTypes/PostTypes.php:235
 #, php-format
 msgid "View %s"
 msgstr ""
 
 #. translators: %s: plural content type label.
 #. translators: %s: plural taxonomy label.
-#: src/PostTypes/PostTypes.php:226
+#: src/PostTypes/PostTypes.php:237
 #: src/PostTypes/Taxonomies.php:108
 #, php-format
 msgid "Search %s"
 msgstr ""
 
 #. translators: %s: lowercase plural content type label.
-#: src/PostTypes/PostTypes.php:228
+#: src/PostTypes/PostTypes.php:239
 #, php-format
 msgid "No %s found."
 msgstr ""
 
 #. translators: %s: lowercase plural content type label.
-#: src/PostTypes/PostTypes.php:230
+#: src/PostTypes/PostTypes.php:241
 #, php-format
 msgid "No %s found in Trash."
 msgstr ""
@@ -404,6 +812,7 @@ msgid "That quiz attempt does not exist."
 msgstr ""
 
 #: src/Quizzes/QuizService.php:186
+#: src/Quizzes/QuizService.php:226
 msgid "That quiz attempt has already been submitted."
 msgstr ""
 
@@ -411,15 +820,60 @@ msgstr ""
 msgid "The time limit for this quiz has expired."
 msgstr ""
 
-#: src/Rest/CourseController.php:103
+#: src/Reports/EnrollmentReport.php:197
+msgid "Name"
+msgstr ""
+
+#: src/Reports/EnrollmentReport.php:198
+msgid "Email"
+msgstr ""
+
+#: src/Reports/EnrollmentReport.php:200
+msgid "Source"
+msgstr ""
+
+#: src/Reports/EnrollmentReport.php:203
+msgid "Expires"
+msgstr ""
+
+#: src/Reports/EnrollmentReport.php:204
+msgid "Progress %"
+msgstr ""
+
+#: src/Rest/BuilderController.php:139
+msgid "Give it a title first."
+msgstr ""
+
+#: src/Rest/BuilderController.php:146
+msgid "A topic belongs under a lesson of this course."
+msgstr ""
+
+#: src/Rest/BuilderController.php:152
+msgid "A quiz belongs under this course, or one of its lessons or topics."
+msgstr ""
+
+#: src/Rest/BuilderController.php:241
+msgid "That item is not part of this course."
+msgstr ""
+
+#: src/Rest/CoreGuards.php:107
+msgid "You cannot read this content."
+msgstr ""
+
+#: src/Rest/CoreGuards.php:115
+msgid "You cannot read this file."
+msgstr ""
+
+#: src/Rest/CourseController.php:107
+#: src/Rest/CourseController.php:170
 msgid "That course does not exist."
 msgstr ""
 
-#: src/Rest/CourseController.php:172
+#: src/Rest/CourseController.php:180
 msgid "This course cannot be joined directly."
 msgstr ""
 
-#: src/Rest/CourseController.php:182
+#: src/Rest/CourseController.php:190
 msgid "You could not be enrolled on this course."
 msgstr ""
 
@@ -427,21 +881,33 @@ msgstr ""
 msgid "That step does not exist."
 msgstr ""
 
-#: src/Rest/ProgressController.php:79
-msgid "This step is not available to you yet."
-msgstr ""
-
 #: src/Rest/ProgressController.php:87
 msgid "That step cannot be marked complete directly."
 msgstr ""
 
 #: src/Rest/QuizController.php:128
-#: src/Rest/QuizController.php:164
+#: src/Rest/QuizController.php:174
 msgid "This quiz is not available to you yet."
 msgstr ""
 
-#: src/Rest/QuizController.php:219
+#: src/Rest/QuizController.php:229
 msgid "That quiz attempt does not belong to you."
+msgstr ""
+
+#: src/Rest/QuizController.php:238
+msgid "This quiz is no longer available to you."
+msgstr ""
+
+#: src/Rest/SubmissionController.php:190
+msgid "You cannot grade this course."
+msgstr ""
+
+#: src/Rest/SubmissionController.php:224
+msgid "That submission does not exist."
+msgstr ""
+
+#: src/Rest/SubmissionController.php:238
+msgid "The grade could not be saved."
 msgstr ""
 
 #: src/Support/Assets.php:71
@@ -510,6 +976,40 @@ msgstr ""
 msgid "Verification code: %s"
 msgstr ""
 
+#: templates/parts/assignment.php:18
+msgid "Waiting for review"
+msgstr ""
+
+#: templates/parts/assignment.php:19
+msgid "Approved"
+msgstr ""
+
+#: templates/parts/assignment.php:20
+msgid "Needs another try"
+msgstr ""
+
+#. translators: 1: points earned, 2: points possible.
+#: templates/parts/assignment.php:33
+#, php-format
+msgid "%1$s / %2$s points"
+msgstr ""
+
+#: templates/parts/assignment.php:46
+msgid "Your answer"
+msgstr ""
+
+#: templates/parts/assignment.php:50
+msgid "Attach a file (optional)"
+msgstr ""
+
+#: templates/parts/assignment.php:54
+msgid "Hand in"
+msgstr ""
+
+#: templates/parts/assignment.php:57
+msgid "JavaScript is required to hand in an assignment."
+msgstr ""
+
 #: templates/parts/certificate-verify.php:15
 msgid "Certificate code"
 msgstr ""
@@ -537,6 +1037,10 @@ msgstr ""
 msgid "No courses found."
 msgstr ""
 
+#: templates/parts/course-grid.php:41
+msgid "Course pages"
+msgstr ""
+
 #: templates/parts/course-outline.php:17
 msgid "This course has no content yet."
 msgstr ""
@@ -545,15 +1049,23 @@ msgstr ""
 msgid "Locked"
 msgstr ""
 
-#: templates/parts/enroll-button.php:18
+#: templates/parts/enroll-button.php:19
 msgid "Log in to enroll"
 msgstr ""
 
-#: templates/parts/enroll-button.php:22
+#: templates/parts/enroll-button.php:23
 msgid "Continue course"
 msgstr ""
 
-#: templates/parts/enroll-button.php:27
+#: templates/parts/enroll-button.php:34
+msgid "This course requires a purchase."
+msgstr ""
+
+#: templates/parts/enroll-button.php:37
+msgid "Enrollment on this course is by invitation."
+msgstr ""
+
+#: templates/parts/enroll-button.php:41
 msgid "Enroll on this course"
 msgstr ""
 
@@ -569,7 +1081,14 @@ msgstr ""
 msgid "You are not enrolled on any courses yet."
 msgstr ""
 
+#. translators: %s: course title.
+#: templates/parts/my-courses.php:27
+#, php-format
+msgid "Progress on %s"
+msgstr ""
+
 #: templates/parts/progress-bar.php:19
+#: assets/src/blocks/index.js:78
 msgid "Course progress"
 msgstr ""
 
@@ -577,4 +1096,106 @@ msgstr ""
 #: templates/parts/progress-bar.php:26
 #, php-format
 msgid "%1$d of %2$d steps complete (%3$s%%)"
+msgstr ""
+
+#: assets/src/blocks/index.js:40
+msgid "Current course (from context)"
+msgstr ""
+
+#: assets/src/blocks/index.js:68
+msgid "Nothing to show here yet. This block renders for the visitor based on their enrollment and the course it sits in."
+msgstr ""
+
+#: assets/src/blocks/index.js:77
+msgid "Course outline"
+msgstr ""
+
+#: assets/src/blocks/index.js:79
+msgid "Enroll button"
+msgstr ""
+
+#: assets/src/blocks/index.js:104
+msgid "Enrollment status"
+msgstr ""
+
+#: assets/src/blocks/index.js:107
+msgid "All"
+msgstr ""
+
+#: assets/src/blocks/index.js:108
+msgid "In progress"
+msgstr ""
+
+#: assets/src/blocks/index.js:115
+msgid "My courses"
+msgstr ""
+
+#: assets/src/blocks/index.js:127
+msgid "Courses to show"
+msgstr ""
+
+#: assets/src/blocks/index.js:134
+msgid "Category slug"
+msgstr ""
+
+#: assets/src/blocks/index.js:135
+msgid "Leave empty for every course."
+msgstr ""
+
+#: assets/src/blocks/index.js:141
+msgid "Course grid"
+msgstr ""
+
+#: assets/src/course-builder/index.js:76
+msgid "Title"
+msgstr ""
+
+#: assets/src/course-builder/index.js:80
+msgid "Cancel"
+msgstr ""
+
+#: assets/src/course-builder/index.js:85
+msgid "Add"
+msgstr ""
+
+#: assets/src/course-builder/index.js:110
+msgid "Move up"
+msgstr ""
+
+#: assets/src/course-builder/index.js:111
+msgid "Move down"
+msgstr ""
+
+#: assets/src/course-builder/index.js:112
+msgid "Remove from course"
+msgstr ""
+
+#: assets/src/course-builder/index.js:156
+#: assets/src/course-builder/index.js:170
+msgid "Course builder"
+msgstr ""
+
+#: assets/src/course-builder/index.js:157
+msgid "Save the course once to start adding lessons."
+msgstr ""
+
+#: assets/src/course-builder/index.js:179
+msgid "No content yet. Add a lesson to begin."
+msgstr ""
+
+#: assets/src/course-builder/index.js:191
+#: assets/src/course-builder/index.js:199
+msgid "+ Quiz"
+msgstr ""
+
+#: assets/src/course-builder/index.js:198
+msgid "+ Topic"
+msgstr ""
+
+#: assets/src/course-builder/index.js:206
+msgid "+ Lesson"
+msgstr ""
+
+#: assets/src/course-builder/index.js:207
+msgid "+ Course quiz"
 msgstr ""

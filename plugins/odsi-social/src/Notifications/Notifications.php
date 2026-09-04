@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace ODSI\Social\Notifications;
 
+use ODSI\Social\Repositories\MemberRepository;
 use ODSI\Social\Repositories\NotificationRepository;
 
 defined( 'ABSPATH' ) || exit;
@@ -25,10 +26,12 @@ final class Notifications {
 	 *
 	 * @param NotificationRepository $notifications Storage.
 	 * @param Renderers              $renderers     Renderers.
+	 * @param MemberRepository       $members       Member index, for actor avatars.
 	 */
 	public function __construct(
 		private NotificationRepository $notifications,
-		private Renderers $renderers
+		private Renderers $renderers,
+		private MemberRepository $members
 	) {
 	}
 
@@ -147,9 +150,19 @@ final class Notifications {
 	public function list( int $user_id, bool $unread_only = false, int $page = 1, int $per_page = 20 ): array {
 		$rows = $this->notifications->for_user( $user_id, $unread_only, $per_page, max( 0, $page - 1 ) * $per_page );
 
-		cache_users( array_values( array_unique( array_map( static fn ( object $r ): int => (int) $r->actor_id, $rows ) ) ) );
+		$this->members->prime_display( array_map( static fn ( object $r ): int => (int) $r->actor_id, $rows ) );
 
 		return array_map( fn ( object $row ): array => $this->present( $row ), $rows );
+	}
+
+	/**
+	 * How many notifications a member has, for pagination.
+	 *
+	 * @param int  $user_id     Member.
+	 * @param bool $unread_only Unread only.
+	 */
+	public function count( int $user_id, bool $unread_only = false ): int {
+		return $this->notifications->count_for_user( $user_id, $unread_only );
 	}
 
 	/**
@@ -199,6 +212,24 @@ final class Notifications {
 			 * @param int[]|null $ids     Ids, or null for all.
 			 */
 			do_action( 'odsi_social_notifications_read', $user_id, $ids );
+		}
+
+		return $changed;
+	}
+
+	/**
+	 * Mark a member's unread notifications about one item read.
+	 *
+	 * @param int    $user_id   Member.
+	 * @param string $component Component.
+	 * @param string $action    Action.
+	 * @param int    $item_id   Item.
+	 */
+	public function mark_read_for_item( int $user_id, string $component, string $action, int $item_id ): int {
+		$changed = $this->notifications->mark_read_for_item( $user_id, $component, $action, $item_id );
+
+		if ( $changed > 0 ) {
+			wp_cache_delete( "unread_{$user_id}", self::CACHE_GROUP );
 		}
 
 		return $changed;

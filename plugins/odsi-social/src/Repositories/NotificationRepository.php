@@ -127,6 +127,48 @@ final class NotificationRepository extends AbstractRepository {
 	}
 
 	/**
+	 * Total rows for a user, for pagination.
+	 *
+	 * @param int  $user_id     User id.
+	 * @param bool $unread_only Unread only.
+	 */
+	public function count_for_user( int $user_id, bool $unread_only = false ): int {
+		$table = $this->table();
+		$sql   = "SELECT COUNT(*) FROM {$table} WHERE user_id = %d" . ( $unread_only ? ' AND is_new = 1' : '' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		return (int) $this->db->get_var( $this->db->prepare( $sql, $user_id ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
+	/**
+	 * Mark a user's unread rows about one item read (opening a thread reads
+	 * its "new message" notification).
+	 *
+	 * @param int    $user_id   User id.
+	 * @param string $component Component.
+	 * @param string $action    Action.
+	 * @param int    $item_id   Item id.
+	 *
+	 * @return int Rows changed.
+	 */
+	public function mark_read_for_item( int $user_id, string $component, string $action, int $item_id ): int {
+		$table = $this->table();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (int) $this->db->query(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$this->db->prepare(
+				"UPDATE {$table} SET is_new = 0, collapse_key = NULL, date_read = %s WHERE user_id = %d AND is_new = 1 AND component = %s AND action = %s AND item_id = %d",
+				$this->now(),
+				$user_id,
+				$component,
+				$action,
+				$item_id
+			)
+		);
+	}
+
+	/**
 	 * Unread count.
 	 *
 	 * @param int $user_id User id.

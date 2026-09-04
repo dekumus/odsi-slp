@@ -14,6 +14,7 @@ use ODSI\Social\Groups\Membership;
 use ODSI\Social\Members\Uploads;
 use ODSI\Social\Repositories\GroupMemberRepository;
 use ODSI\Social\Repositories\GroupRepository;
+use ODSI\Social\Repositories\MemberRepository;
 use ODSI\Social\Support\Capabilities;
 use WP_Error;
 use WP_REST_Request;
@@ -33,15 +34,17 @@ final class GroupsController {
 	 * @param Groups                $groups     Groups.
 	 * @param Membership            $membership Membership.
 	 * @param GroupMemberRepository $members    Membership rows.
-	 * @param GroupRepository       $index      Index rows.
-	 * @param Uploads               $uploads    Image uploads.
+	 * @param GroupRepository       $index         Index rows.
+	 * @param Uploads               $uploads       Image uploads.
+	 * @param MemberRepository      $index_members Member index, for avatars.
 	 */
 	public function __construct(
 		private Groups $groups,
 		private Membership $membership,
 		private GroupMemberRepository $members,
 		private GroupRepository $index,
-		private Uploads $uploads
+		private Uploads $uploads,
+		private MemberRepository $index_members
 	) {
 	}
 
@@ -93,6 +96,16 @@ final class GroupsController {
 						),
 					),
 				),
+			)
+		);
+
+		register_rest_route(
+			$ns,
+			'/groups/mine',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'mine' ),
+				'permission_callback' => $in,
 			)
 		);
 
@@ -220,6 +233,7 @@ final class GroupsController {
 		}
 
 		$result = $this->index->directory( $args );
+		$this->groups->prime( $viewer, $result['ids'] );
 
 		return new WP_REST_Response(
 			array(
@@ -229,6 +243,13 @@ final class GroupsController {
 				'per_page' => (int) $request['per_page'],
 			)
 		);
+	}
+
+	/**
+	 * `GET /groups/mine` — the caller's active groups, pending requests and invitations (SOC-GRP-010).
+	 */
+	public function mine(): WP_REST_Response {
+		return new WP_REST_Response( $this->membership->mine( get_current_user_id() ) );
 	}
 
 	/**
@@ -386,7 +407,7 @@ final class GroupsController {
 		$per_page = 50;
 		$rows     = $this->members->for_group( $group_id, $status, null, $per_page, ( max( 1, (int) $request['page'] ) - 1 ) * $per_page );
 
-		cache_users( array_map( static fn ( object $r ): int => (int) $r->user_id, $rows ) );
+		$this->index_members->prime_display( array_map( static fn ( object $r ): int => (int) $r->user_id, $rows ) );
 
 		return new WP_REST_Response(
 			array(
@@ -411,14 +432,19 @@ final class GroupsController {
 	}
 
 	/**
-	 * `POST /groups/{id}/membership` — join or request per visibility.
+	 * `POST /groups/{id}/membership` — accept an invitation, else join or request per visibility.
 	 *
 	 * @param WP_REST_Request $request Request.
 	 */
 	public function join_or_request( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$viewer   = get_current_user_id();
 		$group_id = (int) $request['id'];
-		$result   = 'public' === $this->groups->visibility( $group_id ) ? $this->membership->join( $viewer, $group_id ) : $this->membership->request( $viewer, $group_id );
+
+		if ( $this->membership->is_invited( $viewer, $group_id ) || 'public' === $this->groups->visibility( $group_id ) ) {
+			$result = $this->membership->join( $viewer, $group_id );
+		} else {
+			$result = $this->membership->request( $viewer, $group_id );
+		}
 
 		if ( $result instanceof WP_Error ) {
 			return RestServiceProvider::respond( $result );

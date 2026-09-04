@@ -8,7 +8,7 @@ when you change what it describes.
 | Plugin | State |
 | --- | --- |
 | `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 125 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
-| `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens, blocks, profile and group settings pages, notification emails. 132 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
+| `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens, blocks, profile and group settings pages, notification emails. 164 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules plus an uninstall data switch (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 15 integration tests. |
 
 Verification so far: the integration suite boots WordPress core with the
@@ -97,7 +97,7 @@ Architecture in `docs/specs/20-social-architecture.md`, tables in
 4. ~~Group settings UI~~ Closed: `/groups/{slug}/manage/` for organisers:
    settings, images, requests, roles, bans.
 5. ~~Reaction "who" lists~~ Closed for reactions: `Feed::reactors()`, REST, and
-   the single item page (SOC-ACT-012). Comment authors were always listed.
+   the single item page (SOC-ACT-037). Comment authors were always listed.
 6. **No object caching** beyond per-request repository caches and the unread
    counters.
 7. **Feed benchmark** asserts a query budget; nothing asserts a time bound
@@ -358,6 +358,34 @@ with the spec or with itself. LMS findings fixed, each with a regression in
   the lesson template on classic themes; status labels are translated; the
   progress bar carries `role="progressbar"`.
 
+Community findings fixed by a delegated pass, each with a regression
+(`social/CorrectnessTest` plus extensions of the existing classes):
+
+- REST `per_page` of 0 returned nothing; hidden-group invitees could not
+  reach the page to accept or decline; the post form ignored the allowed
+  and default privacy settings; "load more" rendered items client-side
+  with a different markup from the server (now `render=1` returns the
+  template's HTML); privacy checks in the feed were one query per item
+  (`Privacy::prime()`, repository memos) and the cursor came from the
+  filtered page rather than the fetched one.
+- Missing pages returned 200: the router now asks `odsi_social_page_exists`
+  before output and sends a real 404 with no-cache headers; a member's own
+  groups (active, pending, invited) are listed and served by `GET
+  /groups/mine`; staff see `can_delete`; comment notifications go with the
+  parent; the Following tab works in the block; directory, profile, groups,
+  inbox and notifications pages cost a fixed number of queries.
+- Viewing a profile no longer creates member rows; groups created in
+  wp-admin get their author as organiser and a true member count; only
+  promotions notify; templates build links through `odsi_social_page_url`;
+  mentions of members the viewer cannot see render as text; backslashes
+  survive posting; malformed profile fields are a 400; empty multiselects
+  count as empty; the settings screen edits every option with a validating
+  sanitiser; uninstall removes group posts, images, usermeta, transients
+  and the cron event before dropping tables (still opt-in); the group page
+  lists members; inbox, notifications and directory paginate; organisers
+  can be promoted and demoted; opening a thread marks its notifications
+  read; the daily job recounts denormalised counters (`SOC-OPS-001/002`).
+
 Harness: the core test framework unregisters every meta key between tests,
 so `tests/integration/TestCase` re-registers both plugins' meta in `set_up`.
 Before this, only the first test in a process saw registered meta, which
@@ -393,17 +421,18 @@ count individually), which is why they can exceed the number of methods.
 | Member flow in a browser | e2e `social-member-flow` | 1, passing |
 | Social schema, ADR-005 scan | integration `social/SchemaTest` | 20 (5 methods with providers) |
 | Privacy decision table, both representations | integration `social/PrivacyTest` | 41 (3 methods, 19-row table twice) |
-| `SOC-ACT-*` | integration `social/ActivityTest` | 14 |
+| `SOC-ACT-*` | integration `social/ActivityTest` | 19 |
 | `SOC-CON-*` | integration `social/ConnectionsTest` | 5 |
-| `SOC-GRP-*` | integration `social/GroupsTest` | 10 |
-| `SOC-NOT-*` | integration `social/NotificationsTest` | 8 |
+| `SOC-GRP-*` | integration `social/GroupsTest` | 13 |
+| `SOC-NOT-*` | integration `social/NotificationsTest` | 11 |
 | `SOC-NOT-008` notification emails | integration `social/EmailsTest` | 1 |
 | `SOC-MSG-*` | integration `social/MessagesTest` | 5 |
-| `SOC-MEM-*` | integration `social/MembersTest` | 6 |
-| Social REST, ADR-011 | integration `social/RestTest` | 6 |
-| Uploads, profile and group forms, image REST routes | integration `social/SettingsFormsTest` | 5 |
+| `SOC-MEM-*` | integration `social/MembersTest` | 9 |
+| Social REST, ADR-011 | integration `social/RestTest` | 9 |
+| Uploads, profile and group forms, image REST routes | integration `social/SettingsFormsTest` | 6 |
 | `SOC-IF-004` blocks | integration `social/BlocksTest` | 2 |
 | ADR-018, `SOC-ABUSE-*`, `SOC-MEM-004b`, `SOC-NOT-009` | integration `social/SecurityTest` | 9 |
+| Post-form privacy, page URLs, 404 decisions, my groups, query budgets, settings sanitiser, uninstall purge, counter recount (`SOC-OPS-*`) | integration `social/CorrectnessTest` | 14 |
 | Integration contract end to end, unpublished courses, queued link sync, expiry, cohorts, trash, relink, essay passes, banned members | integration `bridge/BridgeTest` | 15 |
 
 ## Open questions

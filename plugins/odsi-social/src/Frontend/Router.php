@@ -55,6 +55,7 @@ final class Router implements Bootable {
 		add_filter( 'odsi_social_group_url', array( $this, 'group_url' ), 10, 2 );
 		add_filter( 'odsi_social_activity_url', array( $this, 'activity_url' ), 10, 2 );
 		add_filter( 'odsi_social_thread_url', array( $this, 'thread_url' ), 10, 2 );
+		add_filter( 'odsi_social_page_url', array( $this, 'page_url' ), 10, 4 );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
 	}
 
@@ -135,6 +136,37 @@ final class Router implements Bootable {
 	}
 
 	/**
+	 * The HTTP status a community request deserves, decided before any output.
+	 *
+	 * The page renderer answers `odsi_social_page_exists` — does this member,
+	 * group, item or thread exist for this viewer — and the router turns a
+	 * "no" into a real 404 with no-cache headers. A private section a
+	 * visitor reaches is redirected earlier, so it is not a 404 here.
+	 *
+	 * @param string $section     Section.
+	 * @param string $object_slug Object slug.
+	 * @param string $action      Sub-action.
+	 * @param int    $viewer      Viewer.
+	 *
+	 * @return int 200 or 404.
+	 */
+	public function status_for( string $section, string $object_slug, string $action, int $viewer ): int {
+		/**
+		 * Filters whether a community page exists for the viewer (ADR-011:
+		 * "does not exist" and "may not see" are the same answer).
+		 *
+		 * @param bool   $exists  Whether the page exists.
+		 * @param string $section Section.
+		 * @param string $object  Object slug (nicename, group slug, activity id, thread id).
+		 * @param string $action  Sub-action (`edit`, `manage`).
+		 * @param int    $viewer  Viewer, 0 for a visitor.
+		 */
+		$exists = (bool) apply_filters( 'odsi_social_page_exists', true, $section, $object_slug, $action, $viewer );
+
+		return $exists ? 200 : 404;
+	}
+
+	/**
 	 * Render the community template through the theme's page template.
 	 *
 	 * @param string $template Resolved template.
@@ -152,7 +184,13 @@ final class Router implements Bootable {
 		$wp_query->is_home     = false;
 		$wp_query->is_archive  = false;
 
-		status_header( 200 );
+		$status = $this->status_for( $this->section(), $this->object(), $this->action(), get_current_user_id() );
+
+		status_header( $status );
+
+		if ( 404 === $status ) {
+			nocache_headers();
+		}
 
 		$this->install_virtual_post();
 
@@ -259,6 +297,18 @@ final class Router implements Bootable {
 		}
 
 		return home_url( user_trailingslashit( $path ) );
+	}
+
+	/**
+	 * URL of any community page, for templates (`odsi_social_page_url`).
+	 *
+	 * @param string $url         Current value.
+	 * @param string $section     Section.
+	 * @param string $object_slug Object slug.
+	 * @param string $action      Action.
+	 */
+	public function page_url( string $url, string $section, string $object_slug = '', string $action = '' ): string {
+		return '' !== $section ? $this->url( $section, $object_slug, $action ) : $url;
 	}
 
 	/**

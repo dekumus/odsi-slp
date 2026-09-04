@@ -59,6 +59,35 @@ final class Privacy {
 	}
 
 	/**
+	 * Warm every lookup `can_view()` makes for a page of rows — the groups,
+	 * the viewer's memberships in them and the viewer's connections to the
+	 * authors — in at most one query each, so a page costs no query per item
+	 * (SOC-ACT-035).
+	 *
+	 * @param int      $viewer_id Viewer, 0 for a visitor.
+	 * @param object[] $rows      Activity rows.
+	 */
+	public function prime( int $viewer_id, array $rows ): void {
+		$group_ids  = array();
+		$author_ids = array();
+
+		foreach ( $rows as $row ) {
+			if ( (int) $row->group_id > 0 ) {
+				$group_ids[] = (int) $row->group_id;
+			}
+
+			$author_ids[] = (int) $row->user_id;
+		}
+
+		$this->groups->prime( $group_ids );
+
+		if ( $viewer_id > 0 && ! Capabilities::is_admin( $viewer_id ) ) {
+			$this->members->prime_for_user( $viewer_id, $group_ids );
+			$this->connections->prime_pairs( $viewer_id, $author_ids );
+		}
+	}
+
+	/**
 	 * Whether the viewer may see the item.
 	 *
 	 * @param int    $viewer_id Viewer, 0 for a visitor.

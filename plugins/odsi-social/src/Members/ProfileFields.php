@@ -22,6 +22,13 @@ final class ProfileFields {
 	public const VISIBILITIES = array( 'public', 'members', 'connections', 'only_me' );
 
 	/**
+	 * Per-request memo of the structure; definitions change only from the admin screen.
+	 *
+	 * @var array<int, array{group: object, fields: object[]}>|null
+	 */
+	private ?array $structure = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ProfileFieldRepository $fields Storage.
@@ -30,21 +37,31 @@ final class ProfileFields {
 	}
 
 	/**
-	 * Field groups with their fields, in order.
+	 * Field groups with their fields, in order. Two queries, memoised per request.
 	 *
 	 * @return array<int, array{group: object, fields: object[]}>
 	 */
 	public function structure(): array {
-		$out = array();
+		if ( null !== $this->structure ) {
+			return $this->structure;
+		}
+
+		$by_group = array();
+
+		foreach ( $this->fields->fields() as $field ) {
+			$by_group[ (int) $field->group_id ][] = $field;
+		}
+
+		$this->structure = array();
 
 		foreach ( $this->fields->groups() as $group ) {
-			$out[] = array(
+			$this->structure[] = array(
 				'group'  => $group,
-				'fields' => $this->fields->fields( (int) $group->id ),
+				'fields' => $by_group[ (int) $group->id ] ?? array(),
 			);
 		}
 
-		return $out;
+		return $this->structure;
 	}
 
 	/**
@@ -55,11 +72,20 @@ final class ProfileFields {
 	public function all(): array {
 		$by_id = array();
 
-		foreach ( $this->fields->fields() as $field ) {
-			$by_id[ (int) $field->id ] = $field;
+		foreach ( $this->structure() as $section ) {
+			foreach ( $section['fields'] as $field ) {
+				$by_id[ (int) $field->id ] = $field;
+			}
 		}
 
 		return $by_id;
+	}
+
+	/**
+	 * Forget the memoised structure after a definition changes.
+	 */
+	public function flush(): void {
+		$this->structure = null;
 	}
 
 	/**
@@ -70,6 +96,8 @@ final class ProfileFields {
 	 * @param int    $sort_order  Order.
 	 */
 	public function create_group( string $name, string $description = '', int $sort_order = 0 ): int {
+		$this->flush();
+
 		return $this->fields->create_group( sanitize_text_field( $name ), sanitize_textarea_field( $description ), $sort_order );
 	}
 
@@ -79,6 +107,7 @@ final class ProfileFields {
 	 * @param int $group_id Group id.
 	 */
 	public function delete_group( int $group_id ): void {
+		$this->flush();
 		$this->fields->delete_group( $group_id );
 	}
 
@@ -103,6 +132,8 @@ final class ProfileFields {
 			return 0;
 		}
 
+		$this->flush();
+
 		return $this->fields->create( $group_id, sanitize_text_field( $name ), $type, $args );
 	}
 
@@ -121,6 +152,8 @@ final class ProfileFields {
 			return false;
 		}
 
+		$this->flush();
+
 		return $this->fields->update( $field_id, $data );
 	}
 
@@ -130,6 +163,8 @@ final class ProfileFields {
 	 * @param int $field_id Field.
 	 */
 	public function delete( int $field_id ): bool {
+		$this->flush();
+
 		return $this->fields->delete( $field_id );
 	}
 

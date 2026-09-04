@@ -263,6 +263,120 @@ final class ActivityTest extends TestCase {
 		self::assertSame( count( $ids ), count( array_unique( $seen ) ) );
 	}
 
+	public function test_act_035_page_query_budget_holds_for_group_and_connections_items(): void {
+		$me     = $this->social->member();
+		$friend = $this->social->member();
+		$owner  = $this->social->member();
+		$this->social->connect( $me, $friend );
+		$private = $this->social->group( $owner, 'private', 'Closed circle' );
+		$public  = $this->social->group( $owner, 'public', 'Open circle' );
+		$this->social->add_to_group( $private, $me );
+		$this->social->service( \ODSI\Social\Groups\Membership::class )->join( $me, $public );
+
+		for ( $i = 0; $i < 6; $i++ ) {
+			$this->social->update( $friend, "friends only {$i}", 'connections' );
+			$this->social->update( $owner, "in private {$i}", 'group', $private );
+			$this->social->update( $owner, "in public {$i}", 'group', $public );
+		}
+
+		foreach ( array( \ODSI\Social\Repositories\GroupRepository::class, \ODSI\Social\Repositories\GroupMemberRepository::class, \ODSI\Social\Repositories\ConnectionRepository::class, \ODSI\Social\Repositories\MemberRepository::class ) as $repo ) {
+			$this->social->service( $repo )->flush();
+		}
+		wp_cache_flush();
+
+		global $wpdb;
+		$before = $wpdb->num_queries;
+		$page   = $this->feed->page( $me, Feed::SCOPE_SITE, array( 'per_page' => 20 ) );
+		$used   = $wpdb->num_queries - $before;
+
+		self::assertCount( 20, $page['items'] );
+		self::assertContains( 'joined_group', array_column( $page['items'], 'type' ), 'A group event is on the page and rendered with its group.' );
+		self::assertStringContainsString( 'Open circle', implode( ' ', array_column( $page['items'], 'action' ) ) );
+		self::assertLessThanOrEqual( 14, $used, "SOC-ACT-035: {$used} queries for a mixed page (constant: viewer, page, three priming lookups, comments, reactions, users, members, group posts)." );
+	}
+
+	public function test_act_034_cursor_continues_past_a_page_the_filter_empties(): void {
+		$u      = $this->social->member();
+		$ids    = array();
+		$hidden = array();
+
+		for ( $i = 0; $i < 5; $i++ ) {
+			$ids[] = $this->social->update( $u, "post {$i}" );
+		}
+
+		// The two newest rows survive the SQL rule but a filter denies them,
+		// so the first page of two shows nothing.
+		$hidden = array_slice( $ids, 3 );
+		add_filter( 'odsi_social_can_view_activity', static fn ( bool $allowed, int $viewer, object $item ): bool => $allowed && ! in_array( (int) $item->id, $hidden, true ), 10, 3 );
+
+		$seen   = array();
+		$cursor = '';
+		$pages  = 0;
+
+		do {
+			$page = $this->feed->page(
+				$u,
+				Feed::SCOPE_SITE,
+				array(
+					'per_page' => 2,
+					'cursor'   => $cursor,
+				)
+			);
+			$seen   = array_merge( $seen, array_column( $page['items'], 'id' ) );
+			$cursor = $page['next_cursor'];
+			++$pages;
+		} while ( '' !== $cursor && $pages < 10 );
+
+		self::assertSame( array( $ids[2], $ids[1], $ids[0] ), $seen );
+	}
+
+	public function test_act_009_feed_marks_deletable_items_for_group_staff(): void {
+		$owner  = $this->social->member();
+		$mod    = $this->social->member();
+		$member = $this->social->member();
+		$group  = $this->social->group( $owner, 'public' );
+		$this->social->add_to_group( $group, $mod, 'moderator' );
+		$this->social->add_to_group( $group, $member );
+		$item = $this->social->update( $member, 'moderate me', 'group', $group );
+
+		$page = fn ( int $viewer ): array => array_column(
+			$this->feed->page(
+				$viewer,
+				Feed::SCOPE_GROUP,
+				array(
+					'group_id' => $group,
+					'type' => 'update',
+				)
+			)['items'],
+			'can_delete',
+			'id'
+		);
+
+		self::assertTrue( $page( $mod )[ $item ], 'Moderators see the Delete button.' );
+		self::assertTrue( $page( $owner )[ $item ] );
+		self::assertTrue( $page( $member )[ $item ], 'Authors do too.' );
+		self::assertFalse( $page( $this->social->member() )[ $item ] );
+	}
+
+	public function test_act_002_backslashes_survive_a_round_trip(): void {
+		$u    = $this->social->member();
+		$item = $this->activity->post_update( $u, 'Path C:\\temp\\file and \\o/', 'public' );
+
+		self::assertSame( 'Path C:\\temp\\file and \\o/', $item->content );
+		self::assertSame( 'Path C:\\temp\\file and \\o/', $this->feed->item( $u, (int) $item->id )['raw_content'] );
+	}
+
+	public function test_act_004_single_item_carries_up_to_five_hundred_comments(): void {
+		$u    = $this->social->member();
+		$item = $this->social->update( $u );
+
+		for ( $i = 0; $i < 105; $i++ ) {
+			$this->social->comment( $u, $item, "c{$i}" );
+		}
+
+		self::assertCount( 105, $this->feed->item( $u, $item )['comments'] );
+	}
+
 	public function test_act_035_page_query_budget_is_constant(): void {
 		$u = $this->social->member();
 
@@ -295,7 +409,7 @@ final class ActivityTest extends TestCase {
 		self::assertNull( Cursor::decode( '' ) );
 	}
 
-	public function test_act_012_reactors_list_respects_visibility(): void {
+	public function test_act_037_reactors_list_respects_visibility(): void {
 		$author = $this->social->member();
 		$fan    = $this->social->member();
 		$other  = $this->social->member();

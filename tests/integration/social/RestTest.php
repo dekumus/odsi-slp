@@ -61,6 +61,81 @@ final class RestTest extends TestCase {
 		self::assertSame( 404, $this->rest( 'GET', self::NS . "/activity/{$id}" )->get_status() );
 	}
 
+	public function test_feed_defaults_to_the_site_page_size_and_can_render_items(): void {
+		$u = $this->social->member();
+
+		for ( $i = 0; $i < 4; $i++ ) {
+			$this->social->update( $u, "p{$i}" );
+		}
+
+		$this->social->service( \ODSI\Social\Support\Settings::class )->update( array( 'feed_per_page' => 3 ) );
+
+		try {
+			$feed = $this->rest( 'GET', self::NS . '/activity', array( 'type' => 'update' ) );
+			self::assertCount( 3, $feed->get_data()['items'], 'Absent per_page means the site default, not one.' );
+			self::assertNotSame( '', $feed->get_data()['next_cursor'] );
+			self::assertArrayNotHasKey( 'html', $feed->get_data()['items'][0] );
+
+			$rendered = $this->as_user(
+				$u,
+				fn () => $this->rest(
+					'GET',
+					self::NS . '/activity',
+					array(
+						'type'     => 'update',
+						'per_page' => 0,
+						'render'   => '1',
+					)
+				)
+			);
+			$item     = $rendered->get_data()['items'][0];
+			self::assertCount( 3, $rendered->get_data()['items'] );
+			self::assertStringContainsString( '<article class="odsi-social-item" data-activity-id="' . $item['id'] . '"', $item['html'] );
+			self::assertStringContainsString( 'odsi-social-react', $item['html'], 'Rendered items carry their buttons.' );
+			self::assertStringContainsString( 'odsi-social-delete', $item['html'] );
+			self::assertStringContainsString( 'odsi-social-comment-form', $item['html'] );
+		} finally {
+			$this->social->service( \ODSI\Social\Support\Settings::class )->update( array( 'feed_per_page' => 20 ) );
+		}
+	}
+
+	public function test_invitees_can_accept_or_decline_a_hidden_group(): void {
+		$owner    = $this->social->member();
+		$accepter = $this->social->member();
+		$decliner = $this->social->member();
+		$hidden   = $this->social->group( $owner, 'hidden' );
+		$this->social->invite( $hidden, $owner, $accepter );
+		$this->social->invite( $hidden, $owner, $decliner );
+
+		$page = $this->as_user( $accepter, fn () => $this->rest( 'GET', self::NS . "/groups/{$hidden}" ) );
+		self::assertSame( 200, $page->get_status() );
+		self::assertSame( 'invited', $page->get_data()['viewer']['status'] );
+
+		$mine = $this->as_user( $accepter, fn () => $this->rest( 'GET', self::NS . '/groups/mine' ) );
+		self::assertSame( array( $hidden ), array_column( $mine->get_data()['invited'], 'id' ), 'SOC-GRP-010' );
+
+		$joined = $this->as_user( $accepter, fn () => $this->rest( 'POST', self::NS . "/groups/{$hidden}/membership" ) );
+		self::assertSame( 200, $joined->get_status() );
+		self::assertSame( 'active', $joined->get_data()['viewer']['status'] );
+		self::assertSame( array( $hidden ), array_column( $this->as_user( $accepter, fn () => $this->rest( 'GET', self::NS . '/groups/mine' ) )->get_data()['active'], 'id' ) );
+
+		$declined = $this->as_user( $decliner, fn () => $this->rest( 'DELETE', self::NS . "/groups/{$hidden}/membership" ) );
+		self::assertSame( 200, $declined->get_status() );
+		self::assertNull( $this->social->service( \ODSI\Social\Repositories\GroupMemberRepository::class )->find_for( $hidden, $decliner ) );
+		self::assertSame( 404, $this->as_user( $decliner, fn () => $this->rest( 'GET', self::NS . "/groups/{$hidden}" ) )->get_status() );
+	}
+
+	public function test_profile_update_rejects_malformed_fields(): void {
+		$u = $this->social->member();
+
+		$bad = $this->as_user( $u, fn () => $this->rest( 'PATCH', self::NS . '/members/me', array( 'fields' => array( '3' => 'x' ) ) ) );
+		self::assertSame( 400, $bad->get_status() );
+		self::assertSame( 'odsi_social_invalid_field', $bad->get_data()['code'] );
+
+		$worse = $this->as_user( $u, fn () => $this->rest( 'PATCH', self::NS . '/members/me', array( 'fields' => 'nope' ) ) );
+		self::assertSame( 400, $worse->get_status() );
+	}
+
 	public function test_hidden_content_is_404_not_403(): void {
 		$u        = $this->social->member();
 		$stranger = $this->social->member();

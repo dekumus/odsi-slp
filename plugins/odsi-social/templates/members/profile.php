@@ -30,7 +30,7 @@ $odsi_uid = (int) $profile['id'];
 
 			<?php if ( $viewer_id > 0 && ( $profile['viewer']['is_self'] || \ODSI\Social\Support\Capabilities::is_admin( $viewer_id ) ) ) : ?>
 				<div class="odsi-social-profile__actions">
-					<a class="odsi-social-button odsi-social-profile__edit" href="<?php echo esc_url( trailingslashit( (string) $profile['url'] ) . 'edit/' ); ?>"><?php esc_html_e( 'Edit profile', 'odsi-social' ); ?></a>
+					<a class="odsi-social-button odsi-social-profile__edit" href="<?php echo esc_url( (string) apply_filters( 'odsi_social_page_url', trailingslashit( (string) $profile['url'] ) . 'edit/', 'members', (string) $profile['nicename'], 'edit' ) ); ?>"><?php esc_html_e( 'Edit profile', 'odsi-social' ); ?></a>
 				</div>
 			<?php endif; ?>
 
@@ -47,7 +47,7 @@ $odsi_uid = (int) $profile['id'];
 	?>
 					<button type="button" class="odsi-social-button odsi-social-connect" data-user-id="<?php echo esc_attr( (string) $odsi_uid ); ?>" data-status="<?php echo esc_attr( $odsi_status ); ?>"><?php echo esc_html( $odsi_label ); ?></button>
 					<button type="button" class="odsi-social-button odsi-social-follow <?php echo $is_following ? 'is-active' : ''; ?>" data-user-id="<?php echo esc_attr( (string) $odsi_uid ); ?>"><?php echo $is_following ? esc_html__( 'Unfollow', 'odsi-social' ) : esc_html__( 'Follow', 'odsi-social' ); ?></button>
-					<a class="odsi-social-button" href="<?php echo esc_url( add_query_arg( 'to', $odsi_uid, (string) apply_filters( 'odsi_social_thread_url', '', 0 ) ?: home_url( '/messages/' ) ) ); ?>"><?php esc_html_e( 'Message', 'odsi-social' ); ?></a>
+					<a class="odsi-social-button" href="<?php echo esc_url( add_query_arg( 'to', $odsi_uid, (string) apply_filters( 'odsi_social_page_url', home_url( '/messages/' ), 'messages', '', '' ) ) ); ?>"><?php esc_html_e( 'Message', 'odsi-social' ); ?></a>
 				</div>
 			<?php endif; ?>
 		</div>
@@ -68,6 +68,9 @@ $odsi_uid = (int) $profile['id'];
 							esc_html_e( 'Yes', 'odsi-social' );
 						} elseif ( 'url' === $odsi_field['type'] ) {
 							printf( '<a href="%1$s" rel="nofollow">%1$s</a>', esc_url( (string) $odsi_value ) );
+						} elseif ( 'textarea' === $odsi_field['type'] ) {
+							// Escaped first; wpautop only adds paragraph and break tags.
+							echo wp_kses_post( wpautop( esc_html( (string) $odsi_value ) ) );
 						} else {
 							echo esc_html( (string) $odsi_value );
 						}

@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace ODSI\Social\Frontend;
 
+use ODSI\Social\Activity\Activity;
 use ODSI\Social\Activity\Feed;
 use ODSI\Social\Container;
 use ODSI\Social\Contracts\Bootable;
@@ -17,8 +18,11 @@ use ODSI\Social\Members\Directory;
 use ODSI\Social\Members\Profiles;
 use ODSI\Social\Members\Uploads;
 use ODSI\Social\Messages\Messages;
+use ODSI\Social\Groups\Membership;
 use ODSI\Social\Notifications\Notifications;
+use ODSI\Social\Repositories\GroupMemberRepository;
 use ODSI\Social\Repositories\GroupRepository;
+use ODSI\Social\Repositories\MemberRepository;
 use ODSI\Social\Support\Capabilities;
 
 defined( 'ABSPATH' ) || exit;
@@ -45,6 +49,56 @@ final class Shortcodes implements Bootable {
 		add_shortcode( 'odsi_activity_feed', array( $this, 'render_feed' ) );
 		add_shortcode( 'odsi_member_directory', array( $this, 'render_directory' ) );
 		add_shortcode( 'odsi_group_directory', array( $this, 'render_groups' ) );
+		add_filter( 'odsi_social_page_exists', array( $this, 'page_exists' ), 10, 5 );
+	}
+
+	/**
+	 * Whether a routed page exists for the viewer, answered before any output
+	 * so the router can send a real 404 (ADR-011).
+	 *
+	 * @param bool   $exists      Current answer.
+	 * @param string $section     Section.
+	 * @param string $object_slug Object slug.
+	 * @param string $action      Sub-action.
+	 * @param int    $viewer      Viewer.
+	 */
+	public function page_exists( bool $exists, string $section, string $object_slug, string $action, int $viewer ): bool {
+		if ( ! $exists || '' === $object_slug ) {
+			return $exists;
+		}
+
+		switch ( $section ) {
+			case 'members':
+				$user = get_user_by( 'slug', $object_slug );
+
+				if ( ! $user ) {
+					return false;
+				}
+
+				// A visitor who may not browse members is asked to log in, not told "no such page".
+				return 'edit' !== $action || $viewer <= 0 || $this->container->get( Profiles::class )->can_edit( $viewer, (int) $user->ID );
+
+			case 'groups':
+				$row    = $this->container->get( GroupRepository::class )->find_by_slug( $object_slug );
+				$groups = $this->container->get( Groups::class );
+
+				if ( ! $row || ! $groups->can_view( $viewer, (int) $row->post_id ) ) {
+					return false;
+				}
+
+				return 'manage' !== $action || $viewer <= 0 || $groups->is_organiser( $viewer, (int) $row->post_id );
+
+			case 'activity':
+				$item = $this->container->get( Activity::class )->get( (int) $object_slug );
+
+				return null !== $item && $this->container->get( \ODSI\Social\Activity\Privacy::class )->can_view( $viewer, $item );
+
+			case 'messages':
+				return $viewer <= 0 || $this->container->get( Messages::class )->can_read( $viewer, (int) $object_slug );
+
+			default:
+				return $exists;
+		}//end switch
 	}
 
 	/**
@@ -118,10 +172,22 @@ final class Shortcodes implements Bootable {
 		);
 		$viewer = get_current_user_id();
 		$feed   = $this->container->get( Feed::class );
+		$writer = $this->container->get( Activity::class );
+		$scope  = (string) $atts['scope'];
+
+		// With tabs, a member switches between "Everyone" (the site feed) and
+		// "Following" (the personal feed) with ?scope=personal.
+		if ( ! empty( $atts['show_tabs'] ) && $viewer > 0 && in_array( $scope, array( Feed::SCOPE_SITE, Feed::SCOPE_PERSONAL ), true ) ) {
+			$wanted = sanitize_key( (string) ( $_GET['scope'] ?? '' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view switch.
+
+			if ( in_array( $wanted, array( Feed::SCOPE_SITE, Feed::SCOPE_PERSONAL ), true ) ) {
+				$scope = $wanted;
+			}
+		}
 
 		$page = $feed->page(
 			$viewer,
-			(string) $atts['scope'],
+			$scope,
 			array_filter(
 				array(
 					'group_id' => (int) $atts['group_id'],
@@ -134,15 +200,16 @@ final class Shortcodes implements Bootable {
 		return $this->templates()->render(
 			'activity/feed',
 			array(
-				'scope'           => (string) $atts['scope'],
+				'scope'           => $scope,
 				'group_id'        => (int) $atts['group_id'],
 				'user_id'         => (int) $atts['user_id'],
 				'items'           => $page['items'],
 				'next_cursor'     => $page['next_cursor'],
 				'viewer_id'       => $viewer,
 				'show_tabs'       => (bool) $atts['show_tabs'],
-				'can_post'        => $viewer > 0 && in_array( $atts['scope'], array( Feed::SCOPE_SITE, Feed::SCOPE_PERSONAL, Feed::SCOPE_GROUP ), true ),
-				'privacy_choices' => \ODSI\Social\Activity\Privacy::choices(),
+				'can_post'        => $viewer > 0 && in_array( $scope, array( Feed::SCOPE_SITE, Feed::SCOPE_PERSONAL, Feed::SCOPE_GROUP ), true ),
+				'privacy_choices' => $viewer > 0 ? $writer->privacy_choices( $viewer ) : array(),
+				'default_privacy' => $viewer > 0 ? $writer->default_privacy( $viewer ) : '',
 			)
 		);
 	}
@@ -333,6 +400,7 @@ final class Shortcodes implements Bootable {
 		);
 
 		$result = $index->directory( $args );
+		$groups->prime( $viewer, $result['ids'] );
 
 		return $this->templates()->render(
 			'groups/directory',
@@ -341,6 +409,7 @@ final class Shortcodes implements Bootable {
 				'total'      => $result['total'],
 				'args'       => $args,
 				'can_create' => $groups->can_create( $viewer ),
+				'mine'       => $viewer > 0 ? $this->container->get( Membership::class )->mine( $viewer ) : array(),
 			)
 		);
 	}
@@ -374,6 +443,7 @@ final class Shortcodes implements Bootable {
 				'viewer_id'        => $viewer,
 				'can_view_content' => $can_view_content,
 				'is_moderator'     => $groups->is_moderator( $viewer, (int) $row->post_id ),
+				'members'          => $can_view_content ? $this->group_members( (int) $row->post_id ) : array(),
 				'feed'             => $can_view_content ? $this->render_feed(
 					array(
 						'scope'    => Feed::SCOPE_GROUP,
@@ -382,6 +452,39 @@ final class Shortcodes implements Bootable {
 				) : '',
 			)
 		);
+	}
+
+	/**
+	 * The first 50 active members of a group, organisers first, for the group page.
+	 *
+	 * @param int $group_id Group.
+	 *
+	 * @return array<int, array{id: int, name: string, avatar: string, url: string, role: string}>
+	 */
+	private function group_members( int $group_id ): array {
+		$rows = $this->container->get( GroupMemberRepository::class )->for_group( $group_id, GroupMemberRepository::STATUS_ACTIVE, null, 50 );
+
+		$this->container->get( MemberRepository::class )->prime_display( array_map( static fn ( object $r ): int => (int) $r->user_id, $rows ) );
+
+		$out = array();
+
+		foreach ( $rows as $row ) {
+			$user = get_userdata( (int) $row->user_id );
+
+			if ( ! $user ) {
+				continue;
+			}
+
+			$out[] = array(
+				'id'     => (int) $row->user_id,
+				'name'   => $user->display_name,
+				'avatar' => (string) get_avatar_url( (int) $row->user_id, array( 'size' => 48 ) ),
+				'url'    => (string) apply_filters( 'odsi_social_member_url', '', (int) $row->user_id ),
+				'role'   => (string) $row->role,
+			);
+		}
+
+		return $out;
 	}
 
 	/**
@@ -417,12 +520,17 @@ final class Shortcodes implements Bootable {
 		}
 
 		$notifications = $this->container->get( Notifications::class );
+		$page          = max( 1, (int) get_query_var( 'paged', 1 ) );
+		$per_page      = 20;
 
 		return $this->templates()->render(
 			'notifications/list',
 			array(
-				'notifications' => $notifications->list( $viewer, false, max( 1, (int) get_query_var( 'paged', 1 ) ) ),
+				'notifications' => $notifications->list( $viewer, false, $page, $per_page ),
 				'unread_count'  => $notifications->unread_count( $viewer ),
+				'total'         => $notifications->count( $viewer ),
+				'page'          => $page,
+				'per_page'      => $per_page,
 			)
 		);
 	}
@@ -438,12 +546,17 @@ final class Shortcodes implements Bootable {
 		}
 
 		$messages = $this->container->get( Messages::class );
+		$page     = max( 1, (int) get_query_var( 'paged', 1 ) );
+		$per_page = 20;
 
 		return $this->templates()->render(
 			'messages/inbox',
 			array(
-				'threads'      => $messages->inbox( $viewer, max( 1, (int) get_query_var( 'paged', 1 ) ) ),
+				'threads'      => $messages->inbox( $viewer, $page, $per_page ),
 				'unread_total' => $messages->unread_total( $viewer ),
+				'total'        => $messages->inbox_count( $viewer ),
+				'page'         => $page,
+				'per_page'     => $per_page,
 			)
 		);
 	}
@@ -475,11 +588,11 @@ final class Shortcodes implements Bootable {
 	}
 
 	/**
-	 * Not-found markup (ADR-011: no distinction from non-existence).
+	 * Not-found markup (ADR-011: no distinction from non-existence). The
+	 * status code was sent by the router before output began, from the
+	 * same answer `page_exists()` gives.
 	 */
 	private function not_found(): string {
-		status_header( 404 );
-
 		return $this->templates()->render( 'parts/not-found' );
 	}
 

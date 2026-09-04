@@ -126,9 +126,10 @@ final class Groups implements Bootable {
 			set_post_thumbnail( $post_id, (int) $args['avatar_id'] );
 		}
 
-		$this->memberships->put( $post_id, $creator_id, GroupMemberRepository::ROLE_ORGANISER, GroupMemberRepository::STATUS_ACTIVE );
+		// `on_save` already ran inside wp_insert_post and seated the author as
+		// organiser; this repeats it for a kernel booted without the hook.
 		$this->mirror( get_post( $post_id ) );
-		$this->groups->adjust( $post_id, 'member_count', 1 );
+		$this->ensure_organiser( $post_id, $creator_id );
 
 		/**
 		 * Fires once a group and its first organiser exist.
@@ -268,7 +269,9 @@ final class Groups implements Bootable {
 	}
 
 	/**
-	 * Whether the viewer may know the group exists (SOC-GRP-005).
+	 * Whether the viewer may know the group exists (SOC-GRP-005). An
+	 * invitation is itself permission to see a hidden group: the invitee
+	 * must be able to reach the page to accept or decline.
 	 *
 	 * @param int $viewer_id Viewer.
 	 * @param int $group_id  Group.
@@ -282,7 +285,17 @@ final class Groups implements Bootable {
 			return true;
 		}
 
-		return $viewer_id > 0 && ( Capabilities::is_admin( $viewer_id ) || $this->memberships->is_active( $group_id, $viewer_id ) );
+		if ( $viewer_id <= 0 ) {
+			return false;
+		}
+
+		if ( Capabilities::is_admin( $viewer_id ) ) {
+			return true;
+		}
+
+		$row = $this->memberships->find_for( $group_id, $viewer_id );
+
+		return $row && in_array( (string) $row->status, array( GroupMemberRepository::STATUS_ACTIVE, GroupMemberRepository::STATUS_INVITED ), true );
 	}
 
 	/**
@@ -324,6 +337,39 @@ final class Groups implements Bootable {
 	}
 
 	/**
+	 * Warm every cache `present()` reads for a list of groups — posts and
+	 * their meta, the index rows, the viewer's memberships, and the avatar
+	 * and cover attachments — in a fixed number of queries.
+	 *
+	 * @param int   $viewer_id Viewer.
+	 * @param int[] $group_ids Group post ids.
+	 */
+	public function prime( int $viewer_id, array $group_ids ): void {
+		$group_ids = array_values( array_unique( array_filter( array_map( 'intval', $group_ids ) ) ) );
+
+		if ( array() === $group_ids ) {
+			return;
+		}
+
+		_prime_post_caches( $group_ids, false, true );
+		$this->groups->prime( $group_ids );
+		$this->memberships->prime_for_user( $viewer_id, $group_ids );
+
+		$attachments = array();
+
+		foreach ( $group_ids as $group_id ) {
+			$attachments[] = (int) get_post_thumbnail_id( $group_id );
+			$attachments[] = (int) get_post_meta( $group_id, Meta::GROUP_COVER_ID, true );
+		}
+
+		$attachments = array_values( array_unique( array_filter( $attachments ) ) );
+
+		if ( array() !== $attachments ) {
+			_prime_post_caches( $attachments, false, true );
+		}
+	}
+
+	/**
 	 * Presentation shape.
 	 *
 	 * @param int $viewer_id Viewer.
@@ -336,8 +382,9 @@ final class Groups implements Bootable {
 			return null;
 		}
 
-		$post = get_post( $group_id );
-		$row  = $this->groups->find( $group_id );
+		$post       = get_post( $group_id );
+		$row        = $this->groups->find( $group_id );
+		$membership = $viewer_id > 0 ? $this->memberships->find_for( $group_id, $viewer_id ) : null;
 
 		return array(
 			'id'           => $group_id,
@@ -352,8 +399,8 @@ final class Groups implements Bootable {
 			'cover'        => wp_get_attachment_image_url( (int) get_post_meta( $group_id, Meta::GROUP_COVER_ID, true ), 'large' ) ?: '',
 			'url'          => (string) apply_filters( 'odsi_social_group_url', '', $group_id ),
 			'viewer'       => array(
-				'role'   => $this->memberships->role_of( $group_id, $viewer_id ),
-				'status' => $viewer_id > 0 ? (string) ( $this->memberships->find_for( $group_id, $viewer_id )->status ?? '' ) : '',
+				'role'   => $membership && GroupMemberRepository::STATUS_ACTIVE === (string) $membership->status ? (string) $membership->role : '',
+				'status' => $membership ? (string) $membership->status : '',
 			),
 			'created'      => $post ? $post->post_date_gmt : '',
 		);
@@ -382,6 +429,11 @@ final class Groups implements Bootable {
 
 		$previous = $this->groups->find( $post_id );
 		$this->mirror( $post );
+
+		// A group saved from wp-admin never went through `create()`: seat the
+		// post author as organiser so the group is never observable without
+		// one (SOC-GRP-001), and keep the member count true to the table.
+		$this->ensure_organiser( $post_id, (int) $post->post_author );
 
 		$now_visibility = $this->visibility( $post_id );
 
@@ -415,6 +467,20 @@ final class Groups implements Bootable {
 		$this->activity_service->destroy_group( $post_id );
 		$this->memberships->delete_group( $post_id );
 		$this->groups->delete( $post_id );
+	}
+
+	/**
+	 * Seat a member as organiser when the group has none, then recount members.
+	 *
+	 * @param int $group_id Group post id.
+	 * @param int $user_id  Member to seat, typically the post author.
+	 */
+	private function ensure_organiser( int $group_id, int $user_id ): void {
+		if ( $user_id > 0 && get_userdata( $user_id ) && 0 === $this->memberships->count( $group_id, GroupMemberRepository::STATUS_ACTIVE, GroupMemberRepository::ROLE_ORGANISER ) ) {
+			$this->memberships->put( $group_id, $user_id, GroupMemberRepository::ROLE_ORGANISER, GroupMemberRepository::STATUS_ACTIVE );
+		}
+
+		$this->groups->recount_members( $group_id );
 	}
 
 	/**

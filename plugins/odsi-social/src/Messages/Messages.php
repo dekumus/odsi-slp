@@ -151,9 +151,21 @@ final class Messages {
 		$rows = $this->threads->inbox( $user_id, $per_page, max( 0, $page - 1 ) * $per_page );
 		$out  = array();
 
+		// Participants, last messages and the other members' display data are
+		// fetched once for the page, not once per thread.
+		$participants = $this->threads->participants_for( array_map( static fn ( object $t ): int => (int) $t->id, $rows ) );
+		$last_rows    = $this->messages->find_many( array_map( static fn ( object $t ): int => (int) $t->last_message_id, $rows ) );
+		$others       = array();
+
 		foreach ( $rows as $thread ) {
-			$other = $this->other_participant( $user_id, (int) $thread->id );
-			$last  = (int) $thread->last_message_id > 0 ? $this->messages->find( (int) $thread->last_message_id ) : null;
+			$others[ (int) $thread->id ] = $this->other_of( $user_id, $participants[ (int) $thread->id ] ?? array() );
+		}
+
+		$this->members->prime_display( array_values( array_filter( $others ) ) );
+
+		foreach ( $rows as $thread ) {
+			$other = $others[ (int) $thread->id ];
+			$last  = $last_rows[ (int) $thread->last_message_id ] ?? null;
 			$user  = $other ? get_userdata( $other ) : null;
 
 			$out[] = array(
@@ -170,6 +182,18 @@ final class Messages {
 		}
 
 		return $out;
+	}
+
+	/**
+	 * Whether the member is a live participant of the thread, without side effects.
+	 *
+	 * @param int $user_id   Member.
+	 * @param int $thread_id Thread.
+	 */
+	public function can_read( int $user_id, int $thread_id ): bool {
+		$participant = $user_id > 0 ? $this->threads->participant( $thread_id, $user_id ) : null;
+
+		return null !== $participant && ! (int) $participant->is_deleted;
 	}
 
 	/**
@@ -191,6 +215,14 @@ final class Messages {
 
 		$this->threads->mark_read( $thread_id, $user_id );
 		wp_cache_delete( "unread_msgs_{$user_id}", 'odsi_social' );
+
+		/**
+		 * Fires when a participant opens a thread, so its notification can be read too.
+		 *
+		 * @param int $thread_id Thread.
+		 * @param int $user_id   Reader.
+		 */
+		do_action( 'odsi_social_thread_opened', $thread_id, $user_id );
 
 		$messages = $this->messages->for_thread( $thread_id, $limit, $before_id );
 
@@ -245,6 +277,15 @@ final class Messages {
 	}
 
 	/**
+	 * Number of live threads, for pagination (SOC-MSG-006).
+	 *
+	 * @param int $user_id Member.
+	 */
+	public function inbox_count( int $user_id ): int {
+		return $this->threads->inbox_count( $user_id );
+	}
+
+	/**
 	 * Unread total, cached.
 	 *
 	 * @param int $user_id Member.
@@ -283,9 +324,18 @@ final class Messages {
 	 * @param int $thread_id Thread.
 	 */
 	private function other_participant( int $user_id, int $thread_id ): ?int {
-		$participants = $this->threads->participants( $thread_id );
-		$mine         = false;
-		$other        = null;
+		return $this->other_of( $user_id, $this->threads->participants( $thread_id ) );
+	}
+
+	/**
+	 * The other participant among a thread's participant rows, when the user is one of them.
+	 *
+	 * @param int      $user_id      Member.
+	 * @param object[] $participants Participant rows.
+	 */
+	private function other_of( int $user_id, array $participants ): ?int {
+		$mine  = false;
+		$other = null;
 
 		foreach ( $participants as $p ) {
 			if ( (int) $p->user_id === $user_id ) {

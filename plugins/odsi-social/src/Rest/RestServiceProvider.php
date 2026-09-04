@@ -57,8 +57,8 @@ final class RestServiceProvider implements Bootable {
 
 		$controllers = array(
 			new MembersController( $c->get( Directory::class ), $c->get( Profiles::class ), $c->get( Uploads::class ) ),
-			new ActivityController( $c->get( Activity::class ), $c->get( Feed::class ), $c->get( Reactions::class ) ),
-			new GroupsController( $c->get( Groups::class ), $c->get( Membership::class ), $c->get( GroupMemberRepository::class ), $c->get( \ODSI\Social\Repositories\GroupRepository::class ), $c->get( Uploads::class ) ),
+			new ActivityController( $c->get( Activity::class ), $c->get( Feed::class ), $c->get( Reactions::class ), $c->get( \ODSI\Social\Frontend\Templates::class ) ),
+			new GroupsController( $c->get( Groups::class ), $c->get( Membership::class ), $c->get( GroupMemberRepository::class ), $c->get( \ODSI\Social\Repositories\GroupRepository::class ), $c->get( Uploads::class ), $c->get( \ODSI\Social\Repositories\MemberRepository::class ) ),
 			new ConnectionsController( $c->get( Connections::class ), $c->get( Follows::class ) ),
 			new NotificationsController( $c->get( Notifications::class ) ),
 			new MessagesController( $c->get( Messages::class ) ),

@@ -224,6 +224,40 @@ final class SettingsFormsTest extends TestCase {
 		self::assertSame( 'odsi_social_invalid_action', $this->forms->process_group_member( $organiser, $group, $member, 'explode' )->get_error_code() );
 	}
 
+	public function test_grp_006_manage_page_promotes_and_demotes_organisers(): void {
+		$organiser = $this->social->member();
+		$member    = $this->social->member();
+		$group     = $this->social->group( $organiser, 'public', 'Board' );
+		$this->social->add_to_group( $group, $member );
+		$roles = $this->social->service( GroupMemberRepository::class );
+
+		self::assertInstanceOf( WP_Error::class, $this->forms->process_group_member( $organiser, $group, $organiser, 'demote_organiser' ), 'The last organiser stays.' );
+
+		self::assertTrue( $this->forms->process_group_member( $organiser, $group, $member, 'promote_organiser' ) );
+		self::assertSame( GroupMemberRepository::ROLE_ORGANISER, $roles->role_of( $group, $member ) );
+
+		self::assertTrue( $this->forms->process_group_member( $organiser, $group, $organiser, 'demote_organiser' ) );
+		self::assertSame( GroupMemberRepository::ROLE_MODERATOR, $roles->role_of( $group, $organiser ) );
+
+		self::assertInstanceOf( WP_Error::class, $this->forms->process_group_member( $organiser, $group, $member, 'demote_organiser' ), 'A moderator cannot change roles.' );
+
+		$this->social->service( \ODSI\Social\Frontend\Router::class );
+		set_query_var( \ODSI\Social\Frontend\Router::QV_PAGE, 'groups' );
+		set_query_var( \ODSI\Social\Frontend\Router::QV_OBJECT, 'board' );
+		set_query_var( \ODSI\Social\Frontend\Router::QV_ACTION, 'manage' );
+
+		try {
+			$html = $this->as_user( $member, fn (): string => $this->social->service( \ODSI\Social\Frontend\Shortcodes::class )->render_page() );
+		} finally {
+			set_query_var( \ODSI\Social\Frontend\Router::QV_PAGE, '' );
+			set_query_var( \ODSI\Social\Frontend\Router::QV_OBJECT, '' );
+			set_query_var( \ODSI\Social\Frontend\Router::QV_ACTION, '' );
+		}
+
+		self::assertStringContainsString( 'value="promote_organiser"', $html, 'A moderator row offers "Make organiser".' );
+		self::assertStringNotContainsString( 'value="demote_organiser"', $html, 'The sole organiser cannot be demoted, so no button.' );
+	}
+
 	public function test_rest_image_routes(): void {
 		$member    = $this->social->member();
 		$organiser = $this->social->member();

@@ -142,20 +142,17 @@
 				group_id: feed.getAttribute( 'data-group-id' ),
 				user_id: feed.getAttribute( 'data-user-id' ),
 				cursor: feed.getAttribute( 'data-next-cursor' ),
+				render: '1',
 			} );
 			more.disabled = true;
 			request( 'GET', '/activity?' + params.toString() )
 				.then( function( page ) {
+					// Each item arrives server-rendered through the same template
+					// as the first page, so it carries its buttons, counts and
+					// comments and every handler above applies to it.
 					const container = feed.querySelector( '.odsi-social-feed__items' );
 					page.items.forEach( function( item ) {
-						const article = document.createElement( 'article' );
-						article.className = 'odsi-social-item';
-						article.innerHTML = '<header class="odsi-social-item__header"><img class="odsi-social-avatar" width="48" height="48" alt="" /><div><div class="odsi-social-item__action"></div><span class="odsi-social-item__time"></span></div></header><div class="odsi-social-item__content"></div>';
-						article.querySelector( 'img' ).src = item.author.avatar;
-						article.querySelector( '.odsi-social-item__action' ).innerHTML = item.action;
-						article.querySelector( '.odsi-social-item__time' ).textContent = item.date_relative;
-						article.querySelector( '.odsi-social-item__content' ).innerHTML = item.content;
-						container.appendChild( article );
+						container.insertAdjacentHTML( 'beforeend', item.html || '' );
 					} );
 					feed.setAttribute( 'data-next-cursor', page.next_cursor );
 					more.disabled = false;

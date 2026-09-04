@@ -25,13 +25,8 @@ spl_autoload_register(
 	}
 );
 
-$odsi_social_settings = (array) get_option( \ODSI\Social\Support\Settings::OPTION, array() );
-
-if ( empty( $odsi_social_settings['reset_data_on_uninstall'] ) ) {
+if ( ! \ODSI\Social\Uninstaller::opted_in() ) {
 	return;
 }
 
-\ODSI\Social\Database\Migrator::drop();
-\ODSI\Social\Support\Capabilities::uninstall();
-
-delete_option( \ODSI\Social\Support\Settings::OPTION );
+\ODSI\Social\Uninstaller::run();

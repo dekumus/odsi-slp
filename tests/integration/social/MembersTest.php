@@ -134,6 +134,75 @@ final class MembersTest extends TestCase {
 		$this->social->service( \ODSI\Social\Support\Settings::class )->update( array( 'public_directory' => true ) );
 	}
 
+	public function test_mem_008_reading_a_profile_never_creates_an_index_row(): void {
+		$ghost   = $this->social->member( 'ghost', false );
+		$members = $this->social->service( MemberRepository::class );
+
+		$profile = $this->profiles->view( 0, $ghost );
+		self::assertNotNull( $profile, 'SOC-MEM-001: every user has a profile.' );
+		self::assertSame( 0, $profile['counts']['connections'] );
+		self::assertNull( $members->find( $ghost ), 'Reading writes nothing.' );
+
+		$directory = $this->social->service( Directory::class );
+		self::assertSame( array(), $directory->query( 0, array( 'search' => 'ghost' ) )['members'], 'SOC-MEM-008: never logged in, not listed.' );
+
+		$this->social->service( Presence::class )->touch( $ghost, true );
+		self::assertSame( array( $ghost ), array_column( $directory->query( 0, array( 'search' => 'ghost' ) )['members'], 'id' ) );
+	}
+
+	public function test_mem_010_a_purged_member_is_not_resurrected_by_content_cleanup(): void {
+		$u       = $this->social->member();
+		$members = $this->social->service( MemberRepository::class );
+		$this->social->service( \ODSI\Social\Support\Settings::class )->update( array( 'delete_content_with_user' => true ) );
+
+		try {
+			$item = $this->social->update( $u, 'to be deleted' );
+			$this->social->comment( $this->social->member(), $item );
+			self::assertNotNull( $members->find( $u ) );
+
+			wp_delete_user( $u );
+		} finally {
+			$this->social->service( \ODSI\Social\Support\Settings::class )->update( array( 'delete_content_with_user' => false ) );
+		}
+
+		self::assertNull( $members->find( $u ), 'SOC-MEM-010: the index row stays gone.' );
+		self::assertNull( $this->social->service( \ODSI\Social\Repositories\ActivityRepository::class )->find( $item ) );
+	}
+
+	public function test_mem_007_an_empty_multiselect_is_empty(): void {
+		$owner = $this->social->member();
+		$group = $this->fields->create_group( 'Prefs' );
+		$req   = $this->fields->create(
+			$group,
+			'Langs',
+			'multiselect',
+			array(
+				'options'  => array( 'PHP', 'JS' ),
+				'required' => true,
+			)
+		);
+		$opt   = $this->fields->create( $group, 'Tools', 'multiselect', array( 'options' => array( 'vim', 'emacs' ) ) );
+
+		$result = $this->profiles->update_fields( $owner, array( $req => array( 'value' => array() ) ) );
+		self::assertInstanceOf( WP_Error::class, $result, 'SOC-MEM-007: no selection is no value.' );
+		self::assertSame( $req, $result->get_error_data()['field_id'] );
+
+		self::assertTrue(
+			$this->profiles->update_fields(
+				$owner,
+				array(
+					$req => array( 'value' => array( 'PHP' ) ),
+					$opt => array( 'value' => array() ),
+				)
+			)
+		);
+		self::assertSame( array( 'Langs' ), array_column( $this->profiles->view( $owner, $owner )['field_groups'][0]['fields'], 'name' ), 'An empty multiselect is not displayed.' );
+
+		$bad = $this->profiles->update_fields( $owner, array( $opt => 'x' ) );
+		self::assertInstanceOf( WP_Error::class, $bad );
+		self::assertSame( 400, $bad->get_error_data()['status'] );
+	}
+
 	public function test_mem_011_presence_is_throttled(): void {
 		$u        = $this->social->member();
 		$presence = $this->social->service( Presence::class );

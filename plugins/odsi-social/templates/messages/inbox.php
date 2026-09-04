@@ -4,6 +4,9 @@
  *
  * @var array<int, array<string, mixed>> $threads      Threads.
  * @var int                              $unread_total Unread.
+ * @var int                              $total        Total threads.
+ * @var int                              $page         Page.
+ * @var int                              $per_page     Page size.
  *
  * @package ODSI\Social
  */
@@ -38,4 +41,16 @@ $odsi_to = absint( $_GET['to'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceV
 	<?php if ( empty( $threads ) && 0 === $odsi_to ) : ?>
 		<p class="odsi-social-feed__empty"><?php esc_html_e( 'No conversations yet.', 'odsi-social' ); ?></p>
 	<?php endif; ?>
+
+	<?php
+	echo wp_kses_post(
+		(string) paginate_links(
+			array(
+				'total'   => (int) ceil( (int) ( $total ?? 0 ) / max( 1, (int) ( $per_page ?? 20 ) ) ),
+				'current' => max( 1, (int) ( $page ?? 1 ) ),
+				'base'    => add_query_arg( 'paged', '%#%' ),
+			)
+		)
+	);
+	?>
 </div>

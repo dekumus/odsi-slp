@@ -80,6 +80,17 @@ final class Connections {
 	}
 
 	/**
+	 * Warm the pair cache for a member against several others, so a list of
+	 * profiles asks about each relationship without a query per row.
+	 *
+	 * @param int   $user_id Member.
+	 * @param int[] $others  Other members.
+	 */
+	public function prime_pairs( int $user_id, array $others ): void {
+		$this->connections->prime_pairs( $user_id, $others );
+	}
+
+	/**
 	 * Send a request.
 	 *
 	 * @param int $actor_id  Actor.

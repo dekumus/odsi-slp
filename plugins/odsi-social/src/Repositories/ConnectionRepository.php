@@ -27,6 +27,14 @@ final class ConnectionRepository extends AbstractRepository {
 	private array $accepted_cache = array();
 
 	/**
+	 * Per-request pair cache keyed by "low:high". The privacy rule asks about
+	 * the viewer and each author on a page.
+	 *
+	 * @var array<string, object|null>
+	 */
+	private array $pair_cache = array();
+
+	/**
 	 * Short schema key for the backing table.
 	 */
 	protected function table_key(): string {
@@ -57,12 +65,74 @@ final class ConnectionRepository extends AbstractRepository {
 	 */
 	public function find_pair( int $a, int $b ): ?object {
 		[ $low, $high ] = $this->order( $a, $b );
-		$table          = $this->table();
+		$key            = "{$low}:{$high}";
+
+		if ( array_key_exists( $key, $this->pair_cache ) ) {
+			return $this->pair_cache[ $key ];
+		}
+
+		$table = $this->table();
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$row = $this->db->get_row( $this->db->prepare( "SELECT * FROM {$table} WHERE user_low = %d AND user_high = %d", $low, $high ) );
 
-		return $row ?: null;
+		$this->pair_cache[ $key ] = $row ?: null;
+
+		return $this->pair_cache[ $key ];
+	}
+
+	/**
+	 * Warm the pair cache for one member against several others, in one query.
+	 *
+	 * @param int   $user_id User id.
+	 * @param int[] $others  Other user ids.
+	 */
+	public function prime_pairs( int $user_id, array $others ): void {
+		$others = array_values(
+			array_unique(
+				array_filter(
+					array_map( 'intval', $others ),
+					function ( int $other ) use ( $user_id ): bool {
+						[ $low, $high ] = $this->order( $user_id, $other );
+
+						return $other > 0 && $other !== $user_id && ! array_key_exists( "{$low}:{$high}", $this->pair_cache );
+					}
+				)
+			)
+		);
+
+		if ( $user_id <= 0 || array() === $others ) {
+			return;
+		}
+
+		$table = $this->table();
+		$in    = implode( ',', array_fill( 0, count( $others ), '%d' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = (array) $this->db->get_results(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$this->db->prepare(
+				"SELECT * FROM {$table} WHERE (user_low = %d AND user_high IN ({$in})) OR (user_high = %d AND user_low IN ({$in}))",
+				array_merge( array( $user_id ), $others, array( $user_id ), $others )
+			)
+		);
+
+		foreach ( $others as $other ) {
+			[ $low, $high ]                       = $this->order( $user_id, $other );
+			$this->pair_cache[ "{$low}:{$high}" ] = null;
+		}
+
+		foreach ( $rows as $row ) {
+			$this->pair_cache[ "{$row->user_low}:{$row->user_high}" ] = $row;
+		}
+	}
+
+	/**
+	 * Drop the per-request caches.
+	 */
+	public function flush(): void {
+		$this->accepted_cache = array();
+		$this->pair_cache     = array();
 	}
 
 	/**
@@ -75,6 +145,8 @@ final class ConnectionRepository extends AbstractRepository {
 	 */
 	public function request( int $initiator_id, int $recipient_id ): int {
 		[ $low, $high ] = $this->order( $initiator_id, $recipient_id );
+
+		unset( $this->pair_cache[ "{$low}:{$high}" ] );
 
 		return $this->insert_row(
 			array(
@@ -93,7 +165,7 @@ final class ConnectionRepository extends AbstractRepository {
 	 * @param int $row_id Row id.
 	 */
 	public function accept( int $row_id ): bool {
-		$this->accepted_cache = array();
+		$this->flush();
 
 		return $this->update_row(
 			$row_id,
@@ -110,7 +182,7 @@ final class ConnectionRepository extends AbstractRepository {
 	 * @param int $id Row id.
 	 */
 	public function delete( int $id ): bool {
-		$this->accepted_cache = array();
+		$this->flush();
 
 		return parent::delete( $id );
 	}
@@ -211,7 +283,7 @@ final class ConnectionRepository extends AbstractRepository {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$this->db->query( $this->db->prepare( "DELETE FROM {$table} WHERE user_low = %d OR user_high = %d", $user_id, $user_id ) );
 
-		$this->accepted_cache = array();
+		$this->flush();
 
 		return $others;
 	}

@@ -28,6 +28,14 @@ final class Renderers {
 	private array $renderers = array();
 
 	/**
+	 * Constructor.
+	 *
+	 * @param Privacy $privacy Privacy rule, so mentions of members who cannot see an item stay plain text.
+	 */
+	public function __construct( private Privacy $privacy ) {
+	}
+
+	/**
 	 * Register a renderer.
 	 *
 	 * @param string           $type      Activity type.
@@ -69,7 +77,7 @@ final class Renderers {
 	 */
 	public function body( object $item ): string {
 		$renderer = $this->for( $item );
-		$html     = $renderer ? $renderer->body( $item ) : Sanitizer::render( (string) $item->content );
+		$html     = $renderer ? $renderer->body( $item ) : Sanitizer::render( (string) $item->content, fn ( int $user_id ): bool => $this->privacy->can_view( $user_id, $item ) );
 
 		/**
 		 * Filters rendered activity content.

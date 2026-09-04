@@ -58,6 +58,35 @@ final class MessageRepository extends AbstractRepository {
 	}
 
 	/**
+	 * Several messages by id, keyed by id.
+	 *
+	 * @param int[] $ids Message ids.
+	 *
+	 * @return array<int, object>
+	 */
+	public function find_many( array $ids ): array {
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', $ids ) ) ) );
+
+		if ( array() === $ids ) {
+			return array();
+		}
+
+		$table = $this->table();
+		$in    = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = (array) $this->db->get_results( $this->db->prepare( "SELECT * FROM {$table} WHERE id IN ({$in})", $ids ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$by_id = array();
+
+		foreach ( $rows as $row ) {
+			$by_id[ (int) $row->id ] = $row;
+		}
+
+		return $by_id;
+	}
+
+	/**
 	 * Messages in a thread, oldest first, optionally before an id.
 	 *
 	 * @param int $thread_id Thread id.
