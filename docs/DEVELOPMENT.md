@@ -145,6 +145,14 @@ CI rebuilds the bundle before the E2E job, so a stale committed bundle
 does not hide a broken build, but it does not verify the committed file
 matches the source. Rebuild before you commit.
 
+## Packaging
+
+`bin/package.sh` builds the editor bundles and writes one installable zip
+per plugin to `dist/` (`odsi-lms-<version>.zip` and so on), containing only
+what a site needs: no bundle sources, no dev files. Upload them through
+**Plugins → Add New → Upload Plugin**, or unzip into `wp-content/plugins/`.
+The bridge zip must be activated after the other two.
+
 ## Static analysis
 
 - `npm run lint:js` runs ESLint with the WordPress `esnext` and `jsdoc`

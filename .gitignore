@@ -34,3 +34,4 @@ Thumbs.db
 /.phpunit.*.result.cache
 /composer.lock.bak
 /.wp-env.override.json
+dist/

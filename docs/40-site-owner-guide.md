@@ -10,8 +10,11 @@ Requirements: WordPress 6.4 or newer, PHP 8.1 or newer, MySQL 5.7 / MariaDB
 10.3 or newer. A block theme is not required; every front-end page is a
 classic template a theme may override.
 
-1. Copy `plugins/odsi-lms` and `plugins/odsi-social` into `wp-content/plugins/`
-   (each works alone; install only the one you need).
+1. Install `odsi-lms` and `odsi-social` (each works alone; install only the
+   one you need): upload the zips that `bin/package.sh` produces through
+   **Plugins → Add New → Upload Plugin**, or copy `plugins/odsi-lms` and
+   `plugins/odsi-social` into `wp-content/plugins/` after running
+   `npm install && npm run build` once so the editor bundles exist.
 2. Activate **ODSI Learning** and / or **ODSI Community**. Activation creates
    the plugins' tables, the `Instructor` role, and, for the community, five
    pages (Members, Groups, Activity, Notifications, Messages) that hold the
