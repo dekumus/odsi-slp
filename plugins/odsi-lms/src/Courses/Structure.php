@@ -125,6 +125,20 @@ final class Structure implements Bootable {
 			return $this->cache[ $course_id ];
 		}
 
+		/**
+		 * Filters the outline before it is computed. Return an array to short-circuit.
+		 *
+		 * @param array<int, array<string, mixed>>|null $outline   Null to compute.
+		 * @param int                                   $course_id Course post id.
+		 */
+		$pre = apply_filters( 'odsi_lms_pre_course_outline', null, $course_id );
+
+		if ( is_array( $pre ) ) {
+			$this->cache[ $course_id ] = $pre;
+
+			return $pre;
+		}
+
 		$steps = array();
 
 		foreach ( $this->lessons( $course_id ) as $lesson_id ) {

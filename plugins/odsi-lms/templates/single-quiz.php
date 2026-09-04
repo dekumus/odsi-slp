@@ -21,11 +21,6 @@ get_header();
 			<h1 class="odsi-lms-quiz__title"><?php the_title(); ?></h1>
 			<div class="odsi-lms-quiz__intro"><?php the_content(); ?></div>
 
-			<div class="odsi-lms-quiz__player" data-quiz-id="<?php echo esc_attr( (string) get_the_ID() ); ?>">
-				<noscript>
-					<p><?php esc_html_e( 'JavaScript is required to take this quiz.', 'odsi-lms' ); ?></p>
-				</noscript>
-			</div>
 		</article>
 		<?php
 	endwhile;

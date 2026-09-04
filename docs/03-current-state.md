@@ -7,16 +7,19 @@ when you change what it describes.
 
 | Plugin | State |
 | --- | --- |
-| `odsi-lms` | Kernel, data layer, content model, services and REST proven by 30 unit and 79 integration tests against WordPress 7.1 on MariaDB. PHPCS and PHPStan level 6 clean. Not yet exercised in a browser. |
+| `odsi-lms` | Engine, reports, grading, certificates, cohorts and quiz player proven by 30 unit and 87 integration tests, plus the learner flow end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens. 113 integration tests including the full privacy decision table through both PHP and SQL. PHPCS and PHPStan level 6 clean. Not yet exercised in a browser. |
 | `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 8 integration tests. |
 
 Verification so far: the integration suite boots WordPress core with the
 plugin as a must-use plugin, runs activation, and exercises enrollment, outline
 derivation, progress, access, the quiz lifecycle and every REST route against a
-real database. What has **not** happened: nobody has clicked through the
-front end in a browser, and the E2E flow is written but cannot pass until the
-quiz player exists. **Treat the LMS as a tested engine with an unproven UI.**
+real database. The Playwright flow (publish a course, enroll, be gated, complete, pass a quiz,
+reach 100%) passes against a fresh install with the default block theme. It
+found two product bugs on its first runs that no PHP test could have: the
+plugin's templates never applied on block themes (ADR-017), and questions
+created over REST never linked to their quiz because the relationship meta was
+not registered for that post type. Both are fixed.
 
 ## `odsi-bridge` — what exists
 
@@ -157,7 +160,19 @@ stores `_odsi_lesson_id` and inherits `_odsi_course_id` from it. Ordering is
 - `Quizzes\QuizService` — resumes an open attempt, abandons timed-out ones,
   counts only closed attempts against the limit, enforces the time limit with
   a 30 s grace at submit, returns a per-question breakdown, `grade_answer()`
-  for manual marking that can complete the node.
+  for manual marking that can complete the node; wipes attempts on a progress
+  reset.
+- `Courses\Cohorts` — cohort membership enrolls on the cohort's courses with
+  `source = cohort`; removal cancels only those; progress kept (LMS-ENR-012).
+- `Certificates\Certificates` — issues on completion for courses with a
+  template, readable unguessable codes, `/certificate/{code}/` rendering with
+  placeholders, public verification, revocation.
+- `Reports\EnrollmentReport` — enrollment rows with progress (paginated,
+  sortable, filterable), course summary, the manual grading queue.
+- `Support\ObjectCache` — outlines in the persistent object cache, invalidated
+  on the same events as the per-request cache.
+- `Frontend\ContentDecorator` — every piece of front-end LMS UI, through
+  `the_content`, for block and classic themes alike (ADR-017).
 
 ### Interfaces
 
@@ -166,12 +181,16 @@ stores `_odsi_lesson_id` and inherits `_odsi_course_id` from it. Ordering is
   `GET /quizzes/<id>/questions`, `POST /quizzes/<id>/attempts`,
   `POST /attempts/<id>/submit`. A test-only
   `POST /e2e/questions/<id>/answers` exists when `ODSI_E2E` is defined.
-- Admin: top-level "Learning" menu, placeholder dashboard and reports screens,
-  classic relationship meta boxes on every child post type.
-- Front end: theme-overridable templates for course, lesson, quiz and archive;
-  five shortcodes (`odsi_course_outline`, `odsi_course_progress`,
-  `odsi_enroll_button`, `odsi_my_courses`, `odsi_course_grid`); token-based CSS;
-  progressive-enhancement JS.
+- Admin: "Learning" menu whose dashboard is the enrollment report
+  (`WP_List_Table`, enroll / remove / reset actions), a grading queue for
+  essays, classic relationship meta boxes on every child post type, cohort
+  course and member boxes.
+- Front end: content-injected course UI on any theme; classic-theme templates
+  for course, lesson, quiz and archive; shortcodes `odsi_course_outline`,
+  `odsi_course_progress`, `odsi_enroll_button`, `odsi_my_courses`,
+  `odsi_course_grid`, `odsi_certificate_verify`, `odsi_my_certificates`; a
+  quiz player (`assets/js/quiz-player.js`) rendering questions, timing,
+  submission and results; token-based CSS.
 
 ### Extension points already published
 
@@ -188,32 +207,33 @@ stores `_odsi_lesson_id` and inherits `_odsi_course_id` from it. Ordering is
 
 ## Known gaps in the LMS
 
-Numbering is kept from the original list so the briefs still line up.
-Struck-through items are closed.
+Numbering is kept from the original list. Struck-through items are closed.
 
 1. ~~No tests, and no test harness at all.~~ Closed by brief 02.
-2. **Reports and dashboard are placeholder screens.** No reporting queries exist.
-3. **Certificates**: the table exists; nothing issues, renders or verifies one.
+2. ~~Reports and dashboard are placeholder screens.~~ Closed.
+3. ~~Certificates.~~ Closed: issued, rendered, verified, revocable. No PDF;
+   the page is print-styled.
 4. **Submissions**: the table exists; no upload, grading UI or service.
-5. **The React course builder is not written.** `Support\Assets` looks for a
-   compiled bundle and silently skips it; the classic meta boxes are the only
-   editing UI. Root `package.json` carries `@wordpress/scripts` but no source.
-6. **No blocks.** Shortcodes only.
-7. **The quiz player is a mount point.** `templates/single-quiz.php` renders an
-   empty div; the REST routes it needs now exist, the JavaScript does not.
-8. **Manual grading has no interface.** `QuizService::grade_answer()` exists and
-   is tested; nothing in the admin calls it.
-9. **No object caching** anywhere. `Structure` caches per request only.
-10. ~~`Migrator::maybe_migrate()` runs on every request.~~ Closed: `admin_init`
-    and the daily cron only.
-11. **No commerce integration** — `access_mode = paid` is declared and enforced
-    but nothing can fulfil it.
-12. ~~No cron handler.~~ Closed: `Courses\Maintenance`.
+5. **The React course builder is not written.** The classic meta boxes are the
+   editing UI; `Support\Assets` still looks for a compiled bundle. Root
+   `package.json` carries `@wordpress/scripts` but no source.
+6. **No blocks.** Shortcodes and content injection only.
+7. ~~The quiz player is a mount point.~~ Closed; proven by the E2E flow.
+8. ~~Manual grading has no interface.~~ Closed: the Grading screen.
+9. ~~No object caching.~~ Closed for outlines. Progress reads are still
+   uncached (they are single indexed lookups).
+10. ~~`Migrator::maybe_migrate()` on every request.~~ Closed.
+11. **No commerce integration** — `access_mode = paid` is enforced but nothing
+    can fulfil it.
+12. ~~No cron handler.~~ Closed.
 13. **No i18n build**, no `.pot` file.
 14. ~~No `Structure` cache invalidation on post save.~~ Closed.
-15. **Cohort behaviour is unimplemented.** The post type exists; `LMS-ENR-012`
-    is decided; nothing enrolls a cohort's members.
-16. **No enrollment or grading admin actions** (`LMS-ADM-003`, `LMS-ADM-004`).
+15. ~~Cohort behaviour is unimplemented.~~ Closed.
+16. ~~No enrollment or grading admin actions.~~ Closed.
+17. **Reports have no CSV export** and no per-question quiz breakdown (v2).
+18. **The enrollment report loads percentages per row** (one outline
+    intersection each); fine at report page sizes, worth a batched query if
+    pages grow.
 
 ## Test coverage map
 
@@ -227,7 +247,8 @@ Struck-through items are closed.
 | `LMS-ACC-*` | integration `AccessTest` | 11 |
 | `LMS-QZ-*` | integration `QuizTest` | 15 |
 | `LMS-IF` REST, `LMS-ACC-007` | integration `RestTest` | 9 |
-| Learner flow in a browser | e2e | 1, blocked on gap 7 |
+| `LMS-ADM-*`, `LMS-ENR-007/012`, certificates, cache | integration `HardeningTest` | 8 |
+| Learner flow in a browser | e2e `lms-learner-flow` | 1, passing |
 | Social schema, ADR-005 scan | integration `social/SchemaTest` | 20 |
 | Privacy decision table, both representations | integration `social/PrivacyTest` | 42 |
 | `SOC-ACT-*` | integration `social/ActivityTest` | 13 |

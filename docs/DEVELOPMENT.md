@@ -96,9 +96,26 @@ npm run test:e2e
 Without Docker, after `bin/install-wp-tests.sh`:
 
 ```bash
-npm run serve:local                  # installs a site into /tmp/odsi-site, serves on :8080
-npm run test:e2e:local               # in another terminal
+ODSI_CORE_DIR=/tmp/wordpress bin/serve-local.sh --install   # install once
+( cd /tmp/odsi-site && php -S 127.0.0.1:8080 -t /tmp/odsi-site "$PWD/bin/router.php" & )
+npm run test:e2e:local
 ```
+
+`bin/serve-local.sh` fetches wp-cli from the `wp-cli/builds` mirror on
+GitHub (raw.githubusercontent.com), installs WordPress with the three plugins
+symlinked and activated, and sets pretty permalinks.
+
+Where a Chromium is pre-installed and Playwright must not download one
+(Claude Code on the web, some CI images), point the suite at it:
+
+```bash
+ODSI_E2E_CHROMIUM=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run test:e2e:local
+```
+
+The default theme on a fresh install is a block theme. That matters: the
+plugins' PHP templates only apply to classic themes, and every piece of LMS
+UI reaches the page through `the_content` (see ADR-017). The E2E flow runs
+against the block theme on purpose.
 
 `ODSI_E2E` enables a small set of test-only REST routes the suite uses to
 seed data that is deliberately not writable over the public API (quiz answer
@@ -106,6 +123,8 @@ keys). It must never be defined on a real site.
 
 ## Static analysis
 
+- `npm run lint:js` runs ESLint with the WordPress `esnext` and `jsdoc`
+  presets over the plugins' JavaScript and the E2E suite.
 - `composer lint` runs PHPCS with `phpcs.xml.dist`: WordPress Coding
   Standards plus PHPCompatibilityWP for PHP 8.1+. `composer lint:fix` applies
   the automatic fixes.

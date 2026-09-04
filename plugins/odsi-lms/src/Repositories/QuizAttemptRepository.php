@@ -105,6 +105,31 @@ final class QuizAttemptRepository extends AbstractRepository {
 	}
 
 	/**
+	 * Delete every attempt and answer a user has on a course's quizzes (LMS-ENR-007).
+	 *
+	 * @param int $user_id   User id.
+	 * @param int $course_id Course post id.
+	 */
+	public function delete_for_course( int $user_id, int $course_id ): void {
+		$table   = $this->table();
+		$answers = Schema::table( 'quiz_answers' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$ids = array_map( 'intval', (array) $this->db->get_col( $this->db->prepare( "SELECT id FROM {$table} WHERE user_id = %d AND course_id = %d", $user_id, $course_id ) ) );
+
+		if ( array() === $ids ) {
+			return;
+		}
+
+		$in = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$this->db->query( $this->db->prepare( "DELETE FROM {$answers} WHERE attempt_id IN ({$in})", $ids ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$this->db->query( $this->db->prepare( "DELETE FROM {$table} WHERE id IN ({$in})", $ids ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
+	/**
 	 * How many attempts a user has used at a quiz: closed ones only. An open
 	 * attempt is resumable and has not been spent (LMS-QZ-003).
 	 *

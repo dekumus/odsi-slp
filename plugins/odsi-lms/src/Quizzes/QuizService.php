@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace ODSI\LMS\Quizzes;
 
+use ODSI\LMS\Contracts\Bootable;
 use ODSI\LMS\Courses\Progress;
 use ODSI\LMS\PostTypes\PostTypes;
 use ODSI\LMS\Repositories\QuizAttemptRepository;
@@ -21,7 +22,24 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Starts, scores and closes quiz attempts.
  */
-final class QuizService {
+final class QuizService implements Bootable {
+
+	/**
+	 * Register hooks.
+	 */
+	public function boot(): void {
+		add_action( 'odsi_lms_progress_reset', array( $this, 'on_progress_reset' ), 10, 2 );
+	}
+
+	/**
+	 * A progress reset also wipes attempts (LMS-ENR-007).
+	 *
+	 * @param int $user_id   User id.
+	 * @param int $course_id Course post id.
+	 */
+	public function on_progress_reset( int $user_id, int $course_id ): void {
+		$this->attempts->delete_for_course( $user_id, $course_id );
+	}
 
 	/**
 	 * Constructor.

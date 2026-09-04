@@ -22,6 +22,18 @@ final class AdminMenu implements Bootable {
 	public const SLUG = 'odsi-lms';
 
 	/**
+	 * Constructor.
+	 *
+	 * @param ReportsScreen $reports Reports screen.
+	 * @param GradingScreen $grading Grading screen.
+	 */
+	public function __construct(
+		private ReportsScreen $reports,
+		private GradingScreen $grading
+	) {
+	}
+
+	/**
 	 * Register hooks.
 	 */
 	public function boot(): void {
@@ -45,35 +57,14 @@ final class AdminMenu implements Bootable {
 			30
 		);
 
-		add_submenu_page(
-			self::SLUG,
-			__( 'Reports', 'odsi-lms' ),
-			__( 'Reports', 'odsi-lms' ),
-			Capabilities::REPORT,
-			'odsi-lms-reports',
-			array( $this, 'render_reports' )
-		);
+		add_submenu_page( self::SLUG, __( 'Reports', 'odsi-lms' ), __( 'Reports', 'odsi-lms' ), Capabilities::REPORT, ReportsScreen::SLUG, array( $this->reports, 'render' ) );
+		add_submenu_page( self::SLUG, __( 'Grading', 'odsi-lms' ), __( 'Grading', 'odsi-lms' ), Capabilities::REPORT, GradingScreen::SLUG, array( $this->grading, 'render' ) );
 	}
 
 	/**
-	 * Placeholder dashboard screen.
+	 * The dashboard is the reports screen.
 	 */
 	public function render_dashboard(): void {
-		printf(
-			'<div class="wrap"><h1>%s</h1><p>%s</p></div>',
-			esc_html__( 'Learning', 'odsi-lms' ),
-			esc_html__( 'Course, enrollment and completion summaries will appear here.', 'odsi-lms' )
-		);
-	}
-
-	/**
-	 * Placeholder reports screen.
-	 */
-	public function render_reports(): void {
-		printf(
-			'<div class="wrap"><h1>%s</h1><p>%s</p></div>',
-			esc_html__( 'Reports', 'odsi-lms' ),
-			esc_html__( 'Enrollment, progress and quiz reporting will appear here.', 'odsi-lms' )
-		);
+		$this->reports->render();
 	}
 }

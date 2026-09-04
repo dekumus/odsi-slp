@@ -129,11 +129,17 @@ final class Access implements Bootable {
 	 * @return string
 	 */
 	public function filter_content( string $content ): string {
-		if ( ! is_singular() || ! in_the_loop() || ! is_main_query() ) {
+		// Block themes render the_content from the post-content block outside a
+		// classic loop, so in_the_loop() is not a usable guard; compare ids instead.
+		if ( ! is_singular() || is_admin() ) {
 			return $content;
 		}
 
 		$post_id = get_the_ID();
+
+		if ( (int) $post_id !== (int) get_queried_object_id() ) {
+			return $content;
+		}
 
 		if ( ! $post_id ) {
 			return $content;

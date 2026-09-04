@@ -20,17 +20,9 @@ get_header();
 		<article <?php post_class( 'odsi-lms-course__article' ); ?>>
 			<header class="odsi-lms-course__header">
 				<h1 class="odsi-lms-course__title"><?php the_title(); ?></h1>
-				<?php echo do_shortcode( '[odsi_course_progress]' ); ?>
 			</header>
 
 			<div class="odsi-lms-course__content"><?php the_content(); ?></div>
-
-			<?php echo do_shortcode( '[odsi_enroll_button]' ); ?>
-
-			<section class="odsi-lms-course__outline">
-				<h2><?php esc_html_e( 'Course content', 'odsi-lms' ); ?></h2>
-				<?php echo do_shortcode( '[odsi_course_outline]' ); ?>
-			</section>
 		</article>
 		<?php
 	endwhile;

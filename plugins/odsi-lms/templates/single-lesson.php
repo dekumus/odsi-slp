@@ -17,20 +17,10 @@ get_header();
 		<article <?php post_class( 'odsi-lms-lesson__article' ); ?>>
 			<h1 class="odsi-lms-lesson__title"><?php the_title(); ?></h1>
 			<div class="odsi-lms-lesson__content"><?php the_content(); ?></div>
-
-			<footer class="odsi-lms-lesson__footer">
-				<button type="button" class="odsi-lms-button odsi-lms-complete"
-					data-step-id="<?php echo esc_attr( (string) get_the_ID() ); ?>">
-					<?php esc_html_e( 'Mark complete', 'odsi-lms' ); ?>
-				</button>
-			</footer>
 		</article>
 		<?php
 	endwhile;
 	?>
-	<aside class="odsi-lms-lesson__outline">
-		<?php echo do_shortcode( '[odsi_course_outline]' ); ?>
-	</aside>
 </main>
 <?php
 get_footer();

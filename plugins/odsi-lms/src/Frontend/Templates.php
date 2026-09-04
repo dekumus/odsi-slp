@@ -100,7 +100,9 @@ final class Templates implements Bootable {
 	public function filter_template_include( string $template ): string {
 		$candidate = $this->template_for_query();
 
-		if ( '' === $candidate ) {
+		// Block themes render through the template canvas; the LMS UI reaches
+		// them through the_content (ContentDecorator), never by swapping templates.
+		if ( '' === $candidate || ( function_exists( 'wp_is_block_theme' ) && wp_is_block_theme() ) ) {
 			return $template;
 		}
 

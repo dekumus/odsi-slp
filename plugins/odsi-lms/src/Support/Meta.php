@@ -127,6 +127,7 @@ final class Meta {
 				self::TIME_LIMIT   => $int,
 			),
 			PostTypes::QUESTION => array(
+				self::QUIZ_ID         => $int,
 				self::QUESTION_TYPE   => $string + array( 'default' => 'single' ),
 				self::QUESTION_POINTS => $int + array( 'default' => 1 ),
 			),

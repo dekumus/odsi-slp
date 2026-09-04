@@ -10,24 +10,33 @@ declare( strict_types = 1 );
 namespace ODSI\LMS;
 
 use ODSI\LMS\Admin\AdminMenu;
+use ODSI\LMS\Admin\CohortMetaBox;
 use ODSI\LMS\Admin\CourseBuilder;
+use ODSI\LMS\Admin\GradingScreen;
+use ODSI\LMS\Admin\ReportsScreen;
+use ODSI\LMS\Certificates\Certificates;
 use ODSI\LMS\Contracts\Bootable;
 use ODSI\LMS\Courses\Access;
+use ODSI\LMS\Courses\Cohorts;
 use ODSI\LMS\Courses\Enrollment;
 use ODSI\LMS\Courses\Maintenance;
 use ODSI\LMS\Courses\Progress;
 use ODSI\LMS\Courses\Structure;
 use ODSI\LMS\Database\Migrator;
+use ODSI\LMS\Frontend\ContentDecorator;
 use ODSI\LMS\Frontend\Shortcodes;
 use ODSI\LMS\Frontend\Templates;
 use ODSI\LMS\PostTypes\PostTypes;
 use ODSI\LMS\PostTypes\Taxonomies;
 use ODSI\LMS\Quizzes\Grader;
 use ODSI\LMS\Quizzes\QuizService;
+use ODSI\LMS\Reports\EnrollmentReport;
+use ODSI\LMS\Repositories\CertificateRepository;
 use ODSI\LMS\Repositories\EnrollmentRepository;
 use ODSI\LMS\Repositories\ProgressRepository;
 use ODSI\LMS\Repositories\QuizAttemptRepository;
 use ODSI\LMS\Rest\RestServiceProvider;
+use ODSI\LMS\Support\ObjectCache;
 use ODSI\LMS\Support\Assets;
 use ODSI\LMS\Support\Meta;
 
@@ -162,7 +171,24 @@ final class Plugin {
 				$c->get( Templates::class )
 			)
 		);
-		$c->set( AdminMenu::class, static fn (): object => new AdminMenu() );
+		$c->set( CertificateRepository::class, static fn (): object => new CertificateRepository() );
+		$c->set( EnrollmentReport::class, static fn ( Container $c ): object => new EnrollmentReport( $c->get( Progress::class ) ) );
+		$c->set( Certificates::class, static fn ( Container $c ): object => new Certificates( $c->get( CertificateRepository::class ), $c->get( Templates::class ) ) );
+		$c->set( Cohorts::class, static fn ( Container $c ): object => new Cohorts( $c->get( Enrollment::class ) ) );
+		$c->set( ObjectCache::class, static fn ( Container $c ): object => new ObjectCache( $c->get( Structure::class ) ) );
+		$c->set( ReportsScreen::class, static fn ( Container $c ): object => new ReportsScreen( $c->get( EnrollmentReport::class ), $c->get( Enrollment::class ) ) );
+		$c->set( GradingScreen::class, static fn ( Container $c ): object => new GradingScreen( $c->get( EnrollmentReport::class ), $c->get( QuizService::class ) ) );
+		$c->set( CohortMetaBox::class, static fn ( Container $c ): object => new CohortMetaBox( $c->get( Cohorts::class ) ) );
+		$c->set(
+			ContentDecorator::class,
+			static fn ( Container $c ): object => new ContentDecorator(
+				$c->get( Structure::class ),
+				$c->get( Progress::class ),
+				$c->get( Access::class ),
+				$c->get( Shortcodes::class )
+			)
+		);
+		$c->set( AdminMenu::class, static fn ( Container $c ): object => new AdminMenu( $c->get( ReportsScreen::class ), $c->get( GradingScreen::class ) ) );
 		$c->set( CourseBuilder::class, static fn ( Container $c ): object => new CourseBuilder( $c->get( Structure::class ) ) );
 		$c->set( RestServiceProvider::class, static fn ( Container $c ): object => new RestServiceProvider( $c ) );
 
@@ -187,17 +213,25 @@ final class Plugin {
 			Taxonomies::class,
 			PostTypes::class,
 			Structure::class,
+			ObjectCache::class,
 			Access::class,
 			Maintenance::class,
+			QuizService::class,
+			Certificates::class,
+			Cohorts::class,
 			Assets::class,
 			Templates::class,
 			Shortcodes::class,
+			ContentDecorator::class,
 			RestServiceProvider::class,
 		);
 
 		if ( is_admin() ) {
 			$services[] = AdminMenu::class;
 			$services[] = CourseBuilder::class;
+			$services[] = ReportsScreen::class;
+			$services[] = GradingScreen::class;
+			$services[] = CohortMetaBox::class;
 		}
 
 		/**

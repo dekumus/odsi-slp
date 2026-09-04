@@ -328,3 +328,35 @@ those columns fails review.
 
 **Cost.** Grant-style overrides via `odsi_social_can_view_activity` cannot be
 pushed into SQL; they apply to single items only, and the docblock says so.
+
+
+---
+
+## ADR-017 — Front-end UI is injected through `the_content`, never by swapping templates
+
+**Status:** Accepted
+
+**Context.** The first E2E run against a fresh WordPress install failed before
+the learner could enroll: the active theme was a block theme, and block themes
+render singular posts through the template canvas, so the plugin's
+`template_include` swap never fired and the course page showed bare content.
+The classic-template path had been the only path.
+
+**Decision.** Everything the LMS adds to a course, lesson, topic or quiz page
+(progress bar, enroll button, outline, mark-complete control, quiz player) is
+appended to the post's content through `the_content` by
+`Frontend\ContentDecorator`. The plugin's PHP templates exist only for classic
+themes, wrap the content, and add nothing themselves, so both paths render
+identically. Access locking likewise runs on `the_content` and guards on the
+queried object id rather than `in_the_loop()`, which block themes do not set.
+
+**Why.** Block themes are the WordPress default and the direction of travel;
+a plugin whose UI only appears on classic themes is broken for new sites. The
+content filter is the one rendering path both theme kinds share. It also keeps
+theme overrides simple: a theme that wants a different layout filters
+`odsi_lms_decorate_content` off and composes the shortcodes itself.
+
+**Cost.** Layout control is limited to "before and after the content". Themes
+wanting a sidebar outline do the composition themselves. Content filters run on
+every render, so the decorator must stay cheap; it reuses the per-request
+outline cache.

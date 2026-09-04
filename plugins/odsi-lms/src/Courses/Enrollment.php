@@ -102,6 +102,7 @@ final class Enrollment {
 
 		if ( $reset_progress ) {
 			$this->progress->reset_course( $user_id, $course_id );
+			do_action( 'odsi_lms_progress_reset', $user_id, $course_id );
 		}
 
 		if ( $removed ) {
@@ -116,6 +117,34 @@ final class Enrollment {
 		}
 
 		return $removed;
+	}
+
+	/**
+	 * Wipe a learner's progress and attempts on a course and reopen a completed
+	 * enrollment (LMS-ENR-007). Issued certificates are not revoked.
+	 *
+	 * @param int $user_id   User id.
+	 * @param int $course_id Course post id.
+	 */
+	public function reset_progress( int $user_id, int $course_id ): void {
+		$this->progress->reset_course( $user_id, $course_id );
+
+		/**
+		 * Fires when a learner's progress on a course is reset, before the
+		 * enrollment is reopened. Listeners holding derived data (quiz
+		 * attempts, caches) clear it here.
+		 *
+		 * @param int $user_id   User id.
+		 * @param int $course_id Course post id.
+		 */
+		do_action( 'odsi_lms_progress_reset', $user_id, $course_id );
+
+		$row = $this->enrollments->find_for( $user_id, $course_id );
+
+		if ( $row && EnrollmentRepository::STATUS_COMPLETED === $row->status ) {
+			$this->enrollments->set_status( $user_id, $course_id, EnrollmentRepository::STATUS_ACTIVE );
+			$this->enrollments->clear_completed_at( $user_id, $course_id );
+		}
 	}
 
 	/**

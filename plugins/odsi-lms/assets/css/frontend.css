@@ -125,3 +125,19 @@
 	border-bottom: 1px solid var(--odsi-lms-border, #d9dce1);
 	padding: 1rem 0;
 }
+
+.odsi-lms-quiz__question {
+	border: 1px solid var(--odsi-lms-border, #d9dce1);
+	border-radius: var(--odsi-lms-radius, 6px);
+	margin-bottom: 1rem;
+	padding: 1rem;
+}
+
+.odsi-lms-quiz__option { margin: 0.25rem 0; }
+.odsi-lms-quiz__status { font-size: 1.25rem; font-weight: 600; }
+.odsi-lms-quiz__status.is-passed { color: #15803d; }
+.odsi-lms-quiz__status.is-failed { color: #b91c1c; }
+.odsi-lms-quiz__breakdown .is-correct { color: #15803d; }
+.odsi-lms-quiz__breakdown .is-incorrect { color: #b91c1c; }
+.odsi-lms-quiz__clock { font-variant-numeric: tabular-nums; font-weight: 600; }
+.odsi-lms-quiz__error { color: #b91c1c; }

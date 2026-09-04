@@ -4,10 +4,10 @@
  * Progressive enhancement only: every control it binds to is a real element
  * rendered by PHP, so the pages remain readable without this file.
  */
-( function () {
+( function() {
 	'use strict';
 
-	var config = window.odsiLms || {};
+	const config = window.odsiLms || {};
 
 	/**
 	 * Call a plugin REST route.
@@ -27,8 +27,8 @@
 				},
 				body: body ? JSON.stringify( body ) : undefined,
 			} )
-			.then( function ( response ) {
-				return response.json().then( function ( data ) {
+			.then( function( response ) {
+				return response.json().then( function( data ) {
 					if ( ! response.ok ) {
 						throw new Error( data.message || config.i18n.error );
 					}
@@ -45,16 +45,16 @@
 	 * @param {number} percentage Completion percentage.
 	 */
 	function paintProgress( courseId, percentage ) {
-		var wrapper = document.querySelector(
-			'.odsi-lms-progress[data-course-id="' + courseId + '"]'
+		const wrapper = document.querySelector(
+			'.odsi-lms-progress[data-course-id="' + courseId + '"]',
 		);
 
 		if ( ! wrapper ) {
 			return;
 		}
 
-		var track = wrapper.querySelector( '.odsi-lms-progress__track' );
-		var fill = wrapper.querySelector( '.odsi-lms-progress__fill' );
+		const track = wrapper.querySelector( '.odsi-lms-progress__track' );
+		const fill = wrapper.querySelector( '.odsi-lms-progress__fill' );
 
 		if ( fill ) {
 			fill.style.width = percentage + '%';
@@ -71,18 +71,18 @@
 	 * @param {HTMLElement} button Clicked button.
 	 */
 	function completeStep( button ) {
-		var stepId = button.getAttribute( 'data-step-id' );
-		var original = button.textContent;
+		const stepId = button.getAttribute( 'data-step-id' );
+		const original = button.textContent;
 
 		button.disabled = true;
 		button.textContent = config.i18n.markingComplete;
 
 		request( '/steps/' + stepId + '/complete', {} )
-			.then( function ( data ) {
+			.then( function( data ) {
 				button.textContent = config.i18n.completed;
 				paintProgress( data.course_id, data.percentage );
 			} )
-			.catch( function ( error ) {
+			.catch( function( error ) {
 				button.disabled = false;
 				button.textContent = original;
 				window.alert( error.message );
@@ -95,22 +95,22 @@
 	 * @param {HTMLElement} button Clicked button.
 	 */
 	function enroll( button ) {
-		var courseId = button.getAttribute( 'data-course-id' );
+		const courseId = button.getAttribute( 'data-course-id' );
 
 		button.disabled = true;
 
 		request( '/courses/' + courseId + '/enroll', {} )
-			.then( function () {
+			.then( function() {
 				window.location.reload();
 			} )
-			.catch( function ( error ) {
+			.catch( function( error ) {
 				button.disabled = false;
 				window.alert( error.message );
 			} );
 	}
 
-	document.addEventListener( 'click', function ( event ) {
-		var target = event.target;
+	document.addEventListener( 'click', function( event ) {
+		const target = event.target;
 
 		if ( ! ( target instanceof HTMLElement ) ) {
 			return;
@@ -126,4 +126,4 @@
 			enroll( target );
 		}
 	} );
-} )();
+}() );

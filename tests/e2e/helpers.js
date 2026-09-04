@@ -14,11 +14,21 @@ const ADMIN_PASS = process.env.ODSI_E2E_ADMIN_PASS || 'password';
  * @param {string}                          password Password.
  */
 async function login( page, username, password ) {
-	await page.goto( '/wp-login.php' );
-	await page.fill( '#user_login', username );
-	await page.fill( '#user_pass', password );
-	await page.click( '#wp-submit' );
-	await expect( page ).not.toHaveURL( /wp-login\.php/ );
+	await page.goto( '/wp-login.php', { waitUntil: 'networkidle' } );
+
+	// wp-login.php moves focus around on load; fill each field explicitly and
+	// confirm the values landed before submitting, so a focus race cannot put
+	// the password into the username box.
+	const user = page.locator( '#user_login' );
+	const pass = page.locator( '#user_pass' );
+	await user.click();
+	await user.fill( username );
+	await pass.click();
+	await pass.fill( password );
+	await expect( user ).toHaveValue( username );
+	await expect( pass ).toHaveValue( password );
+
+	await Promise.all( [ page.waitForURL( ( url ) => ! url.pathname.endsWith( 'wp-login.php' ) ), page.click( '#wp-submit' ) ] );
 }
 
 /**
@@ -64,9 +74,9 @@ async function rest( page, method, path, body ) {
 /**
  * Create a post of any type through the core REST API and return its id.
  *
- * @param {import('@playwright/test').Page} page  Logged-in admin page.
- * @param {string}                          type  REST base, e.g. `odsi_course`.
- * @param {Object}                          data  Post fields.
+ * @param {import('@playwright/test').Page} page Logged-in admin page.
+ * @param {string}                          type REST base, e.g. `odsi_course`.
+ * @param {Object}                          data Post fields.
  * @return {Promise<number>} Post id.
  */
 async function createPost( page, type, data ) {

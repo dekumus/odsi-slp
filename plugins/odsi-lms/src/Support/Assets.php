@@ -23,6 +23,7 @@ final class Assets implements Bootable {
 
 	public const FRONTEND_STYLE  = 'odsi-lms';
 	public const FRONTEND_SCRIPT = 'odsi-lms';
+	public const QUIZ_SCRIPT     = 'odsi-lms-quiz-player';
 	public const BUILDER_SCRIPT  = 'odsi-lms-course-builder';
 
 	/**
@@ -67,12 +68,28 @@ final class Assets implements Bootable {
 				'nonce'   => wp_create_nonce( 'wp_rest' ),
 				'userId'  => get_current_user_id(),
 				'i18n'    => array(
-					'markingComplete' => __( 'Saving…', 'odsi-lms' ),
-					'completed'       => __( 'Completed', 'odsi-lms' ),
-					'error'           => __( 'Something went wrong. Please try again.', 'odsi-lms' ),
+					'markingComplete'   => __( 'Saving…', 'odsi-lms' ),
+					'completed'         => __( 'Completed', 'odsi-lms' ),
+					'error'             => __( 'Something went wrong. Please try again.', 'odsi-lms' ),
+					'start'             => __( 'Start quiz', 'odsi-lms' ),
+					'submit'            => __( 'Submit answers', 'odsi-lms' ),
+					'tryAgain'          => __( 'Back to the quiz', 'odsi-lms' ),
+					'passed'            => __( 'You passed!', 'odsi-lms' ),
+					'failed'            => __( 'Not this time.', 'odsi-lms' ),
+					'needsGrading'      => __( 'Awaiting grading', 'odsi-lms' ),
+					'correct'           => __( 'Correct', 'odsi-lms' ),
+					'incorrect'         => __( 'Incorrect', 'odsi-lms' ),
+					'minutes'           => __( 'minutes', 'odsi-lms' ),
+					'attemptsRemaining' => __( 'Attempts remaining:', 'odsi-lms' ),
+					'passMark'          => __( 'Pass mark:', 'odsi-lms' ),
+					'timeLeft'          => __( 'Time left:', 'odsi-lms' ),
 				),
 			)
 		);
+
+		if ( is_singular( PostTypes::QUIZ ) ) {
+			wp_enqueue_script( self::QUIZ_SCRIPT, Plugin::url() . 'assets/js/quiz-player.js', array( self::FRONTEND_SCRIPT ), VERSION, true );
+		}
 	}
 
 	/**

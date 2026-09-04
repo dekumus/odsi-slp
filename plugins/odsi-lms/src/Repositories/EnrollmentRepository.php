@@ -201,6 +201,26 @@ final class EnrollmentRepository extends AbstractRepository {
 	}
 
 	/**
+	 * Clear the completion timestamp after a reset.
+	 *
+	 * @param int $user_id   User id.
+	 * @param int $course_id Course post id.
+	 */
+	public function clear_completed_at( int $user_id, int $course_id ): void {
+		$row = $this->find_for( $user_id, $course_id );
+
+		if ( $row ) {
+			$this->update_row(
+				(int) $row->id,
+				array(
+					'completed_at' => null,
+					'updated_at'   => $this->now(),
+				)
+			);
+		}
+	}
+
+	/**
 	 * Remove a user's enrollment entirely.
 	 *
 	 * @param int $user_id   User id.
