@@ -1,0 +1,141 @@
+# Copyright (C) 2026 ODSI
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: ODSI Bridge 0.1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/odsi-bridge\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-09-04T09:06:24+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: odsi-bridge\n"
+
+#. Plugin Name of the plugin
+#: odsi-bridge.php
+msgid "ODSI Bridge"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: odsi-bridge.php
+msgid "https://github.com/dekumus/odsi-slp"
+msgstr ""
+
+#. Description of the plugin
+#: odsi-bridge.php
+msgid "Connects ODSI LMS and ODSI Social: course activity in the feed, groups linked to courses, shared progress."
+msgstr ""
+
+#. Author of the plugin
+#: odsi-bridge.php
+msgid "ODSI"
+msgstr ""
+
+#. translators: %s: required PHP version.
+#: odsi-bridge.php:42
+#, php-format
+msgid "ODSI Bridge requires PHP %s or newer."
+msgstr ""
+
+#. translators: %s: required WordPress version.
+#: odsi-bridge.php:47
+#, php-format
+msgid "ODSI Bridge requires WordPress %s or newer."
+msgstr ""
+
+#: odsi-bridge.php:66
+msgid "ODSI Bridge needs the ODSI LMS plugin to be active."
+msgstr ""
+
+#. translators: %s: required version.
+#: odsi-bridge.php:69
+#, php-format
+msgid "ODSI Bridge needs ODSI LMS %s or newer."
+msgstr ""
+
+#: odsi-bridge.php:73
+msgid "ODSI Bridge needs the ODSI Social plugin to be active."
+msgstr ""
+
+#. translators: %s: required version.
+#: odsi-bridge.php:76
+#, php-format
+msgid "ODSI Bridge needs ODSI Social %s or newer."
+msgstr ""
+
+#: odsi-bridge.php:127
+msgid "ODSI Bridge has been deactivated; activate it again once both are available."
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:44
+#: src/Admin/SettingsScreen.php:57
+msgid "Community bridge"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:52
+msgid "Post course events (enrolled, completed, passed a quiz) to the activity feed"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:53
+msgid "Link courses to groups and keep membership in step with enrollment"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:54
+msgid "Let members of a linked group see each other's progress"
+msgstr ""
+
+#: src/Admin/SettingsScreen.php:83
+msgid "You cannot change these settings."
+msgstr ""
+
+#: src/Modules/CourseActivity.php:152
+#: src/Modules/ProgressVisibility.php:114
+msgid "A former member"
+msgstr ""
+
+#: src/Modules/CourseActivity.php:154
+msgid "a course"
+msgstr ""
+
+#. translators: 1: member name, 2: course link.
+#: src/Modules/CourseActivity.php:159
+#, php-format
+msgid "%1$s completed the course %2$s"
+msgstr ""
+
+#. translators: 1: member name, 2: quiz link.
+#: src/Modules/CourseActivity.php:161
+#, php-format
+msgid "%1$s passed the quiz %2$s"
+msgstr ""
+
+#. translators: 1: member name, 2: course link.
+#: src/Modules/CourseActivity.php:163
+#, php-format
+msgid "%1$s enrolled on %2$s"
+msgstr ""
+
+#: src/Modules/GroupLinkage.php:183
+msgid "Community group"
+msgstr ""
+
+#: src/Modules/GroupLinkage.php:205
+msgid "Members of the linked group see each other's progress; enrolling adds learners to it."
+msgstr ""
+
+#: src/Modules/GroupLinkage.php:206
+msgid "— No group —"
+msgstr ""
+
+#: src/Modules/ProgressVisibility.php:95
+msgid "That group does not exist."
+msgstr ""
+
+#. translators: %s: course title.
+#: src/Modules/ProgressVisibility.php:164
+#, php-format
+msgid "Progress on %s"
+msgstr ""

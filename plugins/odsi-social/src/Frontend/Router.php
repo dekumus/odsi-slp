@@ -234,7 +234,7 @@ final class Router implements Bootable {
 	public function body_class( array $classes ): array {
 		if ( $this->is_community_page() ) {
 			$classes[] = 'odsi-social';
-			$classes[] = 'odsi-social-' . $this->section();
+			$classes[] = 'odsi-social-page-' . $this->section();
 		}
 
 		return $classes;

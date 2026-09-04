@@ -8,7 +8,7 @@ when you change what it describes.
 | Plugin | State |
 | --- | --- |
 | `odsi-lms` | Engine, reports, grading, certificates, cohorts and quiz player proven by 30 unit and 87 integration tests, plus the learner flow end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
-| `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens. 113 integration tests including the full privacy decision table through both PHP and SQL. PHPCS and PHPStan level 6 clean. Not yet exercised in a browser. |
+| `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens. 114 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 8 integration tests. |
 
 Verification so far: the integration suite boots WordPress core with the
@@ -77,7 +77,7 @@ Architecture in `docs/specs/20-social-architecture.md`, tables in
 
 ### Known gaps in the social plugin
 
-1. **No browser verification** and no E2E flow yet.
+1. ~~No browser verification.~~ Closed: `tests/e2e/social-member-flow.spec.js`.
 2. **Avatar and cover upload UI** — the services accept attachment ids; nothing
    on the front end uploads a file.
 3. **Profile edit form** on the front end — values are writable over REST only.
@@ -226,7 +226,7 @@ Numbering is kept from the original list. Struck-through items are closed.
 11. **No commerce integration** — `access_mode = paid` is enforced but nothing
     can fulfil it.
 12. ~~No cron handler.~~ Closed.
-13. **No i18n build**, no `.pot` file.
+13. ~~No i18n build.~~ Closed: `languages/*.pot` for all three plugins, regenerated with `npm run i18n`.
 14. ~~No `Structure` cache invalidation on post save.~~ Closed.
 15. ~~Cohort behaviour is unimplemented.~~ Closed.
 16. ~~No enrollment or grading admin actions.~~ Closed.
@@ -249,6 +249,7 @@ Numbering is kept from the original list. Struck-through items are closed.
 | `LMS-IF` REST, `LMS-ACC-007` | integration `RestTest` | 9 |
 | `LMS-ADM-*`, `LMS-ENR-007/012`, certificates, cache | integration `HardeningTest` | 8 |
 | Learner flow in a browser | e2e `lms-learner-flow` | 1, passing |
+| Member flow in a browser | e2e `social-member-flow` | 1, passing |
 | Social schema, ADR-005 scan | integration `social/SchemaTest` | 20 |
 | Privacy decision table, both representations | integration `social/PrivacyTest` | 42 |
 | `SOC-ACT-*` | integration `social/ActivityTest` | 13 |

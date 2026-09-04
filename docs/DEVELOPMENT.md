@@ -82,7 +82,10 @@ The bootstrap loads all three plugins as must-use plugins and runs each
 
 ### End to end
 
-`tests/e2e/`. Playwright driving a real browser against a running site.
+`tests/e2e/`. Playwright driving a real browser against a running site. Two
+flows: the LMS learner flow and the community member flow. Both create their
+own users and content with a timestamp so they can run repeatedly against the
+same site.
 
 With Docker:
 

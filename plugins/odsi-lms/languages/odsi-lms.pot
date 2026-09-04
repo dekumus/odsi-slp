@@ -1,0 +1,580 @@
+# Copyright (C) 2026 ODSI
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: ODSI LMS 0.1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/odsi-lms\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-09-04T09:06:23+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: odsi-lms\n"
+
+#. Plugin Name of the plugin
+#: odsi-lms.php
+msgid "ODSI LMS"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: odsi-lms.php
+msgid "https://github.com/dekumus/odsi-slp"
+msgstr ""
+
+#. Description of the plugin
+#: odsi-lms.php
+msgid "Course, lesson, quiz and progress engine for the ODSI social learning platform."
+msgstr ""
+
+#. Author of the plugin
+#: odsi-lms.php
+msgid "ODSI"
+msgstr ""
+
+#. translators: 1: required PHP version, 2: current PHP version.
+#: odsi-lms.php:40
+#, php-format
+msgid "ODSI LMS requires PHP %1$s or newer. This site runs PHP %2$s."
+msgstr ""
+
+#. translators: 1: required WordPress version, 2: current WordPress version.
+#: odsi-lms.php:49
+#, php-format
+msgid "ODSI LMS requires WordPress %1$s or newer. This site runs WordPress %2$s."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:51
+#: src/Admin/AdminMenu.php:52
+msgid "Learning"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:60
+#: src/Admin/ReportsScreen.php:54
+msgid "Reports"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:61
+#: src/Admin/GradingScreen.php:55
+#: src/Admin/GradingScreen.php:62
+msgid "Grading"
+msgstr ""
+
+#: src/Admin/CohortMetaBox.php:47
+#: src/PostTypes/PostTypes.php:66
+msgid "Courses"
+msgstr ""
+
+#: src/Admin/CohortMetaBox.php:48
+msgid "Members"
+msgstr ""
+
+#: src/Admin/CohortMetaBox.php:80
+msgid "Create a course first."
+msgstr ""
+
+#: src/Admin/CohortMetaBox.php:93
+msgid "Member"
+msgstr ""
+
+#: src/Admin/CohortMetaBox.php:101
+#: src/Admin/EnrollmentListTable.php:152
+msgid "Remove"
+msgstr ""
+
+#: src/Admin/CohortMetaBox.php:106
+msgid "Add members (usernames or emails, comma separated)"
+msgstr ""
+
+#: src/Admin/CourseBuilder.php:57
+msgid "Course placement"
+msgstr ""
+
+#: src/Admin/CourseBuilder.php:79
+#: src/PostTypes/PostTypes.php:108
+msgid "Quiz"
+msgstr ""
+
+#: src/Admin/CourseBuilder.php:89
+#: src/Admin/ReportsScreen.php:99
+#: src/PostTypes/PostTypes.php:67
+msgid "Course"
+msgstr ""
+
+#: src/Admin/CourseBuilder.php:97
+#: src/PostTypes/PostTypes.php:82
+msgid "Lesson"
+msgstr ""
+
+#: src/Admin/CourseBuilder.php:105
+msgid "Ordering follows the Order field under Page Attributes."
+msgstr ""
+
+#: src/Admin/CourseBuilder.php:180
+msgid "— None —"
+msgstr ""
+
+#: src/Admin/EnrollmentListTable.php:48
+msgid "Learner"
+msgstr ""
+
+#: src/Admin/EnrollmentListTable.php:49
+msgid "Status"
+msgstr ""
+
+#: src/Admin/EnrollmentListTable.php:50
+msgid "Progress"
+msgstr ""
+
+#: src/Admin/EnrollmentListTable.php:51
+msgid "Enrolled"
+msgstr ""
+
+#: src/Admin/EnrollmentListTable.php:52
+#: src/Frontend/ContentDecorator.php:118
+#: src/Support/Assets.php:72
+#: templates/parts/course-outline.php:54
+msgid "Completed"
+msgstr ""
+
+#: src/Admin/EnrollmentListTable.php:115
+msgid "All statuses"
+msgstr ""
+
+#: src/Admin/EnrollmentListTable.php:122
+msgid "Filter"
+msgstr ""
+
+#: src/Admin/EnrollmentListTable.php:151
+msgid "Reset progress"
+msgstr ""
+
+#: src/Admin/GradingScreen.php:55
+msgid "Nothing to grade."
+msgstr ""
+
+#. translators: %d: count.
+#: src/Admin/GradingScreen.php:63
+#, php-format
+msgid "%d answer waiting"
+msgid_plural "%d answers waiting"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Admin/GradingScreen.php:86
+msgid "Points"
+msgstr ""
+
+#: src/Admin/GradingScreen.php:87
+msgid "Save grade"
+msgstr ""
+
+#: src/Admin/GradingScreen.php:106
+msgid "You cannot grade this attempt."
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:57
+msgid "No courses to report on yet."
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:82
+msgid "Search learners"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:117
+msgid "enrolled"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:118
+msgid "active"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:119
+msgid "completed"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:120
+msgid "completion rate"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:130
+msgid "Enroll a learner"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:135
+msgid "Username or email"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:136
+msgid "Enroll"
+msgstr ""
+
+#: src/Admin/ReportsScreen.php:150
+msgid "You cannot manage this course."
+msgstr ""
+
+#: src/Certificates/Certificates.php:117
+msgid "A former member"
+msgstr ""
+
+#: src/Certificates/Certificates.php:165
+#: src/PostTypes/PostTypes.php:138
+msgid "Certificate"
+msgstr ""
+
+#: src/Courses/Access.php:304
+msgid "This lesson is not available yet."
+msgstr ""
+
+#. translators: %s: formatted date.
+#: src/Courses/Access.php:309
+#, php-format
+msgid "This lesson will be available on %s."
+msgstr ""
+
+#: src/Courses/Access.php:316
+msgid "Complete the previous step to unlock this one."
+msgstr ""
+
+#: src/Courses/Access.php:321
+msgid "Enroll on this course to view this lesson."
+msgstr ""
+
+#: src/Courses/Access.php:322
+msgid "Please log in and enroll on this course to view this lesson."
+msgstr ""
+
+#: src/Courses/Access.php:335
+msgid "Back to the course"
+msgstr ""
+
+#: src/Frontend/ContentDecorator.php:100
+msgid "Course content"
+msgstr ""
+
+#: src/Frontend/ContentDecorator.php:119
+msgid "Mark complete"
+msgstr ""
+
+#: src/Frontend/ContentDecorator.php:138
+msgid "Log in to take this quiz."
+msgstr ""
+
+#: src/Frontend/ContentDecorator.php:145
+#: src/Support/Assets.php:74
+msgid "Start quiz"
+msgstr ""
+
+#: src/Frontend/ContentDecorator.php:145
+msgid "JavaScript is required to take this quiz."
+msgstr ""
+
+#: src/PostTypes/PostTypes.php:81
+msgid "Lessons"
+msgstr ""
+
+#: src/PostTypes/PostTypes.php:94
+msgid "Topics"
+msgstr ""
+
+#: src/PostTypes/PostTypes.php:95
+msgid "Topic"
+msgstr ""
+
+#: src/PostTypes/PostTypes.php:107
+msgid "Quizzes"
+msgstr ""
+
+#: src/PostTypes/PostTypes.php:120
+msgid "Questions"
+msgstr ""
+
+#: src/PostTypes/PostTypes.php:121
+msgid "Question"
+msgstr ""
+
+#: src/PostTypes/PostTypes.php:137
+msgid "Certificates"
+msgstr ""
+
+#: src/PostTypes/PostTypes.php:151
+msgid "Course Groups"
+msgstr ""
+
+#: src/PostTypes/PostTypes.php:152
+msgid "Course Group"
+msgstr ""
+
+#. translators: %s: singular content type label.
+#. translators: %s: singular taxonomy label.
+#: src/PostTypes/PostTypes.php:218
+#: src/PostTypes/Taxonomies.php:112
+#, php-format
+msgid "Add New %s"
+msgstr ""
+
+#. translators: %s: singular content type label.
+#. translators: %s: singular taxonomy label.
+#: src/PostTypes/PostTypes.php:220
+#: src/PostTypes/Taxonomies.php:110
+#, php-format
+msgid "Edit %s"
+msgstr ""
+
+#. translators: %s: singular content type label.
+#: src/PostTypes/PostTypes.php:222
+#, php-format
+msgid "New %s"
+msgstr ""
+
+#. translators: %s: singular content type label.
+#: src/PostTypes/PostTypes.php:224
+#, php-format
+msgid "View %s"
+msgstr ""
+
+#. translators: %s: plural content type label.
+#. translators: %s: plural taxonomy label.
+#: src/PostTypes/PostTypes.php:226
+#: src/PostTypes/Taxonomies.php:108
+#, php-format
+msgid "Search %s"
+msgstr ""
+
+#. translators: %s: lowercase plural content type label.
+#: src/PostTypes/PostTypes.php:228
+#, php-format
+msgid "No %s found."
+msgstr ""
+
+#. translators: %s: lowercase plural content type label.
+#: src/PostTypes/PostTypes.php:230
+#, php-format
+msgid "No %s found in Trash."
+msgstr ""
+
+#: src/PostTypes/Taxonomies.php:44
+msgid "Course Categories"
+msgstr ""
+
+#: src/PostTypes/Taxonomies.php:45
+msgid "Course Category"
+msgstr ""
+
+#: src/PostTypes/Taxonomies.php:57
+msgid "Course Tags"
+msgstr ""
+
+#: src/PostTypes/Taxonomies.php:58
+msgid "Course Tag"
+msgstr ""
+
+#: src/PostTypes/Taxonomies.php:67
+msgid "Course Levels"
+msgstr ""
+
+#: src/PostTypes/Taxonomies.php:68
+msgid "Course Level"
+msgstr ""
+
+#: src/PostTypes/Taxonomies.php:80
+msgid "Question Categories"
+msgstr ""
+
+#: src/PostTypes/Taxonomies.php:81
+msgid "Question Category"
+msgstr ""
+
+#: src/Quizzes/QuizService.php:117
+msgid "That quiz does not exist."
+msgstr ""
+
+#: src/Quizzes/QuizService.php:135
+msgid "You have used all of your attempts at this quiz."
+msgstr ""
+
+#: src/Quizzes/QuizService.php:143
+msgid "The attempt could not be started."
+msgstr ""
+
+#: src/Quizzes/QuizService.php:182
+msgid "That quiz attempt does not exist."
+msgstr ""
+
+#: src/Quizzes/QuizService.php:186
+msgid "That quiz attempt has already been submitted."
+msgstr ""
+
+#: src/Quizzes/QuizService.php:192
+msgid "The time limit for this quiz has expired."
+msgstr ""
+
+#: src/Rest/CourseController.php:103
+msgid "That course does not exist."
+msgstr ""
+
+#: src/Rest/CourseController.php:172
+msgid "This course cannot be joined directly."
+msgstr ""
+
+#: src/Rest/CourseController.php:182
+msgid "You could not be enrolled on this course."
+msgstr ""
+
+#: src/Rest/ProgressController.php:71
+msgid "That step does not exist."
+msgstr ""
+
+#: src/Rest/ProgressController.php:79
+msgid "This step is not available to you yet."
+msgstr ""
+
+#: src/Rest/ProgressController.php:87
+msgid "That step cannot be marked complete directly."
+msgstr ""
+
+#: src/Rest/QuizController.php:128
+#: src/Rest/QuizController.php:164
+msgid "This quiz is not available to you yet."
+msgstr ""
+
+#: src/Rest/QuizController.php:219
+msgid "That quiz attempt does not belong to you."
+msgstr ""
+
+#: src/Support/Assets.php:71
+msgid "Saving…"
+msgstr ""
+
+#: src/Support/Assets.php:73
+msgid "Something went wrong. Please try again."
+msgstr ""
+
+#: src/Support/Assets.php:75
+msgid "Submit answers"
+msgstr ""
+
+#: src/Support/Assets.php:76
+msgid "Back to the quiz"
+msgstr ""
+
+#: src/Support/Assets.php:77
+msgid "You passed!"
+msgstr ""
+
+#: src/Support/Assets.php:78
+msgid "Not this time."
+msgstr ""
+
+#: src/Support/Assets.php:79
+msgid "Awaiting grading"
+msgstr ""
+
+#: src/Support/Assets.php:80
+msgid "Correct"
+msgstr ""
+
+#: src/Support/Assets.php:81
+msgid "Incorrect"
+msgstr ""
+
+#: src/Support/Assets.php:82
+msgid "minutes"
+msgstr ""
+
+#: src/Support/Assets.php:83
+msgid "Attempts remaining:"
+msgstr ""
+
+#: src/Support/Assets.php:84
+msgid "Pass mark:"
+msgstr ""
+
+#: src/Support/Assets.php:85
+msgid "Time left:"
+msgstr ""
+
+#: src/Support/Capabilities.php:33
+msgid "Instructor"
+msgstr ""
+
+#: src/Support/Capabilities.php:37
+msgid "Student"
+msgstr ""
+
+#. translators: %s: code.
+#: templates/certificate.php:34
+#, php-format
+msgid "Verification code: %s"
+msgstr ""
+
+#: templates/parts/certificate-verify.php:15
+msgid "Certificate code"
+msgstr ""
+
+#: templates/parts/certificate-verify.php:17
+msgid "Verify"
+msgstr ""
+
+#. translators: 1: name, 2: course, 3: date.
+#: templates/parts/certificate-verify.php:22
+#, php-format
+msgid "Valid: %1$s completed %2$s on %3$s."
+msgstr ""
+
+#. translators: 1: name, 2: course, 3: date.
+#: templates/parts/certificate-verify.php:23
+msgid "View certificate"
+msgstr ""
+
+#: templates/parts/certificate-verify.php:26
+msgid "That code is not valid."
+msgstr ""
+
+#: templates/parts/course-grid.php:13
+msgid "No courses found."
+msgstr ""
+
+#: templates/parts/course-outline.php:17
+msgid "This course has no content yet."
+msgstr ""
+
+#: templates/parts/course-outline.php:46
+msgid "Locked"
+msgstr ""
+
+#: templates/parts/enroll-button.php:18
+msgid "Log in to enroll"
+msgstr ""
+
+#: templates/parts/enroll-button.php:22
+msgid "Continue course"
+msgstr ""
+
+#: templates/parts/enroll-button.php:27
+msgid "Enroll on this course"
+msgstr ""
+
+#: templates/parts/login-required.php:12
+msgid "Log in to see your courses."
+msgstr ""
+
+#: templates/parts/my-certificates.php:14
+msgid "No certificates yet."
+msgstr ""
+
+#: templates/parts/my-courses.php:15
+msgid "You are not enrolled on any courses yet."
+msgstr ""
+
+#: templates/parts/progress-bar.php:19
+msgid "Course progress"
+msgstr ""
+
+#. translators: 1: steps completed, 2: total steps, 3: percentage.
+#: templates/parts/progress-bar.php:26
+#, php-format
+msgid "%1$d of %2$d steps complete (%3$s%%)"
+msgstr ""

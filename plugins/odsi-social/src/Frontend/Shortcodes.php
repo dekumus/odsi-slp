@@ -63,7 +63,20 @@ final class Shortcodes implements Bootable {
 				return '' === $object ? $this->render_groups() : $this->render_group( $object, $viewer );
 
 			case 'activity':
-				return '' === $object ? $this->render_feed( array( 'scope' => $viewer > 0 ? Feed::SCOPE_PERSONAL : Feed::SCOPE_SITE ) ) : $this->render_single_activity( (int) $object, $viewer );
+				if ( '' !== $object ) {
+					return $this->render_single_activity( (int) $object, $viewer );
+				}
+
+				// The site feed is the default; members switch to "Following" (the
+				// personal feed) with ?scope=personal.
+				$wants_personal = $viewer > 0 && 'personal' === sanitize_key( (string) ( $_GET['scope'] ?? '' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view switch.
+
+				return $this->render_feed(
+					array(
+						'scope'     => $wants_personal ? Feed::SCOPE_PERSONAL : Feed::SCOPE_SITE,
+						'show_tabs' => 1,
+					)
+				);
 
 			case 'notifications':
 				return $this->render_notifications( $viewer );
@@ -73,7 +86,7 @@ final class Shortcodes implements Bootable {
 
 			default:
 				return '';
-		}
+		}//end switch
 	}
 
 	/**
@@ -84,10 +97,11 @@ final class Shortcodes implements Bootable {
 	public function render_feed( array|string $atts = array() ): string {
 		$atts   = shortcode_atts(
 			array(
-				'scope'    => Feed::SCOPE_SITE,
-				'group_id' => 0,
-				'user_id'  => 0,
-				'per_page' => 0,
+				'scope'     => Feed::SCOPE_SITE,
+				'group_id'  => 0,
+				'user_id'   => 0,
+				'per_page'  => 0,
+				'show_tabs' => 0,
 			),
 			(array) $atts,
 			'odsi_activity_feed'

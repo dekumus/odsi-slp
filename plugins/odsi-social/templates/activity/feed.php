@@ -10,6 +10,7 @@
  * @var int                               $viewer_id       Viewer.
  * @var bool                              $can_post        Whether to show the post box.
  * @var string[]                          $privacy_choices Privacy options.
+ * @var bool                              $show_tabs       Whether to show the site / following switch.
  *
  * @package ODSI\Social
  */
@@ -19,6 +20,12 @@ defined( 'ABSPATH' ) || exit;
 // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- sub-template output is escaped inside the sub-template.
 $odsi_templates = \ODSI\Social\Plugin::instance()->container()->get( \ODSI\Social\Frontend\Templates::class );
 ?>
+<?php if ( ! empty( $show_tabs ) ) : ?>
+	<nav class="odsi-social-feed__tabs">
+		<a class="<?php echo 'site' === $scope ? 'is-active' : ''; ?>" href="<?php echo esc_url( remove_query_arg( 'scope' ) ); ?>"><?php esc_html_e( 'Everyone', 'odsi-social' ); ?></a>
+		<a class="<?php echo 'personal' === $scope ? 'is-active' : ''; ?>" href="<?php echo esc_url( add_query_arg( 'scope', 'personal' ) ); ?>"><?php esc_html_e( 'Following', 'odsi-social' ); ?></a>
+	</nav>
+<?php endif; ?>
 <div class="odsi-social-feed" data-scope="<?php echo esc_attr( $scope ); ?>" data-group-id="<?php echo esc_attr( (string) $group_id ); ?>" data-user-id="<?php echo esc_attr( (string) $user_id ); ?>" data-next-cursor="<?php echo esc_attr( $next_cursor ); ?>">
 	<?php if ( $can_post ) : ?>
 		<form class="odsi-social-post-form" data-group-id="<?php echo esc_attr( (string) $group_id ); ?>">

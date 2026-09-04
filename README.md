@@ -6,7 +6,7 @@ independent GPL plugins plus an optional bridge.
 | Plugin | Role | Status |
 | --- | --- | --- |
 | [`odsi-lms`](plugins/odsi-lms) | Courses, lessons, topics, quizzes, enrollment, progress, reports, certificates, cohorts | 117 tests + browser E2E passing |
-| [`odsi-social`](plugins/odsi-social) | Profiles, activity, groups, connections, notifications, messaging | Engine tested (113 tests); UI unproven |
+| [`odsi-social`](plugins/odsi-social) | Profiles, activity, groups, connections, notifications, messaging | 114 tests + browser E2E passing |
 | [`odsi-bridge`](plugins/odsi-bridge) | Course activity in the feed, groups linked to courses, shared progress | Built and tested (8 tests) |
 
 Each plugin installs and works alone. The bridge activates only when both are
@@ -19,8 +19,9 @@ MariaDB: the LMS (enrollment, outlines, progress, access, quizzes, REST) and the
 community plugin (privacy, feeds, groups, connections, notifications, messages,
 REST), and the bridge between them (course events in the feed, groups linked
 to courses, shared progress). PHPCS and PHPStan level 6 are clean across all
-three, and the LMS learner flow passes end to end in a real browser against a
-fresh install with the default block theme. Read
+three, and both the LMS learner flow and the community member flow pass end to
+end in a real browser against a fresh install with the default block theme.
+Read
 [`docs/03-current-state.md`](docs/03-current-state.md) for the honest inventory.
 
 ## Start here

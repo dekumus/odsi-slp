@@ -110,3 +110,7 @@
 
 .odsi-social-notice { background: var(--odsi-social-surface, #f5f6f8); border-radius: var(--odsi-social-radius, 8px); padding: 1rem; }
 .odsi-social-feed__empty { color: var(--odsi-social-muted, #5b6470); }
+
+.odsi-social-feed__tabs { display: flex; gap: 1rem; margin-bottom: 1rem; }
+.odsi-social-feed__tabs a { color: var(--odsi-social-muted, #5b6470); text-decoration: none; }
+.odsi-social-feed__tabs a.is-active { color: var(--odsi-social-accent, #2563eb); font-weight: 600; }
