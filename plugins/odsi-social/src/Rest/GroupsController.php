@@ -11,6 +11,7 @@ namespace ODSI\Social\Rest;
 
 use ODSI\Social\Groups\Groups;
 use ODSI\Social\Groups\Membership;
+use ODSI\Social\Members\Uploads;
 use ODSI\Social\Repositories\GroupMemberRepository;
 use ODSI\Social\Repositories\GroupRepository;
 use ODSI\Social\Support\Capabilities;
@@ -33,12 +34,14 @@ final class GroupsController {
 	 * @param Membership            $membership Membership.
 	 * @param GroupMemberRepository $members    Membership rows.
 	 * @param GroupRepository       $index      Index rows.
+	 * @param Uploads               $uploads    Image uploads.
 	 */
 	public function __construct(
 		private Groups $groups,
 		private Membership $membership,
 		private GroupMemberRepository $members,
-		private GroupRepository $index
+		private GroupRepository $index,
+		private Uploads $uploads
 	) {
 	}
 
@@ -112,6 +115,25 @@ final class GroupsController {
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => array( $this, 'delete' ),
+					'permission_callback' => $in,
+					'args'                => $id,
+				),
+			)
+		);
+
+		register_rest_route(
+			$ns,
+			'/groups/(?P<id>\d+)/(?P<kind>avatar|cover)',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'upload_image' ),
+					'permission_callback' => $in,
+					'args'                => $id,
+				),
+				array(
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => array( $this, 'remove_image' ),
 					'permission_callback' => $in,
 					'args'                => $id,
 				),
@@ -270,6 +292,56 @@ final class GroupsController {
 		}
 
 		return new WP_REST_Response( $this->groups->present( get_current_user_id(), (int) $request['id'] ) );
+	}
+
+	/**
+	 * `POST /groups/{id}/{avatar|cover}` — multipart `file`, organisers only.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 */
+	public function upload_image( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$actor    = get_current_user_id();
+		$group_id = (int) $request['id'];
+		$kind     = (string) $request['kind'];
+
+		if ( ! $this->groups->exists( $group_id ) || ! $this->groups->can_view( $actor, $group_id ) ) {
+			return new WP_Error( 'odsi_social_group_not_found', __( 'That group does not exist.', 'odsi-social' ), array( 'status' => 404 ) );
+		}
+
+		if ( ! $this->groups->is_organiser( $actor, $group_id ) ) {
+			return new WP_Error( 'odsi_social_forbidden', __( 'Only organisers can change group settings.', 'odsi-social' ), array( 'status' => 403 ) );
+		}
+
+		$files  = $request->get_file_params();
+		$stored = $this->uploads->store( $actor, isset( $files['file'] ) && is_array( $files['file'] ) ? $files['file'] : array(), 'group_' . $kind, $group_id );
+
+		if ( $stored instanceof WP_Error ) {
+			return $stored;
+		}
+
+		$result = $this->groups->update( $actor, $group_id, array( $kind . '_id' => $stored ) );
+
+		if ( $result instanceof WP_Error ) {
+			return RestServiceProvider::respond( $result );
+		}
+
+		return new WP_REST_Response( $this->groups->present( $actor, $group_id ), 201 );
+	}
+
+	/**
+	 * `DELETE /groups/{id}/{avatar|cover}`
+	 *
+	 * @param WP_REST_Request $request Request.
+	 */
+	public function remove_image( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$actor  = get_current_user_id();
+		$result = $this->groups->update( $actor, (int) $request['id'], array( (string) $request['kind'] . '_id' => 0 ) );
+
+		if ( $result instanceof WP_Error ) {
+			return RestServiceProvider::respond( $result );
+		}
+
+		return new WP_REST_Response( $this->groups->present( $actor, (int) $request['id'] ) );
 	}
 
 	/**

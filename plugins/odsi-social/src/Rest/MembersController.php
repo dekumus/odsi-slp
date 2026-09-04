@@ -11,6 +11,7 @@ namespace ODSI\Social\Rest;
 
 use ODSI\Social\Members\Directory;
 use ODSI\Social\Members\Profiles;
+use ODSI\Social\Members\Uploads;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -28,10 +29,12 @@ final class MembersController {
 	 *
 	 * @param Directory $directory Directory.
 	 * @param Profiles  $profiles  Profiles.
+	 * @param Uploads   $uploads   Image uploads.
 	 */
 	public function __construct(
 		private Directory $directory,
-		private Profiles $profiles
+		private Profiles $profiles,
+		private Uploads $uploads
 	) {
 	}
 
@@ -80,6 +83,56 @@ final class MembersController {
 				'permission_callback' => array( RestServiceProvider::class, 'logged_in' ),
 			)
 		);
+
+		register_rest_route(
+			$ns,
+			'/members/me/(?P<kind>avatar|cover)',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'upload_image' ),
+					'permission_callback' => array( RestServiceProvider::class, 'logged_in' ),
+				),
+				array(
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => array( $this, 'remove_image' ),
+					'permission_callback' => array( RestServiceProvider::class, 'logged_in' ),
+				),
+			)
+		);
+	}
+
+	/**
+	 * `POST /members/me/{avatar|cover}` — multipart `file` (SOC-MEM-003/004).
+	 *
+	 * @param WP_REST_Request $request Request.
+	 */
+	public function upload_image( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$user_id = get_current_user_id();
+		$kind    = (string) $request['kind'];
+		$files   = $request->get_file_params();
+		$stored  = $this->uploads->store( $user_id, isset( $files['file'] ) && is_array( $files['file'] ) ? $files['file'] : array(), $kind );
+
+		if ( $stored instanceof WP_Error ) {
+			return $stored;
+		}
+
+		'avatar' === $kind ? $this->profiles->set_avatar( $user_id, $stored ) : $this->profiles->set_cover( $user_id, $stored );
+
+		return new WP_REST_Response( $this->profiles->view( $user_id, $user_id ), 201 );
+	}
+
+	/**
+	 * `DELETE /members/me/{avatar|cover}` — back to Gravatar / no cover.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 */
+	public function remove_image( WP_REST_Request $request ): WP_REST_Response {
+		$user_id = get_current_user_id();
+
+		'avatar' === (string) $request['kind'] ? $this->profiles->set_avatar( $user_id, 0 ) : $this->profiles->set_cover( $user_id, 0 );
+
+		return new WP_REST_Response( $this->profiles->view( $user_id, $user_id ) );
 	}
 
 	/**

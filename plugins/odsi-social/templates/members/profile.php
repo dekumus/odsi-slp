@@ -28,6 +28,12 @@ $odsi_uid = (int) $profile['id'];
 				<?php echo esc_html( sprintf( /* translators: %d: count. */ __( '%d followers', 'odsi-social' ), (int) $profile['counts']['followers'] ) ); ?>
 			</p>
 
+			<?php if ( $viewer_id > 0 && ( $profile['viewer']['is_self'] || \ODSI\Social\Support\Capabilities::is_admin( $viewer_id ) ) ) : ?>
+				<div class="odsi-social-profile__actions">
+					<a class="odsi-social-button odsi-social-profile__edit" href="<?php echo esc_url( trailingslashit( (string) $profile['url'] ) . 'edit/' ); ?>"><?php esc_html_e( 'Edit profile', 'odsi-social' ); ?></a>
+				</div>
+			<?php endif; ?>
+
 			<?php if ( $viewer_id > 0 && ! $profile['viewer']['is_self'] ) : ?>
 				<div class="odsi-social-profile__actions">
 					<?php

@@ -72,6 +72,38 @@ async function rest( page, method, path, body ) {
 }
 
 /**
+ * Call the community plugin's REST API as whoever is logged in, using the
+ * nonce the front end carries, so members (not only admins) can seed data.
+ *
+ * @param {import('@playwright/test').Page} page   Logged-in page.
+ * @param {string}                          method HTTP method.
+ * @param {string}                          path   Route path from /wp-json/odsi-social/v1.
+ * @param {Object}                          [body] JSON body.
+ * @return {Promise<Object>} Parsed JSON.
+ */
+async function socialRest( page, method, path, body ) {
+	await page.goto( '/members/' );
+	const config = await page.evaluate( () => window.odsiSocial );
+
+	const response = await page.request.fetch( `${ config.restUrl }${ path }`, {
+		method,
+		headers: {
+			'Content-Type': 'application/json',
+			'X-WP-Nonce': config.nonce,
+		},
+		data: body ? JSON.stringify( body ) : undefined,
+	} );
+
+	const json = await response.json();
+
+	if ( ! response.ok() ) {
+		throw new Error( `${ method } ${ path } failed: ${ JSON.stringify( json ) }` );
+	}
+
+	return json;
+}
+
+/**
  * Create a post of any type through the core REST API and return its id.
  *
  * @param {import('@playwright/test').Page} page Logged-in admin page.
@@ -107,4 +139,4 @@ async function createUser( page, username, password ) {
 	return json.id;
 }
 
-module.exports = { ADMIN_USER, ADMIN_PASS, login, logout, rest, createPost, createUser };
+module.exports = { ADMIN_USER, ADMIN_PASS, login, logout, rest, socialRest, createPost, createUser };

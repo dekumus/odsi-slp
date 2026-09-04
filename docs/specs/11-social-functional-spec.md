@@ -42,6 +42,13 @@ Gravatar. Maximum dimensions and file types are admin settings with defaults of
 **SOC-MEM-004** Cover image: as `SOC-MEM-003`, displayed on the profile header
 only.
 
+**SOC-MEM-004a** Uploads arrive through a plain multipart form at
+`/members/{nicename}/edit/` (the member's own page; admins may edit anyone's)
+or through `POST /members/me/{avatar|cover}`. The file must decode as an image
+of an allowed type; larger images are shrunk in place to the `avatar_max_px`
+setting; the attachment is owned by the member. A non-image or disallowed
+type rejects the whole save with a message. Removing restores the default.
+
 **SOC-MEM-005** Profile fields are defined by an admin in named field groups.
 Types: `text`, `textarea`, `select`, `multiselect`, `date`, `url`, `checkbox`.
 Each has a required flag, a default visibility, and a flag saying whether the
@@ -317,6 +324,13 @@ Moderators may manage content and members per the state machine but not
 settings or roles. Promotion and demotion is organiser-only; an organiser may
 demote themselves only when another organiser exists.
 
+**SOC-GRP-006a** Organisers manage a group at `/groups/{slug}/manage/`: name,
+description, visibility, photo and cover through a multipart form, and the
+member lists (approve or decline requests; promote, demote, remove, ban,
+unban) through per-row forms. Anyone else gets a 404 there. Every action
+re-runs the same service checks as the REST routes; the page is never the
+authority.
+
 **SOC-GRP-007** Deleting a group deletes its memberships and its activity
 (with comments and reactions), and fires `odsi_social_group_deleted` before
 removal. It does not delete members' accounts or their activity elsewhere.
@@ -432,6 +446,8 @@ participants and to no admin screen in v1. Admins may see thread metadata
 | `GET /members` | any | Directory, `SOC-MEM-008/009`, `search`, `orderby`, `page`. |
 | `GET /members/{id}` | any | Profile with fields filtered by visibility for the caller. |
 | `PATCH /members/me` | logged in | Update own fields and visibilities. |
+| `POST /members/me/{avatar\|cover}` | logged in | Multipart `file`; `SOC-MEM-004a`. 201 with the profile. `DELETE` clears it. |
+| `POST /groups/{id}/{avatar\|cover}` | organiser | Multipart `file`. 403 for others; `DELETE` clears it. |
 | `GET /activity` | any | Feed. `scope` in `site\|personal\|group\|profile`, plus `group_id` / `user_id`, `type`, `cursor`. |
 | `POST /activity` | logged in | Post an update. `content`, `privacy`, optional `group_id`. |
 | `GET /activity/{id}` | any | Single item with all comments the caller may see. 404 when not visible. |

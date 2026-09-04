@@ -32,6 +32,9 @@ $odsi_status = (string) $group['viewer']['status'];
 			</p>
 			<?php if ( $viewer_id > 0 ) : ?>
 				<div class="odsi-social-profile__actions">
+					<?php if ( 'organiser' === $group['viewer']['role'] || \ODSI\Social\Support\Capabilities::is_admin( $viewer_id ) ) : ?>
+						<a class="odsi-social-button odsi-social-group__manage" href="<?php echo esc_url( trailingslashit( (string) $group['url'] ) . 'manage/' ); ?>"><?php esc_html_e( 'Manage group', 'odsi-social' ); ?></a>
+					<?php endif; ?>
 					<?php if ( 'active' === $odsi_status ) : ?>
 						<button type="button" class="odsi-social-button odsi-social-membership" data-group-id="<?php echo esc_attr( (string) $group['id'] ); ?>" data-action="leave"><?php esc_html_e( 'Leave group', 'odsi-social' ); ?></button>
 					<?php elseif ( 'pending' === $odsi_status ) : ?>

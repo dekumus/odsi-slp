@@ -114,3 +114,111 @@
 .odsi-social-feed__tabs { display: flex; gap: 1rem; margin-bottom: 1rem; }
 .odsi-social-feed__tabs a { color: var(--odsi-social-muted, #5b6470); text-decoration: none; }
 .odsi-social-feed__tabs a.is-active { color: var(--odsi-social-accent, #2563eb); font-weight: 600; }
+
+/* Settings forms */
+.odsi-social-settings__section {
+	border: 1px solid var(--odsi-social-border, #d9dce1);
+	border-radius: var(--odsi-social-radius, 6px);
+	padding: 1rem 1.25rem;
+	margin: 0 0 1.25rem;
+}
+
+.odsi-social-settings__section legend,
+.odsi-social-settings__section h3 {
+	font-weight: 600;
+	padding: 0 0.25rem;
+}
+
+.odsi-social-settings__field {
+	margin-bottom: 1rem;
+}
+
+.odsi-social-settings__field > label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 0.25rem;
+}
+
+.odsi-social-settings__field input[type="text"],
+.odsi-social-settings__field input[type="url"],
+.odsi-social-settings__field input[type="date"],
+.odsi-social-settings__field textarea,
+.odsi-social-settings__field select,
+.odsi-social-settings__form textarea {
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+.odsi-social-settings__choice {
+	display: inline-block;
+	margin-right: 1rem;
+}
+
+.odsi-social-settings__visibility {
+	display: block;
+	margin-top: 0.35rem;
+	font-size: 0.875em;
+	color: var(--odsi-social-muted, #5b6470);
+}
+
+.odsi-social-settings__visibility select {
+	width: auto;
+	margin-left: 0.5rem;
+}
+
+.odsi-social-settings__image {
+	display: flex;
+	gap: 1rem;
+	align-items: flex-start;
+	flex-wrap: wrap;
+	margin-bottom: 1rem;
+}
+
+.odsi-social-profile__cover--small {
+	width: 240px;
+	height: 80px;
+	border-radius: var(--odsi-social-radius, 6px);
+}
+
+.odsi-social-notice--success {
+	border-left: 4px solid #16a34a;
+}
+
+.odsi-social-notice--error {
+	border-left: 4px solid #dc2626;
+}
+
+.odsi-social-member-list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.odsi-social-member-list__item {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.5rem 0;
+	border-top: 1px solid var(--odsi-social-border, #d9dce1);
+	flex-wrap: wrap;
+}
+
+.odsi-social-member-list__name {
+	font-weight: 600;
+}
+
+.odsi-social-member-list__role {
+	font-size: 0.875em;
+	color: var(--odsi-social-muted, #5b6470);
+	margin-right: auto;
+}
+
+.odsi-social-inline-form {
+	display: inline;
+}
+
+.odsi-social-button--small {
+	padding: 0.25rem 0.6rem;
+	font-size: 0.875em;
+}

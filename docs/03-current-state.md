@@ -8,7 +8,7 @@ when you change what it describes.
 | Plugin | State |
 | --- | --- |
 | `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 102 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
-| `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens, blocks. 116 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
+| `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens, blocks, profile and group settings pages. 121 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 8 integration tests. |
 
 Verification so far: the integration suite boots WordPress core with the
@@ -67,12 +67,15 @@ Architecture in `docs/specs/20-social-architecture.md`, tables in
 - **Notifications**: `Notifications` (write-time collapse, counts, retention),
   `Listeners` (the spec's trigger table), `Renderers`.
 - **Messages**: `Messages` (pair threads, per-participant delete, unread).
-- **Members**: `Presence`, `Profiles` (visibility-filtered view, field values,
-  avatar/cover, message setting), `ProfileFields`, `Directory`, `Lifecycle`
+- **Members**: `Presence`, `Profiles` (visibility-filtered view, edit form
+  model, field values, avatar/cover, message setting), `ProfileFields`,
+  `Uploads` (image validation and resizing), `Directory`, `Lifecycle`
   (account deletion cleanup).
 - **Interfaces**: REST `odsi-social/v1` with six controllers; `Frontend\Router`
   for `/members/`, `/groups/`, `/activity/`, `/notifications/`, `/messages/`;
-  `Frontend\Shortcodes` dispatching to templates under `templates/`; blocks
+  `Frontend\Shortcodes` dispatching to templates under `templates/`;
+  `Frontend\Forms` handling the profile edit and group manage pages through
+  admin-post so they work without JavaScript; blocks
   `odsi-social/activity-feed`, `member-directory`, `group-directory`
   (`Blocks\Blocks`, editor bundle in `assets/build/blocks.js`); admin
   settings and profile-field screens; progressive-enhancement JS and CSS.
@@ -80,11 +83,14 @@ Architecture in `docs/specs/20-social-architecture.md`, tables in
 ### Known gaps in the social plugin
 
 1. ~~No browser verification.~~ Closed: `tests/e2e/social-member-flow.spec.js`.
-2. **Avatar and cover upload UI** — the services accept attachment ids; nothing
-   on the front end uploads a file.
-3. **Profile edit form** on the front end — values are writable over REST only.
-4. **Group settings UI** on the front end — organisers change settings over
-   REST only.
+2. ~~Avatar and cover upload UI~~ Closed: `Members\Uploads` (type allow-list,
+   image check, shrink to `avatar_max_px`), REST upload routes, and the
+   profile and group forms.
+3. ~~Profile edit form~~ Closed: `/members/{nicename}/edit/`, a plain
+   multipart form handled by `Frontend\Forms` (fields, visibilities, photo,
+   cover, message setting).
+4. ~~Group settings UI~~ Closed: `/groups/{slug}/manage/` for organisers:
+   settings, images, requests, roles, bans.
 5. **Reaction and comment "who" lists** — counts are shown; the lists are not.
 6. **No object caching** beyond per-request repository caches and the unread
    counters.
@@ -286,6 +292,7 @@ Numbering is kept from the original list. Struck-through items are closed.
 | Course builder in the editor | e2e `lms-course-builder` | 1, passing |
 | Assignment hand-in and approval in a browser | e2e `lms-assignment` | 1, passing |
 | Blocks on a page and in the editor | e2e `blocks` | 1, passing |
+| Profile edit and group manage forms in a browser | e2e `social-settings` | 1, passing |
 | Member flow in a browser | e2e `social-member-flow` | 1, passing |
 | Social schema, ADR-005 scan | integration `social/SchemaTest` | 20 |
 | Privacy decision table, both representations | integration `social/PrivacyTest` | 42 |
@@ -296,6 +303,7 @@ Numbering is kept from the original list. Struck-through items are closed.
 | `SOC-MSG-*` | integration `social/MessagesTest` | 5 |
 | `SOC-MEM-*` | integration `social/MembersTest` | 6 |
 | Social REST, ADR-011 | integration `social/RestTest` | 6 |
+| Uploads, profile and group forms, image REST routes | integration `social/SettingsFormsTest` | 5 |
 | `SOC-IF-004` blocks | integration `social/BlocksTest` | 2 |
 | Integration contract end to end | integration `bridge/BridgeTest` | 8 |
 

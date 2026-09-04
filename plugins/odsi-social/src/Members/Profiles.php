@@ -153,6 +153,67 @@ final class Profiles implements Bootable {
 	}
 
 	/**
+	 * Every field with the member's own value and visibility, for the edit form.
+	 *
+	 * @param int $user_id Member.
+	 *
+	 * @return array<int, array{group: string, fields: array<int, array<string, mixed>>}>
+	 */
+	public function edit_form( int $user_id ): array {
+		$values = $this->data->for_user( $user_id );
+		$out    = array();
+
+		foreach ( $this->fields->structure() as $section ) {
+			$group_fields = array();
+
+			foreach ( $section['fields'] as $field ) {
+				$value = $values[ (int) $field->id ] ?? null;
+
+				$group_fields[] = array(
+					'id'                      => (int) $field->id,
+					'name'                    => (string) $field->name,
+					'type'                    => (string) $field->type,
+					'required'                => (bool) $field->required,
+					'options'                 => ProfileFields::options( $field ),
+					'value'                   => $value ? self::decode_value( $field, (string) $value->value ) : ( 'multiselect' === (string) $field->type ? array() : '' ),
+					'visibility'              => $this->fields->effective_visibility( $field, $value->visibility ?? null, $user_id ),
+					'allow_visibility_change' => (bool) $field->allow_visibility_change,
+				);
+			}
+
+			if ( $group_fields ) {
+				$out[] = array(
+					'group'  => (string) $section['group']->name,
+					'fields' => $group_fields,
+				);
+			}
+		}//end foreach
+
+		return $out;
+	}
+
+	/**
+	 * The member's "who may message me" preference.
+	 *
+	 * @param int $user_id Member.
+	 */
+	public function message_setting( int $user_id ): string {
+		$row = $this->members->find( $user_id );
+
+		return $row ? (string) $row->message_setting : 'anyone';
+	}
+
+	/**
+	 * Whether a viewer may edit a member's profile: themselves, or an admin.
+	 *
+	 * @param int $viewer_id Viewer.
+	 * @param int $user_id   Member.
+	 */
+	public function can_edit( int $viewer_id, int $user_id ): bool {
+		return $viewer_id > 0 && ( $viewer_id === $user_id || Capabilities::is_admin( $viewer_id ) );
+	}
+
+	/**
 	 * Update the member's own field values and visibilities (SOC-MEM-007).
 	 *
 	 * @param int                                                   $user_id Member.

@@ -22,6 +22,7 @@ use ODSI\Social\Contracts\Bootable;
 use ODSI\Social\Database\Migrator;
 use ODSI\Social\Frontend\Router;
 use ODSI\Social\Blocks\Blocks;
+use ODSI\Social\Frontend\Forms;
 use ODSI\Social\Frontend\Shortcodes;
 use ODSI\Social\Frontend\Templates;
 use ODSI\Social\Groups\GroupActivity;
@@ -32,6 +33,7 @@ use ODSI\Social\Members\Lifecycle;
 use ODSI\Social\Members\Presence;
 use ODSI\Social\Members\ProfileFields;
 use ODSI\Social\Members\Profiles;
+use ODSI\Social\Members\Uploads;
 use ODSI\Social\Messages\Messages;
 use ODSI\Social\Notifications\Listeners;
 use ODSI\Social\Notifications\Notifications;
@@ -282,6 +284,18 @@ final class Plugin {
 
 		// Interfaces.
 		$c->set( Shortcodes::class, static fn ( Container $c ): object => new Shortcodes( $c ) );
+		$c->set( Uploads::class, static fn ( Container $c ): object => new Uploads( $c->get( Settings::class ) ) );
+		$c->set(
+			Forms::class,
+			static fn ( Container $c ): object => new Forms(
+				$c->get( Profiles::class ),
+				$c->get( Uploads::class ),
+				$c->get( Groups::class ),
+				$c->get( Membership::class ),
+				$c->get( GroupMemberRepository::class ),
+				$c->get( Router::class )
+			)
+		);
 		$c->set( Blocks::class, static fn ( Container $c ): object => new Blocks( $c->get( Shortcodes::class ) ) );
 		$c->set( RestServiceProvider::class, static fn ( Container $c ): object => new RestServiceProvider( $c ) );
 		$c->set( AdminMenu::class, static fn ( Container $c ): object => new AdminMenu( $c->get( Settings::class ), $c->get( ProfileFields::class ) ) );
@@ -315,6 +329,7 @@ final class Plugin {
 			Lifecycle::class,
 			Shortcodes::class,
 			Blocks::class,
+			Forms::class,
 			RestServiceProvider::class,
 			Maintenance::class,
 		);

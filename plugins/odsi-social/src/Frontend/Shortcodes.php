@@ -15,6 +15,7 @@ use ODSI\Social\Contracts\Bootable;
 use ODSI\Social\Groups\Groups;
 use ODSI\Social\Members\Directory;
 use ODSI\Social\Members\Profiles;
+use ODSI\Social\Members\Uploads;
 use ODSI\Social\Messages\Messages;
 use ODSI\Social\Notifications\Notifications;
 use ODSI\Social\Repositories\GroupRepository;
@@ -53,14 +54,23 @@ final class Shortcodes implements Bootable {
 		$router  = $this->container->get( Router::class );
 		$section = $router->section();
 		$object  = $router->object();
+		$action  = $router->action();
 		$viewer  = get_current_user_id();
 
 		switch ( $section ) {
 			case 'members':
-				return '' === $object ? $this->render_directory() : $this->render_profile( $object, $viewer );
+				if ( '' === $object ) {
+					return $this->render_directory();
+				}
+
+				return 'edit' === $action ? $this->render_profile_edit( $object, $viewer ) : $this->render_profile( $object, $viewer );
 
 			case 'groups':
-				return '' === $object ? $this->render_groups() : $this->render_group( $object, $viewer );
+				if ( '' === $object ) {
+					return $this->render_groups();
+				}
+
+				return 'manage' === $action ? $this->render_group_manage( $object, $viewer ) : $this->render_group( $object, $viewer );
 
 			case 'activity':
 				if ( '' !== $object ) {
@@ -190,6 +200,114 @@ final class Shortcodes implements Bootable {
 				'is_following' => $viewer > 0 && $this->container->get( \ODSI\Social\Connections\Follows::class )->is_following( $viewer, (int) $user->ID ),
 			)
 		);
+	}
+
+	/**
+	 * A member's own settings page (SOC-MEM-003/004/007).
+	 *
+	 * @param string $nicename Member slug.
+	 * @param int    $viewer   Viewer.
+	 */
+	private function render_profile_edit( string $nicename, int $viewer ): string {
+		$user = get_user_by( 'slug', $nicename );
+
+		if ( ! $user ) {
+			return $this->not_found();
+		}
+
+		if ( $viewer <= 0 ) {
+			return $this->templates()->render( 'parts/login-required' );
+		}
+
+		$profiles = $this->container->get( Profiles::class );
+
+		if ( ! $profiles->can_edit( $viewer, (int) $user->ID ) ) {
+			return $this->not_found();
+		}
+
+		return $this->templates()->render(
+			'members/edit',
+			array(
+				'profile'         => $profiles->view( (int) $user->ID, (int) $user->ID ),
+				'form'            => $profiles->edit_form( (int) $user->ID ),
+				'message_setting' => $profiles->message_setting( (int) $user->ID ),
+				'visibilities'    => array(
+					'public'      => __( 'Everyone', 'odsi-social' ),
+					'members'     => __( 'Members', 'odsi-social' ),
+					'connections' => __( 'My connections', 'odsi-social' ),
+					'only_me'     => __( 'Only me', 'odsi-social' ),
+				),
+				'accept'          => $this->image_accept(),
+				'notice'          => $this->notice(),
+			)
+		);
+	}
+
+	/**
+	 * Group management page for organisers (SOC-GRP-006).
+	 *
+	 * @param string $slug   Group slug.
+	 * @param int    $viewer Viewer.
+	 */
+	private function render_group_manage( string $slug, int $viewer ): string {
+		$row    = $this->container->get( GroupRepository::class )->find_by_slug( $slug );
+		$groups = $this->container->get( Groups::class );
+
+		if ( ! $row || ! $groups->can_view( $viewer, (int) $row->post_id ) ) {
+			return $this->not_found();
+		}
+
+		if ( $viewer <= 0 ) {
+			return $this->templates()->render( 'parts/login-required' );
+		}
+
+		if ( ! $groups->is_organiser( $viewer, (int) $row->post_id ) ) {
+			return $this->not_found();
+		}
+
+		$forms = $this->container->get( Forms::class );
+
+		return $this->templates()->render(
+			'groups/manage',
+			array(
+				'group'     => $groups->present( $viewer, (int) $row->post_id ),
+				'viewer_id' => $viewer,
+				'accept'    => $this->image_accept(),
+				'notice'    => $this->notice(),
+			) + $forms->group_lists( (int) $row->post_id )
+		);
+	}
+
+	/**
+	 * Accepted image extensions for file inputs.
+	 */
+	private function image_accept(): string {
+		return implode( ',', array_map( static fn ( string $ext ): string => '.' . $ext, array_keys( $this->container->get( Uploads::class )->allowed_mimes() ) ) );
+	}
+
+	/**
+	 * Feedback carried back from a form handler in the query string.
+	 *
+	 * @return array{type: string, text: string}|null
+	 */
+	private function notice(): ?array {
+		$notice = sanitize_key( (string) ( $_GET['notice'] ?? '' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only feedback flag.
+
+		if ( 'saved' === $notice ) {
+			return array(
+				'type' => 'success',
+				'text' => __( 'Saved.', 'odsi-social' ),
+			);
+		}
+
+		if ( 'error' === $notice ) {
+			return array(
+				'type' => 'error',
+				'text' => sanitize_text_field( rawurldecode( wp_unslash( (string) ( $_GET['message'] ?? '' ) ) ) ) ?: __( 'Something went wrong.', 'odsi-social' ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitised inline.
+			);
+		}
+
+		return null;
 	}
 
 	/**
