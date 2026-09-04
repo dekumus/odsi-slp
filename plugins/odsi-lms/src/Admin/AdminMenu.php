@@ -24,12 +24,14 @@ final class AdminMenu implements Bootable {
 	/**
 	 * Constructor.
 	 *
-	 * @param ReportsScreen $reports Reports screen.
-	 * @param GradingScreen $grading Grading screen.
+	 * @param ReportsScreen  $reports Reports screen.
+	 * @param GradingScreen  $grading  Grading screen.
+	 * @param SettingsScreen $settings Settings screen.
 	 */
 	public function __construct(
 		private ReportsScreen $reports,
-		private GradingScreen $grading
+		private GradingScreen $grading,
+		private SettingsScreen $settings
 	) {
 	}
 
@@ -59,6 +61,7 @@ final class AdminMenu implements Bootable {
 
 		add_submenu_page( self::SLUG, __( 'Reports', 'odsi-lms' ), __( 'Reports', 'odsi-lms' ), Capabilities::REPORT, ReportsScreen::SLUG, array( $this->reports, 'render' ) );
 		add_submenu_page( self::SLUG, __( 'Grading', 'odsi-lms' ), __( 'Grading', 'odsi-lms' ), Capabilities::REPORT, GradingScreen::SLUG, array( $this->grading, 'render' ) );
+		add_submenu_page( self::SLUG, __( 'Settings', 'odsi-lms' ), __( 'Settings', 'odsi-lms' ), Capabilities::MANAGE, SettingsScreen::SLUG, array( $this->settings, 'render' ) );
 	}
 
 	/**

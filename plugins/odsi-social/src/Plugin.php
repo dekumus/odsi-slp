@@ -35,6 +35,7 @@ use ODSI\Social\Members\ProfileFields;
 use ODSI\Social\Members\Profiles;
 use ODSI\Social\Members\Uploads;
 use ODSI\Social\Messages\Messages;
+use ODSI\Social\Notifications\Emails;
 use ODSI\Social\Notifications\Listeners;
 use ODSI\Social\Notifications\Notifications;
 use ODSI\Social\Notifications\Renderers as NotificationRenderers;
@@ -241,6 +242,7 @@ final class Plugin {
 				$c->get( GroupMemberRepository::class )
 			)
 		);
+		$c->set( Emails::class, static fn ( Container $c ): object => new Emails( $c->get( Notifications::class ) ) );
 
 		// Messages.
 		$c->set(
@@ -324,6 +326,7 @@ final class Plugin {
 			GroupActivity::class,
 			Mentions::class,
 			Listeners::class,
+			Emails::class,
 			Presence::class,
 			Profiles::class,
 			Lifecycle::class,

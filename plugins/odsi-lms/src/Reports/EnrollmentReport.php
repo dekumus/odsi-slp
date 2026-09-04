@@ -140,7 +140,8 @@ final class EnrollmentReport {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = (array) $this->db->get_results( $this->db->prepare( "SELECT e.*, u.display_name, u.user_email {$sql} ORDER BY {$orderby} {$order}, e.id DESC LIMIT %d OFFSET %d", $params ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-		$out = array();
+		$out         = array();
+		$percentages = $this->progress->course_percentages( array_map( static fn ( object $r ): int => (int) $r->user_id, $rows ), $course_id );
 
 		foreach ( $rows as $row ) {
 			$out[] = array(
@@ -152,7 +153,7 @@ final class EnrollmentReport {
 				'enrolled_at'  => (string) $row->enrolled_at,
 				'completed_at' => (string) ( $row->completed_at ?? '' ),
 				'expires_at'   => (string) ( $row->expires_at ?? '' ),
-				'percentage'   => $this->progress->course_percentage( (int) $row->user_id, $course_id ),
+				'percentage'   => $percentages[ (int) $row->user_id ] ?? 0.0,
 			);
 		}
 

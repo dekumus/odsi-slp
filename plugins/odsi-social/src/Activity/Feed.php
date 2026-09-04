@@ -148,8 +148,48 @@ final class Feed {
 
 		$comments         = $this->activity->comments( (int) $row->id );
 		$item['comments'] = array_map( fn ( object $c ): array => $this->present( $c, $viewer_id, array() ), $comments );
+		$item['reactors'] = $this->reactors( $viewer_id, (int) $row->id );
 
 		return $item;
+	}
+
+	/**
+	 * Who reacted to an item, newest first (SOC-ACT-012).
+	 *
+	 * @param int $viewer_id   Viewer.
+	 * @param int $activity_id Item.
+	 * @param int $limit       Limit.
+	 *
+	 * @return array<int, array{id: int, name: string, avatar: string, url: string}>|null Null when the item is not visible.
+	 */
+	public function reactors( int $viewer_id, int $activity_id, int $limit = 20 ): ?array {
+		$row = $this->activity->find( $activity_id );
+
+		if ( ! $row || ! $this->privacy->can_view( $viewer_id, $row ) ) {
+			return null;
+		}
+
+		$ids = $this->reactions->user_ids_for( $activity_id, $limit );
+		cache_users( $ids );
+
+		$out = array();
+
+		foreach ( $ids as $user_id ) {
+			$user = get_userdata( $user_id );
+
+			if ( ! $user ) {
+				continue;
+			}
+
+			$out[] = array(
+				'id'     => $user_id,
+				'name'   => $user->display_name,
+				'avatar' => (string) get_avatar_url( $user_id, array( 'size' => 48 ) ),
+				'url'    => (string) apply_filters( 'odsi_social_member_url', '', $user_id ),
+			);
+		}
+
+		return $out;
 	}
 
 	/**

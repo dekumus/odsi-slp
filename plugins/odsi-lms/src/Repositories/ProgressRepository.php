@@ -163,6 +163,41 @@ final class ProgressRepository extends AbstractRepository {
 	}
 
 	/**
+	 * Completed-step counts for many users at once, restricted to the given
+	 * outline so removed steps never inflate a count (LMS-PRG-010).
+	 *
+	 * @param int[] $user_ids   Users.
+	 * @param int   $course_id  Course post id.
+	 * @param int[] $object_ids Current outline ids.
+	 *
+	 * @return array<int, int> User id => completed count (absent when zero).
+	 */
+	public function completed_counts( array $user_ids, int $course_id, array $object_ids ): array {
+		$user_ids   = array_values( array_unique( array_map( 'intval', $user_ids ) ) );
+		$object_ids = array_values( array_unique( array_map( 'intval', $object_ids ) ) );
+
+		if ( array() === $user_ids || array() === $object_ids ) {
+			return array();
+		}
+
+		$table   = $this->table();
+		$users   = implode( ',', array_fill( 0, count( $user_ids ), '%d' ) );
+		$objects = implode( ',', array_fill( 0, count( $object_ids ), '%d' ) );
+		$params  = array_merge( array( $course_id, self::STATUS_COMPLETED ), $user_ids, $object_ids );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = (array) $this->db->get_results( $this->db->prepare( "SELECT user_id, COUNT(*) AS completed FROM {$table} WHERE course_id = %d AND status = %s AND user_id IN ({$users}) AND object_id IN ({$objects}) GROUP BY user_id", $params ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$out = array();
+
+		foreach ( $rows as $row ) {
+			$out[ (int) $row->user_id ] = (int) $row->completed;
+		}
+
+		return $out;
+	}
+
+	/**
 	 * Delete every progress row a user has for a course.
 	 *
 	 * Used when an enrollment is reset so a learner can retake a course cleanly.

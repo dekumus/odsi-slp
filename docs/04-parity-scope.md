@@ -19,11 +19,11 @@ matching what users need to do, not how a competitor draws it.
 
 | Capability | Tier | Notes |
 | --- | --- | --- |
-| Courses containing lessons; lessons containing topics | v1 | Scaffolded |
-| Quizzes attachable to a course, lesson or topic | v1 | Scaffolded |
-| Drag-and-drop course builder | v1 | Not started; classic meta boxes are the fallback |
-| Ordering via `menu_order` | v1 | Scaffolded |
-| Categories, tags, difficulty levels | v1 | Scaffolded |
+| Courses containing lessons; lessons containing topics | v1 | Built |
+| Quizzes attachable to a course, lesson or topic | v1 | Built |
+| Course builder in the editor | v1 | Built: sidebar panel with add, move and detach; no drag and drop |
+| Ordering via `menu_order` | v1 | Built |
+| Categories, tags, difficulty levels | v1 | Built |
 | Featured image, excerpt, block-editor content | v1 | Inherited from post types |
 | Course duplication / cloning | v2 | |
 | Shared course steps (one lesson in several courses) | Later | Breaks the single `_odsi_course_id` model; needs a join table |
@@ -35,26 +35,26 @@ matching what users need to do, not how a competitor draws it.
 
 | Capability | Tier | Notes |
 | --- | --- | --- |
-| Open, free, paid and closed access modes | v1 | Enforced; `paid` has no fulfilment yet |
-| Manual enrollment by an admin | v1 | Service exists, no UI |
-| Self-enrollment on free/open courses | v1 | REST route exists |
-| Time-limited access (N days from enrollment) | v1 | Scaffolded |
-| Unenrollment, with optional progress reset | v1 | Service exists, no UI |
-| Cohorts / course groups with a group leader | v2 | Post type registered, no behaviour |
+| Open, free, paid and closed access modes | v1 | Enforced; `paid` waits on a commerce integration |
+| Manual enrollment by an admin | v1 | Built: Reports screen |
+| Self-enrollment on free/open courses | v1 | Built |
+| Time-limited access (N days from enrollment) | v1 | Built, expired by cron |
+| Unenrollment, with optional progress reset | v1 | Built: Reports screen |
+| Cohorts / course groups | v1 | Built: membership grants enrollment (ADR-010); no leader role yet |
 | WooCommerce integration | v2 | The realistic path to `paid` |
 | Subscriptions and recurring access | Later | |
-| Enrollment expiry notifications | v2 | |
+| Enrollment expiry notifications | v2 | `odsi_lms_enrollment_expired` is the seam |
 
 ### Learning experience
 
 | Capability | Tier | Notes |
 | --- | --- | --- |
-| Sequential (linear) progression | v1 | Scaffolded |
-| Mark a step complete | v1 | REST + service |
-| Progress bar and percentage | v1 | Scaffolded |
-| Course outline with locked-state indication | v1 | Scaffolded |
-| Resume where you left off | v1 | `Structure::next_step()` exists; no UI uses it |
-| Drip-fed content by date or days-after-enrollment | v1 | Scaffolded |
+| Sequential (linear) progression | v1 | Built |
+| Mark a step complete | v1 | Built |
+| Progress bar and percentage | v1 | Built |
+| Course outline with locked-state indication | v1 | Built |
+| Resume where you left off | v1 | Built: `resume` in the outline route and the continue button |
+| Drip-fed content by date or days-after-enrollment | v1 | Built |
 | Video progression (must watch before completing) | v2 | |
 | Assignments: upload, grade, feedback | v1 | Text and/or file, approve/reject with points and feedback, gates completion |
 | Notes and bookmarks | Later | |
@@ -64,34 +64,34 @@ matching what users need to do, not how a competitor draws it.
 
 | Capability | Tier | Notes |
 | --- | --- | --- |
-| Single choice, multiple response, true/false | v1 | Grader implemented |
-| Fill in the blank | v1 | Grader implemented |
-| Essay / free text with manual grading | v1 grading, v2 UI | Grader flags it; no marking interface |
-| Points per question, pass mark, attempt limits | v1 | Scaffolded |
-| Attempt history retained | v1 | Scaffolded |
-| Time limits | v1 data, v2 enforcement | Meta exists; nothing counts down |
-| Question bank with categories | v1 | Taxonomy registered |
+| Single choice, multiple response, true/false | v1 | Built |
+| Fill in the blank | v1 | Built |
+| Essay / free text with manual grading | v1 | Built: Grading screen |
+| Points per question, pass mark, attempt limits | v1 | Built |
+| Attempt history retained | v1 | Built |
+| Time limits | v1 | Built: enforced at submit with a grace period, countdown in the player |
+| Question bank with categories | v1 | Built |
 | Question randomisation and per-attempt sampling | v2 | |
 | Sorting, matching, ordering question types | v2 | Extend via `odsi_lms_grade_answer` |
-| Certificates on completion | v2 | Table exists; nothing issues one |
-| Public certificate verification by code | v2 | Column exists |
+| Certificates on completion | v1 | Built: issued, rendered, revocable; print-styled, no PDF |
+| Public certificate verification by code | v1 | Built |
 
 ### Instructor and admin
 
 | Capability | Tier | Notes |
 | --- | --- | --- |
-| Instructor role with own-content capabilities | v1 | Capability map done |
-| Enrollment list per course | v1 | Repository method exists, no screen |
-| Progress and completion report | v1 | Nothing exists |
+| Instructor role with own-content capabilities | v1 | Built |
+| Enrollment list per course | v1 | Built: sortable, filterable list table |
+| Progress and completion report | v1 | Built |
 | Quiz results and per-question breakdown | v2 | |
-| CSV export of any report | v2 | |
+| CSV export of the enrollment report | v1 | Built (LMS-ADM-006) |
 | Bulk enroll / unenroll | v2 | |
-| Email notifications on enrollment and completion | v2 | |
-| Learner-facing dashboard | v1 | `[odsi_my_courses]` is the seed |
+| Email notifications on enrollment, completion and assignment results | v1 | Built (LMS-ADM-007) |
+| Learner-facing dashboard | v1 | Built: `[odsi_my_courses]`, the My courses block, certificates list |
 
 ## Social (`odsi-social`)
 
-Nothing here is built. The whole column is a specification target.
+Every v1 row below is built and tested; see `docs/03-current-state.md`.
 
 ### Members
 
@@ -144,6 +144,7 @@ Nothing here is built. The whole column is a specification target.
 | Notification preferences per type | v2 |
 | Private one-to-one messaging | v1 |
 | Group messaging threads | v2 |
+| Email per notification, with member opt-out | v1 |
 | Email digests | v2 |
 | Real-time delivery (websockets / push) | Later |
 

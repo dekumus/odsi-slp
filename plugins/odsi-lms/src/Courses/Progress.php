@@ -275,6 +275,27 @@ final class Progress {
 	}
 
 	/**
+	 * Percentages for many users in one query, for reports.
+	 *
+	 * @param int[] $user_ids  Users.
+	 * @param int   $course_id Course post id.
+	 *
+	 * @return array<int, float> User id => percentage (every requested user present).
+	 */
+	public function course_percentages( array $user_ids, int $course_id ): array {
+		$outline = $this->structure->step_ids( $course_id );
+		$total   = count( $outline );
+		$counts  = 0 === $total ? array() : $this->progress->completed_counts( $user_ids, $course_id, $outline );
+		$out     = array();
+
+		foreach ( $user_ids as $user_id ) {
+			$out[ (int) $user_id ] = 0 === $total ? 0.0 : round( ( ( $counts[ (int) $user_id ] ?? 0 ) / $total ) * 100, 2 );
+		}
+
+		return $out;
+	}
+
+	/**
 	 * Number of steps in a course the user has completed.
 	 *
 	 * Progress rows for steps that were later removed from the outline are

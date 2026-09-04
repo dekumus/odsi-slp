@@ -294,4 +294,24 @@ final class ActivityTest extends TestCase {
 		self::assertNull( Cursor::decode( 'garbage' ) );
 		self::assertNull( Cursor::decode( '' ) );
 	}
+
+	public function test_act_012_reactors_list_respects_visibility(): void {
+		$author = $this->social->member();
+		$fan    = $this->social->member();
+		$other  = $this->social->member();
+		$post   = $this->social->update( $author, 'Liked post', 'connections' );
+		$this->social->connect( $author, $fan );
+		$this->social->service( \ODSI\Social\Activity\Reactions::class )->set( $fan, $post );
+
+		$feed = $this->social->service( \ODSI\Social\Activity\Feed::class );
+		self::assertSame( array( $fan ), array_column( (array) $feed->reactors( $author, $post ), 'id' ) );
+		self::assertNull( $feed->reactors( $other, $post ), 'Strangers cannot list reactors on a connections-only post.' );
+		self::assertSame( array( $fan ), array_column( (array) $feed->item( $author, $post )['reactors'], 'id' ) );
+
+		do_action( 'rest_api_init' );
+		self::assertSame( 404, $this->as_user( $other, fn () => $this->rest( 'GET', "/odsi-social/v1/activity/{$post}/reactions" ) )->get_status() );
+		$ok = $this->as_user( $fan, fn () => $this->rest( 'GET', "/odsi-social/v1/activity/{$post}/reactions" ) );
+		self::assertSame( 200, $ok->get_status() );
+		self::assertSame( get_userdata( $fan )->display_name, $ok->get_data()['members'][0]['name'] );
+	}
 }

@@ -133,6 +133,11 @@ of `members`.
 member and invalidated on any change to that member's edges. A count that is
 stale after a change is a bug.
 
+
+**SOC-ACT-012** Who reacted to an item is listable, newest first, by anyone
+who may view the item (`GET /activity/{id}/reactions`, and on the single item
+page); a viewer who cannot see the item gets 404, never an empty list.
+
 ---
 
 ## 3. Activity — `SOC-ACT`
@@ -401,6 +406,13 @@ is a v2 concern and must be implementable as a listener on
 **SOC-NOT-008** Notifications older than an admin-set retention (default 90
 days) and read are deleted by the daily maintenance job. Unread ones are kept.
 
+
+**SOC-NOT-008** Each newly written notification also sends one plain-text
+email to the recipient with the notification text and its URL, unless the
+member turned emails off on their profile settings page (on by default) or
+`odsi_social_notification_email` suppresses it. A notification that folds
+into an existing unread row (`SOC-NOT-004`) sends no further email.
+
 ---
 
 ## 6. Private messages — `SOC-MSG`
@@ -455,6 +467,7 @@ participants and to no admin screen in v1. Admins may see thread metadata
 | `POST /activity/{id}/comments` | logged in | Comment. 404 when the parent is not visible. |
 | `PUT /activity/{id}/reaction` | logged in | Set reaction, body `type`. 404 when not visible. |
 | `DELETE /activity/{id}/reaction` | logged in | Remove. |
+| `GET /activity/{id}/reactions` | any | Who reacted, newest first (`SOC-ACT-012`). 404 when not visible. |
 | `GET /groups`, `GET /groups/{id}` | any | `SOC-GRP-004/005`. Hidden → 404 for non-members. |
 | `POST /groups` | logged in | Create. `SOC-GRP-002`. |
 | `PATCH /groups/{id}` | organiser | Settings. |

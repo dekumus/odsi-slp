@@ -228,17 +228,18 @@ final class Shortcodes implements Bootable {
 		return $this->templates()->render(
 			'members/edit',
 			array(
-				'profile'         => $profiles->view( (int) $user->ID, (int) $user->ID ),
-				'form'            => $profiles->edit_form( (int) $user->ID ),
-				'message_setting' => $profiles->message_setting( (int) $user->ID ),
-				'visibilities'    => array(
+				'profile'             => $profiles->view( (int) $user->ID, (int) $user->ID ),
+				'form'                => $profiles->edit_form( (int) $user->ID ),
+				'message_setting'     => $profiles->message_setting( (int) $user->ID ),
+				'email_notifications' => \ODSI\Social\Notifications\Emails::wants_email( (int) $user->ID ),
+				'visibilities'        => array(
 					'public'      => __( 'Everyone', 'odsi-social' ),
 					'members'     => __( 'Members', 'odsi-social' ),
 					'connections' => __( 'My connections', 'odsi-social' ),
 					'only_me'     => __( 'Only me', 'odsi-social' ),
 				),
-				'accept'          => $this->image_accept(),
-				'notice'          => $this->notice(),
+				'accept'              => $this->image_accept(),
+				'notice'              => $this->notice(),
 			)
 		);
 	}

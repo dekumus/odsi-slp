@@ -139,6 +139,17 @@ final class ActivityController {
 
 		register_rest_route(
 			$ns,
+			'/activity/(?P<id>\d+)/reactions',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'reactions' ),
+				'permission_callback' => '__return_true',
+				'args'                => $id,
+			)
+		);
+
+		register_rest_route(
+			$ns,
 			'/activity/(?P<id>\d+)/reaction',
 			array(
 				array(
@@ -270,6 +281,21 @@ final class ActivityController {
 		}
 
 		return new WP_REST_Response( $this->feed->present( $comment, get_current_user_id(), array() ), 201 );
+	}
+
+	/**
+	 * `GET /activity/{id}/reactions` — who reacted. 404 when not visible.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 */
+	public function reactions( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$list = $this->feed->reactors( get_current_user_id(), (int) $request['id'], 50 );
+
+		if ( null === $list ) {
+			return new WP_Error( 'odsi_social_not_found', __( 'That post does not exist.', 'odsi-social' ), array( 'status' => 404 ) );
+		}
+
+		return new WP_REST_Response( array( 'members' => $list ) );
 	}
 
 	/**

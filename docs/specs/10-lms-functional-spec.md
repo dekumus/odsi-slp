@@ -483,6 +483,17 @@ roster into memory at once, and cells beginning with `=`, `+`, `-` or `@` are
 prefixed with an apostrophe so a display name cannot become a spreadsheet
 formula. `odsi_lms_report_csv_columns` and `odsi_lms_report_csv_row` extend it.
 
+**LMS-ADM-007** When the `email_notifications` setting is on (default), a
+learner receives a plain-text email on enrollment (except automatic
+open-course enrollment), on course completion (with the certificate link
+when one was issued), and when an assignment is approved or returned.
+`odsi_lms_email` filters every message and can suppress it; `odsi_lms_emails_enabled`
+overrides the setting. Re-enrolling an already active learner sends nothing.
+
+**LMS-ADM-008** The Settings screen under Learning (requires `manage_odsi_lms`)
+edits the course archive slug, default access mode, default pass mark,
+certificate issuing, learner emails and the uninstall data switch.
+
 ---
 
 ## 8. Interfaces — `LMS-IF`

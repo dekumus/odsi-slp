@@ -21,6 +21,19 @@ $odsi_templates = \ODSI\Social\Plugin::instance()->container()->get( \ODSI\Socia
 			'item'      => $item,
 			'viewer_id' => $viewer_id,
 		)
-	); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped 
+	); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	?>
+	<?php if ( ! empty( $item['reactors'] ) ) : ?>
+		<section class="odsi-social-reactors">
+			<h3><?php esc_html_e( 'Liked by', 'odsi-social' ); ?></h3>
+			<ul class="odsi-social-member-list">
+				<?php foreach ( (array) $item['reactors'] as $odsi_reactor ) : ?>
+					<li class="odsi-social-member-list__item">
+						<img class="odsi-social-avatar" src="<?php echo esc_url( (string) $odsi_reactor['avatar'] ); ?>" alt="" width="32" height="32" />
+						<a class="odsi-social-member-list__name" href="<?php echo esc_url( (string) $odsi_reactor['url'] ); ?>"><?php echo esc_html( (string) $odsi_reactor['name'] ); ?></a>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		</section>
+	<?php endif; ?>
 </div>

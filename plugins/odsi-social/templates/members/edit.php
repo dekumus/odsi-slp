@@ -5,6 +5,7 @@
  * @var array<string, mixed>                      $profile         Profile as the member sees it.
  * @var array<int, array<string, mixed>>          $form            Field groups with values.
  * @var string                                    $message_setting Current message setting.
+ * @var bool                                      $email_notifications Whether the member wants emails.
  * @var array<string, string>                     $visibilities    Visibility key => label.
  * @var string                                    $accept          Accepted image extensions.
  * @var array{type: string, text: string}|null    $notice          Feedback after a save.
@@ -122,6 +123,12 @@ $odsi_uid = (int) $profile['id'];
 				<?php endforeach; ?>
 			</fieldset>
 		<?php endforeach; ?>
+
+		<fieldset class="odsi-social-settings__section">
+			<legend><?php esc_html_e( 'Notifications', 'odsi-social' ); ?></legend>
+			<input type="hidden" name="email_notifications" value="0" />
+			<p><label><input type="checkbox" name="email_notifications" value="1" <?php checked( $email_notifications ); ?> /> <?php esc_html_e( 'Email me when something happens that I would want to know about', 'odsi-social' ); ?></label></p>
+		</fieldset>
 
 		<fieldset class="odsi-social-settings__section">
 			<legend><?php esc_html_e( 'Messages', 'odsi-social' ); ?></legend>

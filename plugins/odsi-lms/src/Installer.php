@@ -71,16 +71,6 @@ final class Installer {
 			return;
 		}
 
-		add_option(
-			self::SETTINGS_OPTION,
-			array(
-				'course_archive_slug'     => 'courses',
-				'default_access_mode'     => 'free',
-				'default_pass_mark'       => 80,
-				'enable_certificates'     => true,
-				'enable_social_bridge'    => true,
-				'reset_data_on_uninstall' => false,
-			)
-		);
+		add_option( self::SETTINGS_OPTION, \ODSI\LMS\Support\Settings::defaults() );
 	}
 }

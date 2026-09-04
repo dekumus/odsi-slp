@@ -149,6 +149,10 @@ final class Forms implements Bootable {
 			$this->profiles->set_message_setting( $user_id, sanitize_key( (string) $post['message_setting'] ) );
 		}
 
+		if ( isset( $post['email_notifications'] ) ) {
+			\ODSI\Social\Notifications\Emails::set_wants_email( $user_id, '1' === (string) $post['email_notifications'] );
+		}
+
 		foreach ( array( 'avatar', 'cover' ) as $kind ) {
 			if ( ! empty( $post[ 'remove_' . $kind ] ) ) {
 				$this->set_member_image( $user_id, $kind, 0 );

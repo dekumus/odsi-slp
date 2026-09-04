@@ -7,8 +7,8 @@ when you change what it describes.
 
 | Plugin | State |
 | --- | --- |
-| `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 102 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
-| `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens, blocks, profile and group settings pages. 121 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
+| `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 107 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
+| `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens, blocks, profile and group settings pages, notification emails. 123 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 8 integration tests. |
 
 Verification so far: the integration suite boots WordPress core with the
@@ -71,6 +71,8 @@ Architecture in `docs/specs/20-social-architecture.md`, tables in
   model, field values, avatar/cover, message setting), `ProfileFields`,
   `Uploads` (image validation and resizing), `Directory`, `Lifecycle`
   (account deletion cleanup).
+- **Notifications**: `Notifications` (write-time collapse), `Listeners`,
+  `Renderers`, `Emails` (one email per fresh notification, member opt-out).
 - **Interfaces**: REST `odsi-social/v1` with six controllers; `Frontend\Router`
   for `/members/`, `/groups/`, `/activity/`, `/notifications/`, `/messages/`;
   `Frontend\Shortcodes` dispatching to templates under `templates/`;
@@ -91,13 +93,15 @@ Architecture in `docs/specs/20-social-architecture.md`, tables in
    cover, message setting).
 4. ~~Group settings UI~~ Closed: `/groups/{slug}/manage/` for organisers:
    settings, images, requests, roles, bans.
-5. **Reaction and comment "who" lists** — counts are shown; the lists are not.
+5. ~~Reaction "who" lists~~ Closed for reactions: `Feed::reactors()`, REST, and
+   the single item page (SOC-ACT-012). Comment authors were always listed.
 6. **No object caching** beyond per-request repository caches and the unread
    counters.
 7. **Feed benchmark** asserts a query budget; nothing asserts a time bound
    under a seeded load.
-8. **Email delivery** of notifications (v2; the `odsi_social_notification_created`
-   hook is the seam).
+8. ~~Email delivery~~ Closed: `Notifications\Emails`, one email per fresh
+   notification, per-member opt-out on the profile settings page
+   (SOC-NOT-008). No digests.
 
 ## `odsi-lms` — what exists
 
@@ -182,8 +186,13 @@ stores `_odsi_lesson_id` and inherits `_odsi_course_id` from it. Ordering is
   template, readable unguessable codes, `/certificate/{code}/` rendering with
   placeholders, public verification, revocation.
 - `Reports\EnrollmentReport` — enrollment rows with progress (paginated,
-  sortable, filterable), course summary, the manual grading queue, paged CSV
-  export.
+  sortable, filterable, percentages in one query), course summary, the manual
+  grading queue, paged CSV export.
+- `Notifications\Emails` — learner emails on enrollment, completion (with
+  certificate link) and assignment decisions, behind the
+  `email_notifications` setting and the `odsi_lms_email` filter.
+- `Support\Settings` — typed access to the plugin option, edited on the
+  Learning → Settings screen.
 - `Support\ObjectCache` — outlines in the persistent object cache, invalidated
   on the same events as the per-request cache.
 - `Frontend\ContentDecorator` — every piece of front-end LMS UI, through
@@ -234,7 +243,8 @@ stores `_odsi_lesson_id` and inherits `_odsi_course_id` from it. Ordering is
 `odsi_lms_quiz_started`, `odsi_lms_quiz_completed`, `odsi_lms_answer_graded`,
 `odsi_lms_can_complete_step`, `odsi_lms_submission_created`,
 `odsi_lms_submission_graded`, `odsi_lms_assignment_mime_types`,
-`odsi_lms_assignment_max_bytes`,
+`odsi_lms_assignment_max_bytes`, `odsi_lms_email`, `odsi_lms_emails_enabled`,
+`odsi_lms_report_csv_columns`, `odsi_lms_report_csv_row`,
 `odsi_lms_rest_controllers`, `odsi_lms_locate_template`,
 `odsi_lms_enqueue_frontend_assets`, `odsi_lms_daily_maintenance` (cron).
 
@@ -268,9 +278,8 @@ Numbering is kept from the original list. Struck-through items are closed.
 16. ~~No enrollment or grading admin actions.~~ Closed.
 17. ~~Reports have no CSV export~~ Closed: paged, formula-safe export from the
     Reports screen (LMS-ADM-006). A per-question quiz breakdown stays v2.
-18. **The enrollment report loads percentages per row** (one outline
-    intersection each); fine at report page sizes, worth a batched query if
-    pages grow.
+18. ~~The enrollment report loads percentages per row~~ Closed:
+    `Progress::course_percentages()` is one GROUP BY query per page.
 
 ## Test coverage map
 
@@ -284,7 +293,8 @@ Numbering is kept from the original list. Struck-through items are closed.
 | `LMS-ACC-*` | integration `AccessTest` | 11 |
 | `LMS-QZ-*` | integration `QuizTest` | 15 |
 | `LMS-IF` REST, `LMS-ACC-007` | integration `RestTest` | 9 |
-| `LMS-ADM-*`, `LMS-ENR-007/012`, certificates, cache, CSV | integration `HardeningTest` | 9 |
+| `LMS-ADM-*`, `LMS-ENR-007/012`, certificates, cache, CSV, batched percentages | integration `HardeningTest` | 10 |
+| `LMS-ADM-007` learner emails | integration `EmailsTest` | 4 |
 | Builder routes: tree, add, reorder, detach, ownership | integration `BuilderTest` | 2 |
 | `LMS-ASN-*` service, uploads, REST, grading scope | integration `AssignmentsTest` | 9 |
 | `LMS-IF-004` block registration and rendering | integration `BlocksTest` | 3 |
@@ -296,10 +306,11 @@ Numbering is kept from the original list. Struck-through items are closed.
 | Member flow in a browser | e2e `social-member-flow` | 1, passing |
 | Social schema, ADR-005 scan | integration `social/SchemaTest` | 20 |
 | Privacy decision table, both representations | integration `social/PrivacyTest` | 42 |
-| `SOC-ACT-*` | integration `social/ActivityTest` | 13 |
+| `SOC-ACT-*` | integration `social/ActivityTest` | 14 |
 | `SOC-CON-*` | integration `social/ConnectionsTest` | 5 |
 | `SOC-GRP-*` | integration `social/GroupsTest` | 9 |
 | `SOC-NOT-*` | integration `social/NotificationsTest` | 8 |
+| `SOC-NOT-008` notification emails | integration `social/EmailsTest` | 1 |
 | `SOC-MSG-*` | integration `social/MessagesTest` | 5 |
 | `SOC-MEM-*` | integration `social/MembersTest` | 6 |
 | Social REST, ADR-011 | integration `social/RestTest` | 6 |

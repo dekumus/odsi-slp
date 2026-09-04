@@ -278,4 +278,32 @@ final class HardeningTest extends TestCase {
 		self::assertSame( 0, $this->report->export_csv( $c['course'], 'completed', $handle ) );
 		fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 	}
+
+	public function test_report_percentages_come_from_one_query(): void {
+		$c = $this->lms->standard_course();
+		$a = $this->lms->enrolled_learner( $c['course'] );
+		$b = $this->lms->enrolled_learner( $c['course'] );
+		$z = $this->lms->enrolled_learner( $c['course'] );
+		$this->progress->complete_step( $a, $c['lesson1'] );
+		$this->progress->complete_step( $b, $c['lesson1'] );
+		$this->progress->complete_step( $b, $c['lesson3'] );
+
+		$percentages = $this->progress->course_percentages( array( $a, $b, $z ), $c['course'] );
+		self::assertSame(
+			array(
+				$a => 16.67,
+				$b => 33.33,
+				$z => 0.0,
+			),
+			$percentages
+		);
+
+		$rows = $this->report->rows( $c['course'] );
+		self::assertEqualsCanonicalizing( array( 16.67, 33.33, 0.0 ), array_column( $rows['rows'], 'percentage' ) );
+
+		global $wpdb;
+		$before = $wpdb->num_queries;
+		$this->report->rows( $c['course'] );
+		self::assertLessThanOrEqual( 5, $wpdb->num_queries - $before, 'The report does not query once per learner.' );
+	}
 }
