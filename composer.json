@@ -1,0 +1,47 @@
+{
+	"name": "odsi/odsi-slp",
+	"description": "Development toolchain for the ODSI social learning platform monorepo.",
+	"type": "project",
+	"license": "GPL-2.0-or-later",
+	"require": {
+		"php": ">=8.1"
+	},
+	"require-dev": {
+		"brain/monkey": "^2.6",
+		"dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+		"mockery/mockery": "^1.6",
+		"php-stubs/wordpress-stubs": "^6.6",
+		"phpcompatibility/phpcompatibility-wp": "^2.1",
+		"phpstan/phpstan": "^2.1",
+		"phpunit/phpunit": "^9.6",
+		"szepeviktor/phpstan-wordpress": "^2.0",
+		"wp-coding-standards/wpcs": "^3.1",
+		"yoast/phpunit-polyfills": "^1.1"
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"ODSI\\LMS\\": "plugins/odsi-lms/src/",
+			"ODSI\\Social\\": "plugins/odsi-social/src/",
+			"ODSI\\Bridge\\": "plugins/odsi-bridge/src/",
+			"ODSI\\Tests\\": "tests/"
+		}
+	},
+	"scripts": {
+		"lint": "phpcs",
+		"lint:fix": "phpcbf",
+		"analyse": "phpstan analyse --memory-limit=1G",
+		"test:unit": "phpunit -c phpunit.unit.xml.dist",
+		"test:integration": "phpunit -c phpunit.integration.xml.dist",
+		"test": [
+			"@test:unit",
+			"@test:integration"
+		]
+	},
+	"config": {
+		"optimize-autoloader": true,
+		"sort-packages": true,
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}

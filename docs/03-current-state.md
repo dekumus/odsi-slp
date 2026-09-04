@@ -127,12 +127,19 @@ These are deliberate omissions, not oversights — but they are all still missin
 14. **No `Structure` cache invalidation on post save** beyond the builder's
     explicit `flush()`.
 
-## Open questions for the spec
+## Open questions
 
-- Does a topic-level quiz block the parent lesson, or only itself?
-- Is course completion "every step" or "every required step", and does that mean
-  a per-step `required` flag?
-- Do cohorts (`odsi_cohort`) grant enrollment, or only group reporting? What
-  happens to a learner's progress when they leave one?
-- Should progress rows be retained after unenrollment by default?
-- How does drip interact with a learner who enrolls, lapses and re-enrolls?
+All five questions this section used to hold are now decided in
+`docs/specs/10-lms-functional-spec.md` § 11, with the reasoning recorded as
+ADR-007 through ADR-010 in `docs/01-decisions.md`:
+
+| Question | Answer | Where |
+| --- | --- | --- |
+| Does a topic-level quiz block the parent lesson? | No. A quiz gates only the node after it; section lessons never gate and complete automatically. | `LMS-OUT-005`, `LMS-PRG-003`, ADR-007 |
+| "Every step" or "every required step"? | Every node in the current outline. A v2 required flag is a filter, not a schema change. | `LMS-PRG-007`, § 11.2 |
+| Do cohorts grant enrollment? | Yes, with `source = cohort`; removal cancels only those; progress retained. | `LMS-ENR-012`, ADR-010 |
+| Retain progress after unenrollment? | Yes; reset is explicit. | `LMS-ENR-006/007`, ADR-009 |
+| Drip after lapse and re-enroll? | Restarts; `enrolled_at` resets on reactivation. | `LMS-ENR-003`, ADR-008 |
+
+The spec also lists, in § 12, fourteen places where the scaffold at `ca23590`
+disagrees with the decided behaviour. Those are the hardening brief's queue.

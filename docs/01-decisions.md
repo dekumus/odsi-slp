@@ -138,3 +138,116 @@ stored progress against the live outline.
 
 **Cost.** Outline resolution costs queries. Mitigated with a per-request cache
 and, later, an object-cache layer.
+
+---
+
+## ADR-007 — Section lessons are containers: never a gate, always auto-completed
+
+**Status:** Accepted (closes open question 1)
+
+**Context.** The scaffold's outline places a lesson before its topics and treats
+the previous node as the gate. For the first topic of a lesson that is the
+lesson itself, which cannot be complete until its topics are — a deadlock under
+linear progression. Some LMS products resolve this by making the learner mark
+the lesson complete *after* its topics, which puts a redundant click at the end
+of every section.
+
+**Decision.** A lesson with topics is a *section*: it is never a gate, cannot be
+marked complete, and gets its own completion row automatically when its last
+descendant completes. A lesson without topics is a *leaf* and behaves like a
+topic. A quiz gates only the node that follows it.
+
+**Why.** It matches what a learner sees: sections are headings, leaves are
+work. It removes the deadlock and the redundant click. Keeping a completion row
+for the section means progress arithmetic and reports can still treat every node
+uniformly.
+
+**Cost.** Publishing the first topic under a leaf lesson changes the lesson's
+kind and the meaning of its existing completion row. The spec accepts that the
+row stands (`LMS-PRG-010`); it is the conservative outcome for the learner.
+
+---
+
+## ADR-008 — Re-enrollment resets the enrollment date
+
+**Status:** Accepted (closes open question 5)
+
+**Decision.** Reactivating an `expired` or `cancelled` enrollment sets
+`enrolled_at` to now and recomputes `expires_at`. Drip schedules keyed to
+enrollment restart.
+
+**Why.** Access windows and drip both anchor on the same date, and a learner
+who has lapsed and returned expects a fresh window. Preserving the original date
+would make a re-purchased course expire immediately.
+
+**Cost.** The original enrollment date is not preserved on the row. Reporting
+that needs it must read the audit trail (v2) rather than the enrollment.
+
+---
+
+## ADR-009 — Progress survives unenrollment
+
+**Status:** Accepted (closes open question 4)
+
+**Decision.** Removing a learner from a course deletes the enrollment and keeps
+every progress and attempt row. Deleting those is a separate, explicit reset.
+
+**Why.** Enrollment is an access decision; progress is a record of work done.
+Conflating them means an administrative slip destroys a learner's history. The
+cost of retained rows is storage; the cost of lost rows is trust.
+
+**Cost.** Orphaned progress accumulates for learners who never return. The
+maintenance job may prune rows older than a configurable retention in v2.
+
+---
+
+## ADR-010 — Cohorts grant enrollment
+
+**Status:** Accepted (closes open question 3)
+
+**Decision.** Adding a member to a cohort enrolls them on each of its courses
+with `source = cohort` and `source_id` = the cohort. Removing them cancels only
+enrollments with that source and id; other enrollments and all progress remain.
+
+**Why.** Cohorts exist for classes and client teams, where "in the cohort"
+*means* "on the courses". Tagging the source makes removal precise, so a learner
+who also bought the course individually keeps it.
+
+**Cost.** Two enrollment paths for the same course cannot coexist on one row
+(the row is unique per user and course), so a cohort add on top of a self
+enrollment is a no-op that leaves `source = self`. Documented in `LMS-ENR-012`.
+
+---
+
+## ADR-011 — Hidden content answers 404, never 403
+
+**Status:** Accepted
+
+**Decision.** Across both plugins, a request for content the caller may not see
+returns 404. 403 is reserved for content the caller can see but may not act on.
+
+**Why.** A 403 confirms that the thing exists. For a hidden group, a private
+message thread or a quiz attempt id, that confirmation is itself a leak, and
+makes ids enumerable. Consistency matters more than the small loss of
+diagnostic precision.
+
+**Cost.** Support conversations occasionally have to distinguish "does not
+exist" from "you cannot see it". Logs carry the distinction; responses do not.
+
+---
+
+## ADR-012 — Follows and connections are independent relationships
+
+**Status:** Accepted
+
+**Decision.** A follow is a directed edge with no consent step; a connection is
+a mutual edge with a request and acceptance. Neither implies the other. Both are
+stored separately and queried separately.
+
+**Why.** They answer different questions — "whose posts do I want" versus "who
+do I know" — and communities use them differently. Coupling them (auto-follow
+on connect, say) is a product policy that can be layered on with a listener;
+coupling them in the schema cannot be undone.
+
+**Cost.** The personal feed query unions two edge tables. It is bounded and
+indexed; see the schema document.
