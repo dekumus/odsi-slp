@@ -25,7 +25,11 @@
 			"ODSI\\Bridge\\": "plugins/odsi-bridge/src/",
 			"ODSI\\Tests\\Unit\\": "tests/unit/",
 			"ODSI\\Tests\\Integration\\": "tests/integration/",
-			"ODSI\\Tests\\Fixtures\\": "tests/fixtures/"
+			"ODSI\\Tests\\Fixtures\\": "tests/fixtures/",
+			"ODSI\\Tests\\Integration\\LMS\\": "tests/integration/lms/",
+			"ODSI\\Tests\\Integration\\Social\\": "tests/integration/social/",
+			"ODSI\\Tests\\Integration\\Bridge\\": "tests/integration/bridge/",
+			"ODSI\\Tests\\Unit\\LMS\\": "tests/unit/lms/"
 		}
 	},
 	"scripts": {
@@ -44,6 +48,9 @@
 		"sort-packages": true,
 		"allow-plugins": {
 			"dealerdirect/phpcodesniffer-composer-installer": true
+		},
+		"platform": {
+			"php": "8.1.0"
 		}
 	}
 }
