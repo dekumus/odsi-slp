@@ -21,6 +21,7 @@ parameters:
     - */vendor/*
     - */node_modules/*
   scanFiles:
+    - tests/stubs/woocommerce.php
     - plugins/odsi-lms/odsi-lms.php
     - plugins/odsi-social/odsi-social.php
     - plugins/odsi-bridge/odsi-bridge.php

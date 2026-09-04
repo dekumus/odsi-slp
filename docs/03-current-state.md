@@ -7,7 +7,7 @@ when you change what it describes.
 
 | Plugin | State |
 | --- | --- |
-| `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 125 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
+| `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 130 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens, blocks, profile and group settings pages, notification emails. 164 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules plus an uninstall data switch (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 15 integration tests. |
 
@@ -278,8 +278,12 @@ Numbering is kept from the original list. Struck-through items are closed.
 9. ~~No object caching.~~ Closed for outlines. Progress reads are still
    uncached (they are single indexed lookups).
 10. ~~`Migrator::maybe_migrate()` on every request.~~ Closed.
-11. **No commerce integration** — `access_mode = paid` is enforced but nothing
-    can fulfil it.
+11. ~~No commerce integration.~~ Closed: `Commerce\Purchases` turns
+    `odsi_lms_course_purchased` / `odsi_lms_course_refunded` into enrollments
+    with `source = purchase`; `Commerce\WooCommerce` maps orders to courses
+    through `_odsi_wc_product_id` and swaps the enroll button for a buy link
+    (LMS-COM-001..004, `CommerceTest`). Any other gateway needs only the two
+    actions.
 12. ~~No cron handler.~~ Closed.
 13. ~~No i18n build.~~ Closed: `languages/*.pot` for all three plugins, regenerated with `npm run i18n`.
 14. ~~No `Structure` cache invalidation on post save.~~ Closed.
@@ -413,8 +417,10 @@ count individually), which is why they can exceed the number of methods.
 | `LMS-IF-004` block registration and rendering | integration `BlocksTest` | 3 |
 | `LMS-ACC-008`, `LMS-AUT-008`, `LMS-ASN-010` regressions | integration `SecurityTest` | 8 |
 | `LMS-AUT-011/012`, `LMS-ENR-013/014`, `LMS-PRG-014`, `LMS-QZ-024/025`, certificates switch, timezone drips | integration `CorrectnessTest` | 10 |
+| `LMS-COM-*` purchase contract and WooCommerce adapter | integration `CommerceTest` | 5 |
 | Learner flow in a browser | e2e `lms-learner-flow` | 1, passing |
 | Course builder in the editor | e2e `lms-course-builder` | 1, passing |
+| Course settings, quiz settings and the question editor through the classic boxes | e2e `lms-authoring` | 2, passing |
 | Assignment hand-in and approval in a browser | e2e `lms-assignment` | 1, passing |
 | Blocks on a page and in the editor | e2e `blocks` | 1, passing |
 | Profile edit and group manage forms in a browser | e2e `social-settings` | 1, passing |

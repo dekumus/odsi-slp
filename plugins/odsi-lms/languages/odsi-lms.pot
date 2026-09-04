@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-04T12:07:58+00:00\n"
+"POT-Creation-Date: 2026-09-04T12:29:59+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: odsi-lms\n"
@@ -422,7 +422,7 @@ msgid "Zero keeps access indefinitely."
 msgstr ""
 
 #: src/Admin/SettingsMetaBoxes.php:81
-#: src/Admin/SettingsMetaBoxes.php:142
+#: src/Admin/SettingsMetaBoxes.php:150
 msgid "Duration (minutes)"
 msgstr ""
 
@@ -440,47 +440,47 @@ msgstr ""
 msgid "None"
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:124
+#: src/Admin/SettingsMetaBoxes.php:132
 msgid "Available immediately"
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:125
+#: src/Admin/SettingsMetaBoxes.php:133
 msgid "Days after enrollment"
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:126
+#: src/Admin/SettingsMetaBoxes.php:134
 msgid "On a fixed date"
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:129
+#: src/Admin/SettingsMetaBoxes.php:137
 msgid "Release"
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:137
+#: src/Admin/SettingsMetaBoxes.php:145
 msgid "Release value"
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:140
+#: src/Admin/SettingsMetaBoxes.php:148
 msgid "A number of days, or a date such as 2026-09-30 (site timezone)."
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:156
+#: src/Admin/SettingsMetaBoxes.php:164
 msgid "Pass mark (%)"
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:157
+#: src/Admin/SettingsMetaBoxes.php:165
 msgid "Maximum attempts"
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:157
+#: src/Admin/SettingsMetaBoxes.php:165
 msgid "Zero means unlimited."
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:158
+#: src/Admin/SettingsMetaBoxes.php:166
 msgid "Time limit (minutes)"
 msgstr ""
 
-#: src/Admin/SettingsMetaBoxes.php:158
+#: src/Admin/SettingsMetaBoxes.php:166
 msgid "Zero means no limit."
 msgstr ""
 
@@ -578,6 +578,18 @@ msgstr ""
 
 #: src/Certificates/Certificates.php:122
 msgid "A former member"
+msgstr ""
+
+#: src/Commerce/WooCommerce.php:124
+msgid "Buy this course"
+msgstr ""
+
+#: src/Commerce/WooCommerce.php:140
+msgid "WooCommerce product ID"
+msgstr ""
+
+#: src/Commerce/WooCommerce.php:143
+msgid "Buying this product enrolls the customer. Set the access mode to Paid."
 msgstr ""
 
 #: src/Courses/Access.php:390

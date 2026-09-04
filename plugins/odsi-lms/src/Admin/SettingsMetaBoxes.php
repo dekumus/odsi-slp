@@ -108,6 +108,14 @@ final class SettingsMetaBoxes implements Bootable {
 			printf( '<option value="%1$d" %2$s>%3$s</option>', (int) $certificate->ID, selected( $current, (int) $certificate->ID, false ), esc_html( get_the_title( $certificate ) ) );
 		}
 		echo '</select></p>';
+
+		/**
+		 * Fires at the end of the course settings box, for integrations that
+		 * add a field (the WooCommerce adapter adds its product id here).
+		 *
+		 * @param WP_Post $post Course.
+		 */
+		do_action( 'odsi_lms_course_settings_box', $post );
 	}
 
 	/**
@@ -188,6 +196,14 @@ final class SettingsMetaBoxes implements Bootable {
 
 				$certificate = $int( Meta::CERTIFICATE_ID );
 				update_post_meta( $post_id, Meta::CERTIFICATE_ID, PostTypes::CERTIFICATE === get_post_type( $certificate ) ? $certificate : 0 );
+
+				/**
+				 * Fires after the course settings box saved its own fields; the
+				 * nonce and `edit_post` were already verified.
+				 *
+				 * @param int $post_id Course.
+				 */
+				do_action( 'odsi_lms_course_settings_saved', $post_id );
 				break;
 
 			case PostTypes::LESSON:

@@ -35,7 +35,7 @@ matching what users need to do, not how a competitor draws it.
 
 | Capability | Tier | Notes |
 | --- | --- | --- |
-| Open, free, paid and closed access modes | v1 | Enforced; `paid` waits on a commerce integration |
+| Open, free, paid and closed access modes | v1 | Enforced; `paid` is sold through WooCommerce or any gateway that fires the purchase actions (LMS-COM) |
 | Manual enrollment by an admin | v1 | Built: Reports screen |
 | Self-enrollment on free/open courses | v1 | Built |
 | Time-limited access (N days from enrollment) | v1 | Built, expired by cron |

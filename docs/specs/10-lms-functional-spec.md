@@ -501,6 +501,44 @@ no links; `odsi_lms_assignment_allowed_html`).
 
 ---
 
+## 6c. Commerce — `LMS-COM`
+
+### Stories
+
+- As a site owner I sell a course through the shop I already run.
+- As a developer I connect a different payment system without touching
+  enrollment tables.
+
+### Criteria
+
+**LMS-COM-001** A commerce integration reports a sale by firing
+`odsi_lms_course_purchased( $user_id, $course_id, $context )` and a reversal
+by firing `odsi_lms_course_refunded( $user_id, $course_id, $context )`.
+`$context` carries at least `order_id` and `gateway`. A purchase enrolls the
+buyer with `source = purchase` and `source_id = order_id`, whatever the
+course's access mode is today, and fires `odsi_lms_purchase_granted`.
+
+**LMS-COM-002** A purchase by a learner who is already enrolled by another
+route keeps the existing row (LMS-ENR-002); `odsi_lms_purchase_granted` still
+fires with `$was_enrolled = true` so the integration can reconcile.
+
+**LMS-COM-003** A refund removes only an enrollment whose source is
+`purchase` and, when the refund names an order, only that order's. Manual and
+cohort enrollments are never removed by a refund. Progress is kept, so a later
+purchase resumes. `odsi_lms_purchase_revoked` fires when a row was removed.
+
+**LMS-COM-004** The bundled WooCommerce adapter is inert unless WooCommerce is
+loaded. A course names its product in `_odsi_wc_product_id` (course settings
+box; the field appears only with WooCommerce active). An order reaching
+`processing` or `completed` purchases every course sold by each of its
+products for the order's customer; `refunded` or `cancelled` reverses them.
+Guest orders enroll nobody. On a `paid` course with a purchasable product the
+enroll button becomes the product's price and a "Buy this course" link to
+add-to-cart (`odsi_lms_paid_enroll_markup`); without a product the paid notice
+stays.
+
+---
+
 ## 7. Instructor and admin — `LMS-ADM`
 
 ### Criteria

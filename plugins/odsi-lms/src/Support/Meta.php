@@ -33,6 +33,9 @@ final class Meta {
 	/** Certificate post id awarded on course completion. */
 	public const CERTIFICATE_ID = '_odsi_certificate_id';
 
+	/** WooCommerce product that sells the course (LMS-COM-004). */
+	public const WC_PRODUCT_ID = '_odsi_wc_product_id';
+
 	/** Access mode: `open`, `free`, `paid` or `closed`. */
 	public const ACCESS_MODE = '_odsi_access_mode';
 
@@ -113,6 +116,7 @@ final class Meta {
 				self::LINEAR_PROGRESSION => $bool + array( 'default' => true ),
 				self::DURATION           => $int,
 				self::CERTIFICATE_ID     => $int,
+				self::WC_PRODUCT_ID      => $int,
 			),
 			PostTypes::LESSON   => array(
 				self::COURSE_ID               => $int,

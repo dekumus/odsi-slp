@@ -5,7 +5,7 @@ independent GPL plugins plus an optional bridge.
 
 | Plugin | Role | Status |
 | --- | --- | --- |
-| [`odsi-lms`](plugins/odsi-lms) | Courses, lessons, topics, quizzes, assignments, enrollment, progress, reports, certificates, cohorts, course builder, learner emails | 155 tests + browser E2E passing |
+| [`odsi-lms`](plugins/odsi-lms) | Courses, lessons, topics, quizzes, assignments, enrollment, progress, reports, certificates, cohorts, course builder, learner emails | 160 tests + browser E2E passing |
 | [`odsi-social`](plugins/odsi-social) | Profiles, activity, groups, connections, notifications, emails, messaging, blocks | 164 tests + browser E2E passing |
 | [`odsi-bridge`](plugins/odsi-bridge) | Course activity in the feed, groups linked to courses, shared progress | Built and tested (15 tests) |
 
@@ -41,9 +41,9 @@ Read
 
 The five briefs in [`docs/briefs/`](docs/briefs) are complete. What remains is
 listed as numbered gaps in
-[`docs/03-current-state.md`](docs/03-current-state.md); the largest are a
-commerce integration for paid courses and the v2 items in
-[`docs/04-parity-scope.md`](docs/04-parity-scope.md).
+[`docs/03-current-state.md`](docs/03-current-state.md) and as the v2 items in
+[`docs/04-parity-scope.md`](docs/04-parity-scope.md). Site owners start with
+the [owner guide](docs/40-site-owner-guide.md).
 
 ## Licence and provenance
 

@@ -21,6 +21,8 @@ use ODSI\LMS\Admin\SettingsScreen;
 use ODSI\LMS\Assignments\Assignments;
 use ODSI\LMS\Blocks\Blocks;
 use ODSI\LMS\Certificates\Certificates;
+use ODSI\LMS\Commerce\Purchases;
+use ODSI\LMS\Commerce\WooCommerce;
 use ODSI\LMS\Contracts\Bootable;
 use ODSI\LMS\Courses\Access;
 use ODSI\LMS\Courses\Cohorts;
@@ -208,6 +210,8 @@ final class Plugin {
 		$c->set( AssignmentMetaBox::class, static fn (): object => new AssignmentMetaBox() );
 		$c->set( SettingsMetaBoxes::class, static fn ( Container $c ): object => new SettingsMetaBoxes( $c->get( Settings::class ) ) );
 		$c->set( QuestionMetaBox::class, static fn (): object => new QuestionMetaBox() );
+		$c->set( Purchases::class, static fn ( Container $c ): object => new Purchases( $c->get( Enrollment::class ) ) );
+		$c->set( WooCommerce::class, static fn ( Container $c ): object => new WooCommerce( $c->get( Purchases::class ) ) );
 		$c->set(
 			Lifecycle::class,
 			static fn ( Container $c ): object => new Lifecycle(
@@ -272,6 +276,8 @@ final class Plugin {
 			RestServiceProvider::class,
 			CoreGuards::class,
 			Lifecycle::class,
+			Purchases::class,
+			WooCommerce::class,
 		);
 
 		if ( is_admin() ) {
