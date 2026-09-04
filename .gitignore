@@ -26,3 +26,10 @@
 *.sublime-*
 .DS_Store
 Thumbs.db
+
+# Harness
+/.cache/
+/.playwright/
+/.phpunit.*.result.cache
+/composer.lock.bak
+/.wp-env.override.json

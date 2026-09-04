@@ -71,7 +71,7 @@ final class Schema {
 	}
 
 	/**
-	 * dbDelta-compatible CREATE TABLE statements.
+	 * The dbDelta-compatible CREATE TABLE statements.
 	 *
 	 * @return string[]
 	 */
@@ -84,8 +84,8 @@ final class Schema {
 
 		// One row per user per course. `status` drives access; `expires_at` supports
 		// subscription and drip style access without a second table.
-		$table                = self::table( 'enrollments' );
-		$statements[]         = "CREATE TABLE {$table} (
+		$table        = self::table( 'enrollments' );
+		$statements[] = "CREATE TABLE {$table} (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			user_id bigint(20) unsigned NOT NULL,
 			course_id bigint(20) unsigned NOT NULL,

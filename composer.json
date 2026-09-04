@@ -23,7 +23,9 @@
 			"ODSI\\LMS\\": "plugins/odsi-lms/src/",
 			"ODSI\\Social\\": "plugins/odsi-social/src/",
 			"ODSI\\Bridge\\": "plugins/odsi-bridge/src/",
-			"ODSI\\Tests\\": "tests/"
+			"ODSI\\Tests\\Unit\\": "tests/unit/",
+			"ODSI\\Tests\\Integration\\": "tests/integration/",
+			"ODSI\\Tests\\Fixtures\\": "tests/fixtures/"
 		}
 	},
 	"scripts": {

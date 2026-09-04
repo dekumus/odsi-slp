@@ -1,0 +1,17 @@
+{
+	"root": true,
+	"extends": [ "plugin:@wordpress/eslint-plugin/recommended" ],
+	"env": {
+		"browser": true,
+		"es2022": true
+	},
+	"globals": {
+		"odsiLms": "readonly"
+	},
+	"overrides": [
+		{
+			"files": [ "tests/e2e/**/*.js" ],
+			"env": { "node": true }
+		}
+	]
+}

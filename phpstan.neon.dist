@@ -1,0 +1,27 @@
+# Static analysis for all three plugins.
+#
+# Target level: 6 (typed everything, no missing iterable value types).
+# Current level: 6. Raise it when the baseline is empty at the next level.
+includes:
+  - vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+  level: 6
+  # Add plugins/odsi-social/src and plugins/odsi-bridge/src here as they land.
+  paths:
+    - plugins/odsi-lms/src
+    - plugins/odsi-lms/odsi-lms.php
+    - plugins/odsi-lms/uninstall.php
+  excludePaths:
+    - */vendor/*
+    - */node_modules/*
+  scanFiles:
+    - plugins/odsi-lms/odsi-lms.php
+  bootstrapFiles:
+    - tests/phpstan-bootstrap.php
+  treatPhpDocTypesAsCertain: false
+  reportUnmatchedIgnoredErrors: false
+  ignoreErrors:
+    # WordPress core declares these as returning string|false; the plugin
+    # casts at every call site, which PHPStan cannot see through the cast.
+    - '#Cannot cast mixed to string#'

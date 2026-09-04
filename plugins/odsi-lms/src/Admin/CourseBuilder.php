@@ -165,6 +165,7 @@ final class CourseBuilder implements Bootable {
 			array(
 				'post_type'              => $post_type,
 				'post_status'            => array( 'publish', 'draft', 'private' ),
+				// phpcs:ignore WordPress.WP.PostsPerPage.posts_per_page_posts_per_page -- bounded internal outline query, not a listing.
 				'posts_per_page'         => 200,
 				'orderby'                => 'title',
 				'order'                  => 'ASC',

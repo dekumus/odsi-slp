@@ -46,17 +46,21 @@ final class Grader {
 	 * @return array{points_earned: float, points_possible: float, is_correct: bool, needs_grading: bool}
 	 */
 	public function grade( int $question_id, mixed $submitted ): array {
-		$type     = (string) get_post_meta( $question_id, Meta::QUESTION_TYPE, true ) ?: self::TYPE_SINGLE;
-		$points   = (float) get_post_meta( $question_id, Meta::QUESTION_POINTS, true ) ?: 1.0;
-		$answers  = (array) get_post_meta( $question_id, Meta::QUESTION_ANSWERS, true );
-		$correct  = false;
-		$manual   = in_array( $type, self::manually_graded(), true );
+		$type    = (string) get_post_meta( $question_id, Meta::QUESTION_TYPE, true ) ?: self::TYPE_SINGLE;
+		$points  = (float) get_post_meta( $question_id, Meta::QUESTION_POINTS, true ) ?: 1.0;
+		$answers = (array) get_post_meta( $question_id, Meta::QUESTION_ANSWERS, true );
+		$correct = false;
+		$manual  = in_array( $type, self::manually_graded(), true );
 
 		if ( ! $manual ) {
+			// An unrecognised type fails closed (LMS-QZ-023): a custom type that
+			// nobody handles through the filter below must not award points.
 			$correct = match ( $type ) {
+				self::TYPE_SINGLE,
+				self::TYPE_TRUE_FALSE => $this->grade_single( $answers, $submitted ),
 				self::TYPE_MULTIPLE   => $this->grade_multiple( $answers, $submitted ),
 				self::TYPE_FILL_BLANK => $this->grade_fill_blank( $answers, $submitted ),
-				default               => $this->grade_single( $answers, $submitted ),
+				default               => false,
 			};
 		}
 

@@ -81,7 +81,7 @@ final class Structure {
 					'depth'  => 1,
 				);
 			}
-		}
+		}//end foreach
 
 		foreach ( $this->course_quizzes( $course_id ) as $quiz_id ) {
 			$steps[] = array(
@@ -173,6 +173,7 @@ final class Structure {
 			array(
 				'post_type'              => PostTypes::QUIZ,
 				'post_status'            => 'publish',
+				// phpcs:ignore WordPress.WP.PostsPerPage.posts_per_page_posts_per_page -- bounded internal outline query, not a listing.
 				'posts_per_page'         => 200,
 				'orderby'                => array(
 					'menu_order' => 'ASC',
@@ -287,6 +288,7 @@ final class Structure {
 			array(
 				'post_type'              => $post_type,
 				'post_status'            => 'publish',
+				// phpcs:ignore WordPress.WP.PostsPerPage.posts_per_page_posts_per_page -- bounded internal outline query, not a listing.
 				'posts_per_page'         => 500,
 				'orderby'                => array(
 					'menu_order' => 'ASC',

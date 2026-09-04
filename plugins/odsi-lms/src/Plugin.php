@@ -39,16 +39,22 @@ final class Plugin {
 
 	/**
 	 * Singleton instance.
+	 *
+	 * @var self|null
 	 */
 	private static ?self $instance = null;
 
 	/**
 	 * Service container.
+	 *
+	 * @var Container
 	 */
 	private Container $container;
 
 	/**
 	 * Whether boot() has already run.
+	 *
+	 * @var bool
 	 */
 	private bool $booted = false;
 

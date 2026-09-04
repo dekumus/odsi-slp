@@ -528,7 +528,7 @@ failing test first.
 | `QuizService::start()` always creates a new attempt | `QZ-001`, `QZ-002` | Return an open attempt; abandon timed-out ones |
 | `QuizAttemptRepository::count_attempts()` counts `in_progress` rows | `QZ-003` | Count `completed` + `abandoned` |
 | No time-limit enforcement | `QZ-006` | Check at submit and at start |
-| `Grader` returns `is_correct = false`, 0 points for an unknown type but does not distinguish it from a wrong answer | `QZ-023` | Acceptable; document it |
+| `Grader` grades an unknown question type as single choice, so a custom type nobody handles can pass | `QZ-023` | Fail closed on the default branch. **Fixed** in brief 02 with a unit test. |
 | No `odsi_lms_enrollment_expired`, no cron listener | `ENR-011`, `ADM-005` | Add both |
 | `Migrator::maybe_migrate()` on every request | — (gap 10) | Move behind `admin_init` |
 | `Access::filter_content()` shows one generic locked message | `ACC-006` | Three distinct reasons |

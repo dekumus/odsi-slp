@@ -19,11 +19,15 @@ defined( 'ABSPATH' ) || exit;
  *
  * All plugin SQL is funnelled through subclasses of this so that table names are
  * never built at call sites and every value goes through `$wpdb->prepare()`.
+ *
+ * @implements Repository<object>
  */
 abstract class AbstractRepository implements Repository {
 
 	/**
 	 * WordPress database handle.
+	 *
+	 * @var wpdb
 	 */
 	protected wpdb $db;
 

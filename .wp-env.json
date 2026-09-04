@@ -1,0 +1,24 @@
+{
+	"core": "WordPress/WordPress#7.1",
+	"phpVersion": "8.2",
+	"plugins": [
+		"./plugins/odsi-lms",
+		"./plugins/odsi-social",
+		"./plugins/odsi-bridge"
+	],
+	"config": {
+		"WP_DEBUG": true,
+		"WP_DEBUG_LOG": true,
+		"WP_DEBUG_DISPLAY": false,
+		"SCRIPT_DEBUG": true
+	},
+	"env": {
+		"tests": {
+			"port": 8889,
+			"config": {
+				"WP_DEBUG": true,
+				"WP_DEBUG_DISPLAY": true
+			}
+		}
+	}
+}

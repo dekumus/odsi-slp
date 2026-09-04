@@ -49,6 +49,7 @@ final class QuizService {
 			array(
 				'post_type'              => PostTypes::QUESTION,
 				'post_status'            => 'publish',
+				// phpcs:ignore WordPress.WP.PostsPerPage.posts_per_page_posts_per_page -- bounded internal outline query, not a listing.
 				'posts_per_page'         => 500,
 				'orderby'                => array(
 					'menu_order' => 'ASC',
@@ -127,8 +128,8 @@ final class QuizService {
 	/**
 	 * Grade and close an attempt.
 	 *
-	 * @param int                $attempt_id Attempt id.
-	 * @param array<int, mixed>  $answers    Submitted answers keyed by question id.
+	 * @param int               $attempt_id Attempt id.
+	 * @param array<int, mixed> $answers    Submitted answers keyed by question id.
 	 *
 	 * @return array{attempt_id: int, points_earned: float, points_possible: float, percentage: float, passed: bool, needs_grading: bool}|WP_Error
 	 */
