@@ -127,6 +127,12 @@ final class Assets implements Bootable {
 		);
 
 		wp_set_script_translations( self::BUILDER_SCRIPT, 'odsi-lms', Plugin::path() . 'languages' );
+
+		$style = is_rtl() ? 'style-course-builder-rtl.css' : 'style-course-builder.css';
+
+		if ( is_readable( Plugin::path() . 'assets/build/' . $style ) ) {
+			wp_enqueue_style( self::BUILDER_SCRIPT, Plugin::url() . 'assets/build/' . $style, array( 'wp-components' ), $asset['version'] ?? VERSION );
+		}
 	}
 
 	/**

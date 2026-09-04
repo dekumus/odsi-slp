@@ -124,6 +124,24 @@ against the block theme on purpose.
 seed data that is deliberately not writable over the public API (quiz answer
 keys). It must never be defined on a real site.
 
+## Building the editor bundle
+
+The LMS course builder is React source in
+`plugins/odsi-lms/assets/src/course-builder/`, compiled by
+`@wordpress/scripts` (`webpack.config.js` at the root) into
+`plugins/odsi-lms/assets/build/`. The build output is committed so the
+plugin works from a plain checkout; rebuild and commit it whenever the
+source changes:
+
+```sh
+npm run build          # one-off
+npm run start          # watch mode while editing
+```
+
+CI rebuilds the bundle before the E2E job, so a stale committed bundle
+does not hide a broken build, but it does not verify the committed file
+matches the source. Rebuild before you commit.
+
 ## Static analysis
 
 - `npm run lint:js` runs ESLint with the WordPress `esnext` and `jsdoc`

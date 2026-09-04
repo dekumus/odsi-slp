@@ -1,0 +1,5 @@
+node_modules/
+vendor/
+plugins/*/assets/build/
+playwright-report/
+test-results/

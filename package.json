@@ -23,8 +23,8 @@
 		"test:e2e": "playwright test -c tests/e2e/playwright.config.js",
 		"test:e2e:local": "ODSI_E2E_BASE_URL=http://127.0.0.1:8080 playwright test -c tests/e2e/playwright.config.js",
 		"serve:local": "bash bin/serve-local.sh",
-		"build": "wp-scripts build --webpack-src-dir=plugins/odsi-lms/assets/src --output-path=plugins/odsi-lms/assets/build",
-		"start": "wp-scripts start --webpack-src-dir=plugins/odsi-lms/assets/src --output-path=plugins/odsi-lms/assets/build",
+		"build": "wp-scripts build",
+		"start": "wp-scripts start",
 		"i18n": "for p in odsi-lms odsi-social odsi-bridge; do wp i18n make-pot plugins/$p plugins/$p/languages/$p.pot --domain=$p --exclude=vendor,node_modules,assets/build; done"
 	},
 	"devDependencies": {

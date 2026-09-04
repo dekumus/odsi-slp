@@ -19,13 +19,42 @@
 	"overrides": [
 		{
 			"files": [
-				"tests/e2e/**/*.js"
+				"tests/e2e/**/*.js",
+				"webpack.config.js"
 			],
 			"env": {
 				"node": true
 			},
 			"parserOptions": {
 				"sourceType": "module"
+			}
+		},
+		{
+			"files": [
+				"plugins/*/assets/src/**/*.js"
+			],
+			"extends": [
+				"plugin:@wordpress/eslint-plugin/esnext",
+				"plugin:@wordpress/eslint-plugin/jsdoc",
+				"plugin:@wordpress/eslint-plugin/react"
+			],
+			"parserOptions": {
+				"sourceType": "module",
+				"ecmaFeatures": {
+					"jsx": true
+				}
+			},
+			"env": {
+				"browser": true,
+				"es2022": true
+			},
+			"settings": {
+				"react": {
+					"version": "18"
+				}
+			},
+			"globals": {
+				"React": "readonly"
 			}
 		}
 	],

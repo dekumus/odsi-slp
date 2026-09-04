@@ -60,6 +60,7 @@ final class RestServiceProvider implements Bootable {
 				$this->container->get( QuizService::class ),
 				$this->container->get( Access::class )
 			),
+			new BuilderController( $this->container->get( Structure::class ) ),
 		);
 
 		/**

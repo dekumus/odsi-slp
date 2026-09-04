@@ -7,7 +7,7 @@ when you change what it describes.
 
 | Plugin | State |
 | --- | --- |
-| `odsi-lms` | Engine, reports, grading, certificates, cohorts and quiz player proven by 30 unit and 87 integration tests, plus the learner flow end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
+| `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 89 integration tests, plus the learner flow and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens. 114 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 8 integration tests. |
 
@@ -179,12 +179,19 @@ stores `_odsi_lesson_id` and inherits `_odsi_course_id` from it. Ordering is
 - REST `odsi-lms/v1`: `GET /courses/<id>/outline` (with `resume`),
   `POST /courses/<id>/enroll`, `GET /me/courses`, `POST /steps/<id>/complete`,
   `GET /quizzes/<id>/questions`, `POST /quizzes/<id>/attempts`,
-  `POST /attempts/<id>/submit`. A test-only
+  `POST /attempts/<id>/submit`. Builder routes for course editors:
+  `GET|POST /courses/<id>/builder`, `POST /courses/<id>/builder/reorder`,
+  `DELETE /courses/<id>/builder/<node>` (detaches, never deletes). A test-only
   `POST /e2e/questions/<id>/answers` exists when `ODSI_E2E` is defined.
 - Admin: "Learning" menu whose dashboard is the enrollment report
   (`WP_List_Table`, enroll / remove / reset actions), a grading queue for
   essays, classic relationship meta boxes on every child post type, cohort
-  course and member boxes.
+  course and member boxes, and the course builder: a block-editor sidebar
+  panel on `odsi_course` (`assets/src/course-builder`, compiled to
+  `assets/build`, which is committed so a checkout works without Node) that
+  shows the outline with drafts, adds lessons, topics and quizzes, moves
+  them up and down, and detaches them. It only ever writes the same
+  relationship meta and `menu_order` the meta boxes write.
 - Front end: content-injected course UI on any theme; classic-theme templates
   for course, lesson, quiz and archive; shortcodes `odsi_course_outline`,
   `odsi_course_progress`, `odsi_enroll_button`, `odsi_my_courses`,
@@ -214,9 +221,10 @@ Numbering is kept from the original list. Struck-through items are closed.
 3. ~~Certificates.~~ Closed: issued, rendered, verified, revocable. No PDF;
    the page is print-styled.
 4. **Submissions**: the table exists; no upload, grading UI or service.
-5. **The React course builder is not written.** The classic meta boxes are the
-   editing UI; `Support\Assets` still looks for a compiled bundle. Root
-   `package.json` carries `@wordpress/scripts` but no source.
+5. ~~The React course builder is not written.~~ Closed: editor sidebar panel
+   backed by `Rest\BuilderController`, covered by `BuilderTest` and the
+   `lms-course-builder` E2E flow. Drag and drop is not implemented; ordering
+   is by move buttons.
 6. **No blocks.** Shortcodes and content injection only.
 7. ~~The quiz player is a mount point.~~ Closed; proven by the E2E flow.
 8. ~~Manual grading has no interface.~~ Closed: the Grading screen.
@@ -248,7 +256,9 @@ Numbering is kept from the original list. Struck-through items are closed.
 | `LMS-QZ-*` | integration `QuizTest` | 15 |
 | `LMS-IF` REST, `LMS-ACC-007` | integration `RestTest` | 9 |
 | `LMS-ADM-*`, `LMS-ENR-007/012`, certificates, cache | integration `HardeningTest` | 8 |
+| Builder routes: tree, add, reorder, detach, ownership | integration `BuilderTest` | 2 |
 | Learner flow in a browser | e2e `lms-learner-flow` | 1, passing |
+| Course builder in the editor | e2e `lms-course-builder` | 1, passing |
 | Member flow in a browser | e2e `social-member-flow` | 1, passing |
 | Social schema, ADR-005 scan | integration `social/SchemaTest` | 20 |
 | Privacy decision table, both representations | integration `social/PrivacyTest` | 42 |

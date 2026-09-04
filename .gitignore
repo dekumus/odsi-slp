@@ -5,8 +5,9 @@
 **/node_modules/
 
 # Build output
-**/assets/build/
 **/build/
+# Compiled editor bundles are committed so the plugins work from a checkout.
+!plugins/*/assets/build/
 *.zip
 
 # Tooling caches
