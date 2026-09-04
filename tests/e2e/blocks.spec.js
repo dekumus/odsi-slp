@@ -3,7 +3,7 @@
  * and the editor shows live server-rendered previews of the same blocks.
  */
 const { test, expect } = require( '@playwright/test' );
-const { ADMIN_USER, ADMIN_PASS, login, logout, createPost } = require( './helpers' );
+const { ADMIN_USER, ADMIN_PASS, login, logout, openEditor, createPost } = require( './helpers' );
 
 test.describe( 'Blocks', () => {
 	const stamp = Date.now();
@@ -42,8 +42,8 @@ test.describe( 'Blocks', () => {
 		await expect( lmsStyle ).toHaveCount( 1 );
 
 		await login( page, ADMIN_USER, ADMIN_PASS );
-		await page.goto( `/wp-admin/post.php?post=${ ids.page }&action=edit` );
-		await page.waitForFunction( () => window.wp && window.wp.data && window.wp.data.select( 'core/block-editor' ).getBlocks().length > 0 );
+		await openEditor( page, ids.page );
+		await page.waitForFunction( () => window.wp.data.select( 'core/block-editor' ).getBlocks().length > 0 );
 
 		const editorGrid = page.frameLocator( 'iframe[name="editor-canvas"]' ).locator( '.wp-block-odsi-lms-course-grid .odsi-lms-grid' );
 		const inlineGrid = page.locator( '.wp-block-odsi-lms-course-grid .odsi-lms-grid' );

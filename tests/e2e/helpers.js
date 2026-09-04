@@ -41,6 +41,37 @@ async function logout( page ) {
 }
 
 /**
+ * Open a post in the block editor with the welcome guide out of the way.
+ *
+ * A fresh site shows the "Welcome to the editor" dialog on first open, which
+ * marks the whole editor aria-hidden, so role-based locators find nothing
+ * behind it. The dismissal is stored as a user preference, so it is only
+ * needed once per user but is idempotent.
+ *
+ * @param {import('@playwright/test').Page} page   Logged-in page.
+ * @param {number}                          postId Post to edit.
+ */
+async function openEditor( page, postId ) {
+	await page.goto( `/wp-admin/post.php?post=${ postId }&action=edit` );
+	await page.waitForFunction( () => window.wp && window.wp.data && window.wp.data.select( 'core/editor' ).getCurrentPostId() );
+	await page.evaluate( () => {
+		const prefs = window.wp.data.dispatch( 'core/preferences' );
+		if ( prefs && prefs.set ) {
+			prefs.set( 'core/edit-post', 'welcomeGuide', false );
+			prefs.set( 'core/edit-post', 'welcomeGuideTemplate', false );
+			prefs.set( 'core', 'welcomeGuide', false );
+		}
+	} );
+
+	const guide = page.getByRole( 'dialog', { name: /welcome/i } );
+
+	if ( await guide.isVisible().catch( () => false ) ) {
+		await guide.getByRole( 'button', { name: /close/i } ).first().click();
+		await expect( guide ).toBeHidden();
+	}
+}
+
+/**
  * Call the WordPress REST API with a nonce obtained from an admin page.
  *
  * @param {import('@playwright/test').Page} page   Logged-in page.
@@ -139,4 +170,4 @@ async function createUser( page, username, password ) {
 	return json.id;
 }
 
-module.exports = { ADMIN_USER, ADMIN_PASS, login, logout, rest, socialRest, createPost, createUser };
+module.exports = { ADMIN_USER, ADMIN_PASS, login, logout, openEditor, rest, socialRest, createPost, createUser };

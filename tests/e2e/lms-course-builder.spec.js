@@ -3,7 +3,7 @@
  * sees its outline, adds a lesson, adds a topic under it, and reorders.
  */
 const { test, expect } = require( '@playwright/test' );
-const { ADMIN_USER, ADMIN_PASS, login, createPost } = require( './helpers' );
+const { ADMIN_USER, ADMIN_PASS, login, openEditor, createPost } = require( './helpers' );
 
 test.describe( 'Course builder', () => {
 	const stamp = Date.now();
@@ -19,11 +19,10 @@ test.describe( 'Course builder', () => {
 
 	test( 'shows the outline and edits it', async ( { page } ) => {
 		await login( page, ADMIN_USER, ADMIN_PASS );
-		await page.goto( `/wp-admin/post.php?post=${ ids.course }&action=edit` );
+		await openEditor( page, ids.course );
 
 		// The editor re-renders its sidebar while loading, which makes clicking a
 		// panel toggle flaky; open the panel through the editor's own store.
-		await page.waitForFunction( () => window.wp && window.wp.data && window.wp.data.select( 'core/editor' ).getCurrentPostId() );
 		await page.evaluate( () => {
 			const name = 'odsi-course-builder/odsi-course-builder';
 			const editor = window.wp.data.select( 'core/editor' );

@@ -132,17 +132,28 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Start WordPress with only ${{ matrix.plugin }}
+      - name: Start WordPress with ${{ matrix.plugin }} available
         run: |
+          # Mapped, not listed as a plugin, so wp-env does not activate it for us:
+          # activation is the thing under test.
           cat > .wp-env.override.json <<JSON
-          { "plugins": [ "./plugins/${{ matrix.plugin }}" ] }
+          { "plugins": [], "mappings": { "wp-content/plugins/${{ matrix.plugin }}": "./plugins/${{ matrix.plugin }}" } }
           JSON
           npx wp-env start
-      - name: Assert clean activation with WP_DEBUG
+      - name: Activate and assert a clean boot with WP_DEBUG
         run: |
-          set -euo pipefail
-          # The bridge needs both other plugins; alone it must deactivate itself with a notice, not fatal.
-          npx wp-env run tests-cli wp plugin list --format=csv
+          set -uo pipefail
+          status=0
+          npx wp-env run tests-cli wp plugin activate ${{ matrix.plugin }} 2>&1 | tee /tmp/activate.log || status=$?
+          if [ "${{ matrix.plugin }}" = "odsi-bridge" ]; then
+            # The bridge declares Requires Plugins; alone, WordPress must refuse it with a reason, never fatal.
+            if [ "$status" -eq 0 ]; then echo "bridge activated without its dependencies"; exit 1; fi
+            grep -qi "requires" /tmp/activate.log || { echo "no dependency message"; exit 1; }
+            npx wp-env run tests-cli wp plugin list --format=csv | grep -q "^odsi-bridge,inactive" || { echo "bridge is not inactive"; exit 1; }
+          else
+            if [ "$status" -ne 0 ]; then echo "activation failed"; exit 1; fi
+            npx wp-env run tests-cli wp plugin list --format=csv | grep -q "^${{ matrix.plugin }},active" || { echo "plugin is not active"; exit 1; }
+          fi
           npx wp-env run tests-cli wp eval 'echo "boot ok\n";' 2>&1 | tee /tmp/boot.log
           if grep -qiE "notice|warning|deprecated|fatal" /tmp/boot.log; then
             echo "PHP notices emitted during boot"; exit 1
