@@ -539,6 +539,7 @@ text nodes only, never inside a tag.
 | `GET /activity/{id}/reactions` | any | Who reacted, newest first (`SOC-ACT-037`). 404 when not visible. |
 | `GET /groups`, `GET /groups/{id}` | any | `SOC-GRP-004/005`. Hidden → 404 for non-members who are not invited. |
 | `GET /groups/mine` | logged in | `SOC-GRP-010`: `active`, `pending`, `invited`. |
+| `GET /groups/{id}/members` | any | Active members, organisers first. 404 when the group is not visible; 403 when its content is not. |
 | `POST /groups` | logged in | Create. `SOC-GRP-002`. |
 | `PATCH /groups/{id}` | organiser | Settings. |
 | `POST /groups/{id}/membership` | logged in | accept an invitation, else join / request per visibility. |
@@ -547,7 +548,7 @@ text nodes only, never inside a tag.
 | `GET /connections`, `POST /connections/{user}`, `DELETE /connections/{user}`, `POST /connections/{user}/accept` | logged in | State machine § 2. |
 | `PUT /follows/{user}`, `DELETE /follows/{user}` | logged in | `SOC-CON-002`. |
 | `GET /notifications`, `POST /notifications/read`, `POST /notifications/{id}/read` | logged in | Own notifications only. |
-| `GET /messages`, `GET /messages/{thread}`, `POST /messages/{user}`, `DELETE /messages/{thread}` | logged in | § 6. Threads not involving the caller → 404. |
+| `GET /messages`, `GET /messages/{thread}`, `POST /messages/to/{user}`, `POST /messages/{thread}`, `DELETE /messages/{thread}` | logged in | § 6. Inbox; read a thread; start a thread with a member; reply in a thread; leave a thread. Threads not involving the caller → 404. |
 
 "404 when not visible" is deliberate throughout: existence of hidden content is
 not disclosed by a 403.
