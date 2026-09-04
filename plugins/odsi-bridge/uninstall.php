@@ -1,7 +1,7 @@
 <?php
 /**
- * Uninstall: remove the link table and settings. Nothing in either other
- * plugin is touched.
+ * Uninstall: remove the link table and settings, only when the site owner
+ * opted in. Nothing in either other plugin is touched.
  *
  * @package ODSI\Bridge
  */
@@ -25,6 +25,12 @@ spl_autoload_register(
 		}
 	}
 );
+
+$odsi_bridge_settings = (array) get_option( \ODSI\Bridge\Support\Settings::OPTION, array() );
+
+if ( empty( $odsi_bridge_settings['reset_data_on_uninstall'] ) ) {
+	return;
+}
 
 \ODSI\Bridge\Database\Migrator::drop();
 delete_option( \ODSI\Bridge\Support\Settings::OPTION );

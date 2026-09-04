@@ -59,6 +59,32 @@ final class Uploads {
 	}
 
 	/**
+	 * Whether a member may use an attachment as their image: they uploaded
+	 * it, or they can edit it (SOC-MEM-004a).
+	 *
+	 * @param int $attachment_id Attachment.
+	 * @param int $user_id       Member.
+	 */
+	public static function owned_by( int $attachment_id, int $user_id ): bool {
+		if ( $attachment_id <= 0 || $user_id <= 0 || 'attachment' !== get_post_type( $attachment_id ) || ! wp_attachment_is_image( $attachment_id ) ) {
+			return false;
+		}
+
+		return (int) get_post_field( 'post_author', $attachment_id ) === $user_id || user_can( $user_id, 'edit_post', $attachment_id );
+	}
+
+	/**
+	 * Delete an image this plugin stored once it is no longer referenced.
+	 *
+	 * @param int $attachment_id Attachment, or 0.
+	 */
+	public static function reclaim( int $attachment_id ): void {
+		if ( $attachment_id > 0 && '' !== (string) get_post_meta( $attachment_id, '_odsi_social_image', true ) ) {
+			wp_delete_attachment( $attachment_id, true );
+		}
+	}
+
+	/**
 	 * Store an uploaded image.
 	 *
 	 * @param int                  $owner_id Member who owns the file.
@@ -75,6 +101,43 @@ final class Uploads {
 
 		if ( (int) ( $file['error'] ?? UPLOAD_ERR_OK ) !== UPLOAD_ERR_OK ) {
 			return new WP_Error( 'odsi_social_upload_failed', __( 'The upload did not complete.', 'odsi-social' ), array( 'status' => 400 ) );
+		}
+
+		/**
+		 * Filters the maximum image upload size in bytes.
+		 *
+		 * @param int $bytes Bytes; 5 MB by default, never above the site limit.
+		 */
+		$max_bytes = min( (int) apply_filters( 'odsi_social_image_max_bytes', 5 * MB_IN_BYTES ), wp_max_upload_size() );
+
+		if ( (int) ( $file['size'] ?? 0 ) > $max_bytes ) {
+			return new WP_Error(
+				'odsi_social_upload_too_large',
+				/* translators: %s: size. */
+				sprintf( __( 'Images must be smaller than %s.', 'odsi-social' ), size_format( $max_bytes ) ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Check the real type from the file's bytes before touching it as an
+		// image, then read only the header: a tiny file can declare enormous
+		// dimensions and exhaust memory in the image editor.
+		$check = wp_check_filetype_and_ext( (string) $file['tmp_name'], (string) $file['name'], $this->allowed_mimes() );
+
+		if ( empty( $check['type'] ) || ! str_starts_with( (string) $check['type'], 'image/' ) ) {
+			return new WP_Error( 'odsi_social_upload_failed', __( 'Sorry, this file type is not permitted for security reasons.', 'odsi-social' ), array( 'status' => 400 ) );
+		}
+
+		$declared = wp_getimagesize( (string) $file['tmp_name'] );
+
+		if ( ! is_array( $declared ) || (int) $declared[0] > 8192 || (int) $declared[1] > 8192 ) {
+			return new WP_Error( 'odsi_social_not_an_image', __( 'That file is not an image we can use.', 'odsi-social' ), array( 'status' => 400 ) );
+		}
+
+		$limited = \ODSI\Social\Support\RateLimiter::check( 'image_upload', $owner_id );
+
+		if ( $limited instanceof WP_Error ) {
+			return $limited;
 		}
 
 		require_once ABSPATH . 'wp-admin/includes/file.php';

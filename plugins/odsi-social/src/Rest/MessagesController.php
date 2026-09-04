@@ -156,6 +156,12 @@ final class MessagesController {
 	 * @param WP_REST_Request $request Request.
 	 */
 	public function send( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$limited = \ODSI\Social\Support\RateLimiter::check( 'message_send', get_current_user_id() );
+
+		if ( $limited instanceof WP_Error ) {
+			return $limited;
+		}
+
 		$result = $this->messages->send( get_current_user_id(), (int) $request['user'], (string) $request['content'] );
 
 		return RestServiceProvider::respond(

@@ -89,13 +89,20 @@ final class GroupLinkage implements Bootable {
 			return false;
 		}
 
-		$learners = $this->enrollment()->repository()->for_course( $course_id, 200 );
+		$offset = 0;
 
-		foreach ( $learners as $row ) {
-			if ( in_array( (string) $row->status, array( 'active', 'completed' ), true ) ) {
-				$this->membership()->add( $group_id, (int) $row->user_id, 'course_enrollment' );
+		do {
+			$learners = $this->enrollment()->repository()->for_course( $course_id, 200, $offset );
+
+			foreach ( $learners as $row ) {
+				if ( in_array( (string) $row->status, array( 'active', 'completed' ), true ) ) {
+					$this->membership()->add( $group_id, (int) $row->user_id, 'course_enrollment' );
+				}
 			}
-		}
+
+			$offset += 200;
+			$page    = count( $learners );
+		} while ( 200 === $page );
 
 		/**
 		 * Fires after a course and a group are linked.
@@ -180,6 +187,12 @@ final class GroupLinkage implements Bootable {
 	 * Meta box on the course edit screen.
 	 */
 	public function register_meta_box(): void {
+		// Linking is an admin decision (the save path requires manage_odsi_lms),
+		// and the picker lists hidden groups, so only admins get to see it.
+		if ( ! current_user_can( \ODSI\LMS\Support\Capabilities::MANAGE ) ) {
+			return;
+		}
+
 		add_meta_box( 'odsi-bridge-group', __( 'Community group', 'odsi-bridge' ), array( $this, 'render_meta_box' ), PostTypes::COURSE, 'side' );
 	}
 
@@ -203,6 +216,7 @@ final class GroupLinkage implements Bootable {
 		);
 
 		echo '<p>' . esc_html__( 'Members of the linked group see each other\'s progress; enrolling adds learners to it.', 'odsi-bridge' ) . '</p>';
+		echo '<p class="description">' . esc_html__( 'Anyone who can enroll on this course joins the group, so a private or hidden group linked to an open or free course is effectively open.', 'odsi-bridge' ) . '</p>';
 		echo '<select name="odsi_bridge_group" class="widefat"><option value="0">' . esc_html__( '— No group —', 'odsi-bridge' ) . '</option>';
 
 		foreach ( $groups as $group ) {

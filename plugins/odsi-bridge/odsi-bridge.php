@@ -132,11 +132,19 @@ function stand_down( array $errors ): void {
 	add_action(
 		'admin_init',
 		static function (): void {
+			// Only a real admin page load by someone who may manage plugins
+			// switches the bridge off; admin-ajax, admin-post and cron never do.
+			if ( wp_doing_ajax() || wp_doing_cron() || ! current_user_can( 'activate_plugins' ) ) {
+				return;
+			}
+
 			if ( ! function_exists( 'deactivate_plugins' ) ) {
 				require_once ABSPATH . 'wp-admin/includes/plugin.php';
 			}
 
-			deactivate_plugins( plugin_basename( __FILE__ ) );
+			$basename = plugin_basename( __FILE__ );
+
+			deactivate_plugins( $basename, false, is_multisite() && is_plugin_active_for_network( $basename ) );
 		}
 	);
 }

@@ -113,7 +113,7 @@ final class Assignments implements Bootable {
 			return new WP_Error( 'odsi_lms_submission_pending', __( 'Your previous submission is still waiting to be reviewed.', 'odsi-lms' ), array( 'status' => 400 ) );
 		}
 
-		$content       = trim( wp_kses_post( $content ) );
+		$content       = trim( wp_kses( $content, self::allowed_html() ) );
 		$attachment_id = 0;
 
 		if ( array() !== $file && ! empty( $file['name'] ) ) {
@@ -171,7 +171,7 @@ final class Assignments implements Bootable {
 
 		$points = min( max( 0.0, $points ), (float) $row->points_possible );
 
-		if ( ! $this->submissions->grade( $id, SubmissionRepository::STATUS_APPROVED, $points, trim( wp_kses_post( $feedback ) ), $grader ) ) {
+		if ( ! $this->submissions->grade( $id, SubmissionRepository::STATUS_APPROVED, $points, trim( wp_kses( $feedback, self::allowed_html() ) ), $grader ) ) {
 			return false;
 		}
 
@@ -195,7 +195,7 @@ final class Assignments implements Bootable {
 			return false;
 		}
 
-		if ( ! $this->submissions->grade( $id, SubmissionRepository::STATUS_REJECTED, 0.0, trim( wp_kses_post( $feedback ) ), $grader ) ) {
+		if ( ! $this->submissions->grade( $id, SubmissionRepository::STATUS_REJECTED, 0.0, trim( wp_kses( $feedback, self::allowed_html() ) ), $grader ) ) {
 			return false;
 		}
 
@@ -293,6 +293,23 @@ final class Assignments implements Bootable {
 	}
 
 	/**
+	 * HTML a learner may hand in: text formatting only. No images, which
+	 * would let a learner log who opens their work, and no links.
+	 *
+	 * @return array<string, array<string, bool>>
+	 */
+	public static function allowed_html(): array {
+		$tags = array_fill_keys( array( 'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'h2', 'h3', 'h4' ), array() );
+
+		/**
+		 * Filters the HTML allowed in assignment text and feedback.
+		 *
+		 * @param array<string, array<string, bool>> $tags Tags => attributes, as `wp_kses()` expects.
+		 */
+		return (array) apply_filters( 'odsi_lms_assignment_allowed_html', $tags );
+	}
+
+	/**
 	 * File extensions a submission may carry.
 	 *
 	 * @return array<string, string> Extension pattern => mime type, as `get_allowed_mime_types()`.
@@ -369,8 +386,11 @@ final class Assignments implements Bootable {
 		$uploaded = $handler(
 			$file,
 			array(
-				'test_form' => false,
-				'mimes'     => $this->allowed_mimes(),
+				'test_form'                => false,
+				'mimes'                    => $this->allowed_mimes(),
+				// Uploads live in the public uploads directory, so the name is
+				// the only thing between a file and anyone who can guess it.
+				'unique_filename_callback' => static fn ( string $dir, string $name, string $ext ): string => wp_generate_password( 24, false ) . $ext,
 			)
 		);
 

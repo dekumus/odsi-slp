@@ -201,6 +201,12 @@ final class ActivityController {
 	 * @param WP_REST_Request $request Request.
 	 */
 	public function post( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$limited = \ODSI\Social\Support\RateLimiter::check( 'activity_post', get_current_user_id() );
+
+		if ( $limited instanceof WP_Error ) {
+			return $limited;
+		}
+
 		$item = $this->activity->post_update( get_current_user_id(), (string) $request['content'], (string) $request['privacy'], (int) $request['group_id'] );
 
 		if ( $item instanceof WP_Error ) {
@@ -274,6 +280,12 @@ final class ActivityController {
 	 * @param WP_REST_Request $request Request.
 	 */
 	public function comment( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$limited = \ODSI\Social\Support\RateLimiter::check( 'activity_comment', get_current_user_id() );
+
+		if ( $limited instanceof WP_Error ) {
+			return $limited;
+		}
+
 		$comment = $this->activity->comment( get_current_user_id(), (int) $request['id'], (string) $request['content'] );
 
 		if ( $comment instanceof WP_Error ) {

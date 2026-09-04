@@ -104,7 +104,10 @@ ODSI_CORE_DIR=/tmp/wordpress bin/serve-local.sh --install   # install once
 npm run test:e2e:local
 ```
 
-`bin/serve-local.sh` fetches wp-cli from the `wp-cli/builds` mirror on
+`bin/serve-local.sh` installs only into an empty directory or one it created
+earlier (it leaves a `.odsi-local-site` marker), verifies the wp-cli download
+against its published checksum, and its router refuses paths outside the site
+root. It fetches wp-cli from the `wp-cli/builds` mirror on
 GitHub (raw.githubusercontent.com), installs WordPress with the three plugins
 symlinked and activated, and sets pretty permalinks.
 

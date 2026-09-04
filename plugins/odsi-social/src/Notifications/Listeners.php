@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace ODSI\Social\Notifications;
 
 use ODSI\Social\Activity\Activity;
+use ODSI\Social\Activity\Privacy;
 use ODSI\Social\Contracts\Bootable;
 use ODSI\Social\Repositories\ActivityRepository;
 use ODSI\Social\Repositories\GroupMemberRepository as Members;
@@ -28,11 +29,13 @@ final class Listeners implements Bootable {
 	 * @param Notifications      $notifications Writer.
 	 * @param ActivityRepository $activity      Activity, for authors and commenters.
 	 * @param Members            $members       Group memberships, for organisers.
+	 * @param Privacy            $privacy       Visibility, so nobody hears about what they cannot see.
 	 */
 	public function __construct(
 		private Notifications $notifications,
 		private ActivityRepository $activity,
-		private Members $members
+		private Members $members,
+		private Privacy $privacy
 	) {
 	}
 
@@ -111,7 +114,7 @@ final class Listeners implements Bootable {
 		foreach ( $this->activity->comments( (int) $parent->id, 500 ) as $comment ) {
 			$commenter = (int) $comment->user_id;
 
-			if ( $commenter !== $actor && $commenter !== $author ) {
+			if ( $commenter !== $actor && $commenter !== $author && $this->privacy->can_view( $commenter, $parent ) ) {
 				$others[] = $commenter;
 			}
 		}

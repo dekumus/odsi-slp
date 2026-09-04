@@ -48,17 +48,19 @@ final class GroupPostType implements Bootable {
 
 		$args = array(
 			'labels'              => $labels,
-			'public'              => true,
-			'publicly_queryable'  => true,
+			// Groups are reached only through the community router, which
+			// applies the visibility rules (ADR-011). As a public post type
+			// WordPress would list hidden groups in core REST, sitemaps, feeds
+			// and ?odsi_social_group= queries.
+			'public'              => false,
+			'publicly_queryable'  => false,
 			'exclude_from_search' => true,
 			'show_ui'             => true,
 			'show_in_menu'        => 'odsi-social',
-			'show_in_rest'        => true,
+			'show_in_rest'        => false,
 			'has_archive'         => false,
-			'rewrite'             => array(
-				'slug'       => 'groups',
-				'with_front' => false,
-			),
+			'rewrite'             => false,
+			'query_var'           => false,
 			'map_meta_cap'        => true,
 			'capabilities'        => Capabilities::group_post_type_caps(),
 			'supports'            => array( 'title', 'editor', 'thumbnail', 'custom-fields' ),

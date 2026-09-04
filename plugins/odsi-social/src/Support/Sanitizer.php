@@ -46,22 +46,36 @@ final class Sanitizer {
 	public static function render( string $content ): string {
 		$html = wpautop( make_clickable( $content ) );
 
-		$html = (string) preg_replace_callback(
-			'/(?<![\w\/])@([A-Za-z0-9_\-\.]+)/u',
-			static function ( array $m ): string {
-				$user = get_user_by( 'slug', $m[1] );
+		// Rewrite mentions in text nodes only. Inside a tag an @nick would sit
+		// in an attribute value, and a link injected there breaks the markup.
+		$parts = preg_split( '/(<[^>]*>)/', $html, -1, PREG_SPLIT_DELIM_CAPTURE );
 
-				if ( ! $user ) {
-					return $m[0];
-				}
+		if ( false === $parts ) {
+			return $html;
+		}
 
-				$url = (string) apply_filters( 'odsi_social_member_url', '', (int) $user->ID );
+		foreach ( $parts as $i => $part ) {
+			if ( '' === $part || '<' === $part[0] ) {
+				continue;
+			}
 
-				return sprintf( '<a class="odsi-social-mention" href="%s">@%s</a>', esc_url( $url ), esc_html( $m[1] ) );
-			},
-			$html
-		);
+			$parts[ $i ] = (string) preg_replace_callback(
+				'/(?<![\w\/])@([A-Za-z0-9_\-\.]+)/u',
+				static function ( array $m ): string {
+					$user = get_user_by( 'slug', $m[1] );
 
-		return $html;
+					if ( ! $user ) {
+						return $m[0];
+					}
+
+					$url = (string) apply_filters( 'odsi_social_member_url', '', (int) $user->ID );
+
+					return sprintf( '<a class="odsi-social-mention" href="%s">@%s</a>', esc_url( $url ), esc_html( $m[1] ) );
+				},
+				$part
+			);
+		}//end foreach
+
+		return implode( '', $parts );
 	}
 }

@@ -237,6 +237,12 @@ final class GroupsController {
 	 * @param WP_REST_Request $request Request.
 	 */
 	public function create( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$limited = \ODSI\Social\Support\RateLimiter::check( 'group_create', get_current_user_id() );
+
+		if ( $limited instanceof WP_Error ) {
+			return $limited;
+		}
+
 		$result = $this->groups->create(
 			get_current_user_id(),
 			array(

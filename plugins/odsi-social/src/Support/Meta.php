@@ -38,7 +38,7 @@ final class Meta {
 				'single'            => true,
 				'type'              => 'string',
 				'default'           => 'public',
-				'show_in_rest'      => true,
+				'show_in_rest'      => false,
 				'sanitize_callback' => static fn ( $value ): string => in_array( $value, array( 'public', 'private', 'hidden' ), true ) ? (string) $value : 'public',
 				'auth_callback'     => static fn (): bool => current_user_can( Capabilities::MANAGE ),
 			)
@@ -51,7 +51,7 @@ final class Meta {
 				'single'        => true,
 				'type'          => 'integer',
 				'default'       => 0,
-				'show_in_rest'  => true,
+				'show_in_rest'  => false,
 				'auth_callback' => static fn (): bool => current_user_can( Capabilities::MANAGE ),
 			)
 		);

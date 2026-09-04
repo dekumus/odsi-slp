@@ -49,9 +49,10 @@ final class SettingsScreen implements Bootable {
 	 */
 	public function render(): void {
 		$modules = array(
-			'course_activity'     => __( 'Post course events (enrolled, completed, passed a quiz) to the activity feed', 'odsi-bridge' ),
-			'group_linkage'       => __( 'Link courses to groups and keep membership in step with enrollment', 'odsi-bridge' ),
-			'progress_visibility' => __( 'Let members of a linked group see each other\'s progress', 'odsi-bridge' ),
+			'course_activity'         => __( 'Post course events (enrolled, completed, passed a quiz) to the activity feed', 'odsi-bridge' ),
+			'group_linkage'           => __( 'Link courses to groups and keep membership in step with enrollment', 'odsi-bridge' ),
+			'progress_visibility'     => __( 'Let members of a linked group see each other\'s progress', 'odsi-bridge' ),
+			'reset_data_on_uninstall' => __( 'Delete course-to-group links when the plugin is uninstalled', 'odsi-bridge' ),
 		);
 
 		echo '<div class="wrap"><h1>' . esc_html__( 'Community bridge', 'odsi-bridge' ) . '</h1><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
@@ -85,9 +86,10 @@ final class SettingsScreen implements Bootable {
 
 		$this->settings->update(
 			array(
-				'course_activity'     => ! empty( $_POST['course_activity'] ),
-				'group_linkage'       => ! empty( $_POST['group_linkage'] ),
-				'progress_visibility' => ! empty( $_POST['progress_visibility'] ),
+				'course_activity'         => ! empty( $_POST['course_activity'] ),
+				'group_linkage'           => ! empty( $_POST['group_linkage'] ),
+				'progress_visibility'     => ! empty( $_POST['progress_visibility'] ),
+				'reset_data_on_uninstall' => ! empty( $_POST['reset_data_on_uninstall'] ),
 			)
 		);
 

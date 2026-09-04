@@ -129,7 +129,14 @@ final class SettingsScreen implements Bootable {
 			};
 		}
 
+		$slug_changed = (string) $this->settings->get( 'course_archive_slug' ) !== (string) $values['course_archive_slug'];
+
 		$this->settings->update( $values );
+
+		if ( $slug_changed ) {
+			// The archive rewrite is registered from this setting at init.
+			update_option( 'odsi_lms_flush_rewrites', '1' );
+		}
 
 		wp_safe_redirect(
 			add_query_arg(

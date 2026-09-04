@@ -31,16 +31,33 @@ mkdir -p "$ROOT/.cache"
 if [ ! -f "$WP_CLI" ]; then
 	echo "Fetching wp-cli"
 	curl -sSL -o "$WP_CLI" https://github.com/wp-cli/wp-cli/releases/latest/download/wp-cli.phar
+	curl -sSL -o "$WP_CLI.sha512" https://github.com/wp-cli/wp-cli/releases/latest/download/wp-cli.phar.sha512
+	if ! echo "$(cat "$WP_CLI.sha512")  $WP_CLI" | sha512sum -c --quiet -; then
+		echo "wp-cli.phar checksum mismatch; refusing to run it." >&2
+		rm -f "$WP_CLI" "$WP_CLI.sha512"
+		exit 1
+	fi
 fi
 wp() { php "$WP_CLI" --path="$SITE_DIR" --allow-root "$@"; }
 
-if [ ! -f "$SITE_DIR/wp-config.php" ]; then
+MARKER="$SITE_DIR/.odsi-local-site"
+
+# Install only into an empty directory or one this script created earlier.
+# A real site (anything else) is never overwritten.
+if [ ! -f "$MARKER" ]; then
+	if [ -e "$SITE_DIR" ] && [ -n "$(ls -A "$SITE_DIR" 2>/dev/null)" ]; then
+		echo "$SITE_DIR exists and was not created by this script; refusing to overwrite it." >&2
+		echo "Point ODSI_SITE_DIR at an empty directory." >&2
+		exit 1
+	fi
+
 	echo "Installing site into $SITE_DIR"
 	mkdir -p "$SITE_DIR"
 	cp -r "$CORE_DIR"/. "$SITE_DIR"/
 	rm -rf "$SITE_DIR/.git"
+	touch "$MARKER"
 
-	mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" -e "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\`;"
+	MYSQL_PWD="$DB_PASS" mysql -h "$DB_HOST" -u "$DB_USER" -e "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\`;"
 
 	wp config create --dbname="$DB_NAME" --dbuser="$DB_USER" --dbpass="$DB_PASS" --dbhost="$DB_HOST" \
 		--extra-php <<'PHP'

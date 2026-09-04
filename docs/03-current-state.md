@@ -281,6 +281,38 @@ Numbering is kept from the original list. Struck-through items are closed.
 18. ~~The enrollment report loads percentages per row~~ Closed:
     `Progress::course_percentages()` is one GROUP BY query per page.
 
+## Security review (this branch)
+
+Three adversarial reviews (one per plugin plus tooling) were run and every
+confirmed finding fixed with a regression test in `SecurityTest` for each
+plugin and `BridgeTest`:
+
+- LMS: locked step content leaked through core REST, feeds and search
+  excerpts; instructors could place nodes in another author's course through
+  the classic meta box; drafts could be completed, attempted and submitted to;
+  self-enrollment worked on unpublished courses; learner uploads were
+  browsable in the Media Library and media REST; assignment text allowed
+  images and links; CSV formula guard missed whitespace triggers; row actions
+  in the enrollment table were nested forms and never submitted.
+- Community: hidden groups were readable through core REST, sitemaps and
+  feeds (ADR-018); group descriptions ran shortcodes and dynamic blocks
+  (a self-referencing shortcode took the directory down); any attachment id
+  could be claimed as an avatar or cover; no rate limits (request/withdraw
+  loops emailed the target each time); mentions were rewritten inside
+  attribute values; REST content was not kses-filtered; profiles ignored the
+  private-directory setting; trashed groups stayed visible; commenters
+  removed from a group kept being notified.
+- Bridge and tooling: course events announced draft and private courses;
+  the course meta box listed hidden groups to instructors; uninstall
+  destroyed links without opt-in; self-deactivation ran on any admin_init;
+  link sync stopped at 200 learners; the local dev router served paths
+  outside its root; the serve script could overwrite a real site; CI ran
+  with a writable token.
+
+Not changed, by design: self-enrolling on a free or open course linked to a
+private or hidden group joins that group (documented on the meta box); open
+courses record an enrollment on first read (published courses only now).
+
 ## Test coverage map
 
 | Spec area | Suite | Tests |
@@ -298,6 +330,7 @@ Numbering is kept from the original list. Struck-through items are closed.
 | Builder routes: tree, add, reorder, detach, ownership | integration `BuilderTest` | 2 |
 | `LMS-ASN-*` service, uploads, REST, grading scope | integration `AssignmentsTest` | 9 |
 | `LMS-IF-004` block registration and rendering | integration `BlocksTest` | 3 |
+| `LMS-ACC-008`, `LMS-AUT-008`, `LMS-ASN-010` regressions | integration `SecurityTest` | 8 |
 | Learner flow in a browser | e2e `lms-learner-flow` | 1, passing |
 | Course builder in the editor | e2e `lms-course-builder` | 1, passing |
 | Assignment hand-in and approval in a browser | e2e `lms-assignment` | 1, passing |
@@ -316,7 +349,8 @@ Numbering is kept from the original list. Struck-through items are closed.
 | Social REST, ADR-011 | integration `social/RestTest` | 6 |
 | Uploads, profile and group forms, image REST routes | integration `social/SettingsFormsTest` | 5 |
 | `SOC-IF-004` blocks | integration `social/BlocksTest` | 2 |
-| Integration contract end to end | integration `bridge/BridgeTest` | 8 |
+| ADR-018, `SOC-ABUSE-*`, `SOC-MEM-004b`, `SOC-NOT-009` | integration `social/SecurityTest` | 9 |
+| Integration contract end to end, unpublished courses, full link sync | integration `bridge/BridgeTest` | 10 |
 
 ## Open questions
 

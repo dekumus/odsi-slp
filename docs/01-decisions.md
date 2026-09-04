@@ -360,3 +360,23 @@ theme overrides simple: a theme that wants a different layout filters
 wanting a sidebar outline do the composition themselves. Content filters run on
 every render, so the decorator must stay cheap; it reuses the per-request
 outline cache.
+
+## ADR-018: The group post type is private data, reached only through the router
+
+**Status:** accepted
+
+**Context.** Groups are stored as posts so authors get the editor and the
+media picker. Registered as a public post type, WordPress also exposed them
+through the core REST API, sitemaps, feeds and `?odsi_social_group=` queries,
+which bypassed every visibility rule and listed hidden groups to visitors.
+
+**Decision.** `odsi_social_group` is registered with `public`,
+`publicly_queryable`, `show_in_rest`, `rewrite` and `query_var` all off. The
+only way to read a group is the community router and the plugin's own REST
+namespace, both of which apply `Groups::can_view()`. Group meta is not exposed
+over REST. The admin edit screen uses the classic editor.
+
+**Consequences.** Themes cannot template groups as ordinary singulars; they
+override `templates/groups/*` instead. Attachments parented to a group inherit
+its non-public status.
+

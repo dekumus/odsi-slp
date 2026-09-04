@@ -249,7 +249,7 @@ final class EnrollmentReport {
 	 * @param string $value Cell.
 	 */
 	private static function csv_safe( string $value ): string {
-		return '' !== $value && str_contains( '=+-@', $value[0] ) ? "'" . $value : $value;
+		return '' !== $value && str_contains( "=+-@\t\r\n", $value[0] ) ? "'" . $value : $value;
 	}
 
 	/**

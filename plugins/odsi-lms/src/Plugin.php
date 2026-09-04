@@ -41,6 +41,7 @@ use ODSI\LMS\Repositories\EnrollmentRepository;
 use ODSI\LMS\Repositories\ProgressRepository;
 use ODSI\LMS\Repositories\QuizAttemptRepository;
 use ODSI\LMS\Repositories\SubmissionRepository;
+use ODSI\LMS\Rest\CoreGuards;
 use ODSI\LMS\Rest\RestServiceProvider;
 use ODSI\LMS\Support\ObjectCache;
 use ODSI\LMS\Support\Assets;
@@ -216,6 +217,7 @@ final class Plugin {
 		$c->set( AdminMenu::class, static fn ( Container $c ): object => new AdminMenu( $c->get( ReportsScreen::class ), $c->get( GradingScreen::class ), $c->get( SettingsScreen::class ) ) );
 		$c->set( CourseBuilder::class, static fn ( Container $c ): object => new CourseBuilder( $c->get( Structure::class ) ) );
 		$c->set( RestServiceProvider::class, static fn ( Container $c ): object => new RestServiceProvider( $c ) );
+		$c->set( CoreGuards::class, static fn ( Container $c ): object => new CoreGuards( $c->get( Access::class ) ) );
 
 		/**
 		 * Fires after the plugin's own services are registered.
@@ -252,6 +254,7 @@ final class Plugin {
 			Blocks::class,
 			ContentDecorator::class,
 			RestServiceProvider::class,
+			CoreGuards::class,
 		);
 
 		if ( is_admin() ) {

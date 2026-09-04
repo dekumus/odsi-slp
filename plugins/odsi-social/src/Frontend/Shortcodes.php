@@ -174,6 +174,10 @@ final class Shortcodes implements Bootable {
 	 * @param int    $viewer   Viewer.
 	 */
 	private function render_profile( string $nicename, int $viewer ): string {
+		if ( ! $this->container->get( Directory::class )->can_view( $viewer ) ) {
+			return $this->templates()->render( 'parts/login-required' );
+		}
+
 		$user = get_user_by( 'slug', $nicename );
 
 		if ( ! $user ) {

@@ -135,6 +135,12 @@ final class Membership {
 			return $this->forbidden();
 		}
 
+		$limited = \ODSI\Social\Support\RateLimiter::check( 'group_invite', $actor_id );
+
+		if ( $limited instanceof WP_Error ) {
+			return $limited;
+		}
+
 		if ( $user_id <= 0 || $user_id === $actor_id || ! get_userdata( $user_id ) ) {
 			return new WP_Error( 'odsi_social_invalid_target', __( 'That member cannot be invited.', 'odsi-social' ) );
 		}

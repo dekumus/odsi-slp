@@ -126,6 +126,12 @@ final class ConnectionsController {
 	 * @param WP_REST_Request $request Request.
 	 */
 	public function request( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$limited = \ODSI\Social\Support\RateLimiter::check( 'connection_request', get_current_user_id() );
+
+		if ( $limited instanceof WP_Error ) {
+			return $limited;
+		}
+
 		return $this->status_response( $this->connections->request( get_current_user_id(), (int) $request['user'] ), (int) $request['user'], 201 );
 	}
 

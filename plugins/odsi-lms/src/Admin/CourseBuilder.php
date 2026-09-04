@@ -138,7 +138,15 @@ final class CourseBuilder implements Bootable {
 				continue;
 			}
 
-			update_post_meta( $post_id, $key, absint( wp_unslash( $_POST[ $key ] ) ) );
+			$target = absint( wp_unslash( $_POST[ $key ] ) );
+
+			// Placing a node inside someone else's course would let an
+			// instructor rewrite that course's outline (LMS-AUT-008).
+			if ( $target > 0 && ! current_user_can( 'edit_post', $target ) ) {
+				continue;
+			}
+
+			update_post_meta( $post_id, $key, $target );
 		}
 
 		// A topic or quiz always inherits its course from the lesson it sits under,
@@ -161,19 +169,24 @@ final class CourseBuilder implements Bootable {
 	 * @param int    $selected  Currently selected post id.
 	 */
 	private function render_select( string $name, string $label, string $post_type, int $selected ): void {
-		$query = new WP_Query(
-			array(
-				'post_type'              => $post_type,
-				'post_status'            => array( 'publish', 'draft', 'private' ),
-				// phpcs:ignore WordPress.WP.PostsPerPage.posts_per_page_posts_per_page -- bounded internal outline query, not a listing.
-				'posts_per_page'         => 200,
-				'orderby'                => 'title',
-				'order'                  => 'ASC',
-				'fields'                 => 'ids',
-				'no_found_rows'          => true,
-				'update_post_term_cache' => false,
-			)
+		$args = array(
+			'post_type'              => $post_type,
+			'post_status'            => array( 'publish', 'draft', 'private' ),
+			// phpcs:ignore WordPress.WP.PostsPerPage.posts_per_page_posts_per_page -- bounded internal outline query, not a listing.
+			'posts_per_page'         => 200,
+			'orderby'                => 'title',
+			'order'                  => 'ASC',
+			'fields'                 => 'ids',
+			'no_found_rows'          => true,
+			'update_post_term_cache' => false,
 		);
+
+		// Instructors place nodes only inside their own courses.
+		if ( ! current_user_can( Capabilities::MANAGE ) ) {
+			$args['author'] = get_current_user_id();
+		}
+
+		$query = new WP_Query( $args );
 
 		printf( '<p><label for="%1$s"><strong>%2$s</strong></label><br />', esc_attr( $name ), esc_html( $label ) );
 		printf( '<select id="%1$s" name="%1$s" class="widefat">', esc_attr( $name ) );

@@ -155,6 +155,12 @@ final class MembersTest extends TestCase {
 	public function test_mem_003_uploaded_avatar_replaces_gravatar(): void {
 		$u = $this->social->member();
 		$attachment = self::factory()->attachment->create_upload_object( DIR_TESTDATA . '/images/canola.jpg' );
+		wp_update_post(
+			array(
+				'ID'          => $attachment,
+				'post_author' => $u,
+			)
+		);
 
 		self::assertTrue( $this->profiles->set_avatar( $u, $attachment ) );
 		self::assertStringContainsString( 'canola', (string) get_avatar_url( $u ) );

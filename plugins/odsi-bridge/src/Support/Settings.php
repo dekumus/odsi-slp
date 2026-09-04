@@ -25,9 +25,10 @@ final class Settings {
 	 */
 	public static function defaults(): array {
 		return array(
-			'course_activity'     => true,
-			'group_linkage'       => true,
-			'progress_visibility' => true,
+			'course_activity'         => true,
+			'group_linkage'           => true,
+			'progress_visibility'     => true,
+			'reset_data_on_uninstall' => false,
 		);
 	}
 

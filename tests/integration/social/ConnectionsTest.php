@@ -75,6 +75,10 @@ final class ConnectionsTest extends TestCase {
 			3
 		);
 
+		// The state machine allows a new request after a withdrawal; the abuse
+		// cooldown that normally spaces them out is covered by SecurityTest.
+		add_filter( 'odsi_social_connection_cooldown', '__return_zero' );
+
 		$this->connections->request( $a, $b );
 		self::assertTrue( $this->connections->remove( $a, $b ) );
 		self::assertSame( '', $this->connections->status( $a, $b ) );

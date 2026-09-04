@@ -233,6 +233,15 @@ complete, start or submit against a node the user cannot open is rejected with
 filter the final decision. A filter may grant or deny. Filters run after the
 built-in rule, receive its result, and receive the ids needed to decide.
 
+
+**LMS-ACC-008** The lock applies wherever WordPress renders a step, not only
+on its page: `the_content` and excerpts in query loops, feeds, search and the
+core `wp/v2` endpoints all yield the locked notice (content marked
+`protected`) or nothing. Lessons, topics and quizzes are excluded from site
+search. Questions and cohorts are readable over core REST only by users who
+may edit them. Unpublished steps and courses are the author's: a learner
+cannot open, complete, attempt, submit to, or self-enroll on them.
+
 ---
 
 ## 5. Progress — `LMS-PRG`
@@ -448,7 +457,11 @@ Uploaded files stay in the media library, owned by the learner.
 **LMS-ASN-010** Uploads are checked against `odsi_lms_assignment_mime_types`
 (documents, images, archives, audio and video by default; never executable
 types) and `odsi_lms_assignment_max_bytes` (the site upload limit by default).
-A file that fails either check rejects the whole submission.
+A file that fails either check rejects the whole submission. Stored files get
+an unguessable name, are hidden from the Media Library and the core media
+REST endpoints for everyone but LMS managers and the learner who uploaded
+them, and submission text and feedback allow formatting only (no images,
+no links; `odsi_lms_assignment_allowed_html`).
 
 ---
 

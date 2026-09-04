@@ -136,8 +136,8 @@ final class Profiles implements Bootable {
 			'avatar'       => get_avatar_url( $user_id, array( 'size' => 192 ) ),
 			'cover'        => (int) $row->cover_id > 0 ? ( wp_get_attachment_image_url( (int) $row->cover_id, 'large' ) ?: '' ) : '',
 			'url'          => (string) apply_filters( 'odsi_social_member_url', '', $user_id ),
-			'last_active'  => (string) $row->last_active,
-			'registered'   => $user->user_registered,
+			'last_active'  => $viewer_id > 0 ? (string) $row->last_active : '',
+			'registered'   => $viewer_id > 0 ? $user->user_registered : '',
 			'counts'       => array(
 				'activity'    => (int) $row->activity_count,
 				'connections' => (int) $row->connection_count,
@@ -337,11 +337,22 @@ final class Profiles implements Bootable {
 	 * @param int    $attachment_id Attachment.
 	 */
 	private function set_image( int $user_id, string $column, int $attachment_id ): bool {
-		if ( $attachment_id > 0 && ! wp_attachment_is_image( $attachment_id ) ) {
+		if ( $attachment_id > 0 && ! Uploads::owned_by( $attachment_id, $user_id ) ) {
 			return false;
 		}
 
-		return $this->members->update( $user_id, array( $column => $attachment_id ) );
+		$row      = $this->members->ensure( $user_id );
+		$previous = (int) $row->{$column};
+
+		if ( ! $this->members->update( $user_id, array( $column => $attachment_id ) ) ) {
+			return false;
+		}
+
+		if ( $previous > 0 && $previous !== $attachment_id ) {
+			Uploads::reclaim( $previous );
+		}
+
+		return true;
 	}
 
 	/**

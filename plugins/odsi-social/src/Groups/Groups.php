@@ -11,6 +11,7 @@ namespace ODSI\Social\Groups;
 
 use ODSI\Social\Activity\Activity;
 use ODSI\Social\Contracts\Bootable;
+use ODSI\Social\Members\Uploads;
 use ODSI\Social\PostTypes\GroupPostType;
 use ODSI\Social\Repositories\ActivityRepository;
 use ODSI\Social\Repositories\GroupMemberRepository;
@@ -111,7 +112,7 @@ final class Groups implements Bootable {
 				'meta_input'   => array(
 					Meta::GROUP_VISIBILITY => $visibility,
 					Meta::GROUP_CREATOR_ID => $creator_id,
-					Meta::GROUP_COVER_ID   => (int) ( $args['cover_id'] ?? 0 ),
+					Meta::GROUP_COVER_ID   => Uploads::owned_by( (int) ( $args['cover_id'] ?? 0 ), $creator_id ) ? (int) $args['cover_id'] : 0,
 				),
 			),
 			true
@@ -121,7 +122,7 @@ final class Groups implements Bootable {
 			return $post_id;
 		}
 
-		if ( ! empty( $args['avatar_id'] ) ) {
+		if ( ! empty( $args['avatar_id'] ) && Uploads::owned_by( (int) $args['avatar_id'], $creator_id ) ) {
 			set_post_thumbnail( $post_id, (int) $args['avatar_id'] );
 		}
 
@@ -187,12 +188,24 @@ final class Groups implements Bootable {
 			}
 		}
 
-		if ( isset( $args['cover_id'] ) ) {
+		// An attachment id is accepted only when the actor may use that file;
+		// otherwise any member could publish the URL of any upload on the site.
+		if ( isset( $args['cover_id'] ) && ( 0 === (int) $args['cover_id'] || Uploads::owned_by( (int) $args['cover_id'], $actor_id ) ) ) {
+			$previous_cover = (int) get_post_meta( $group_id, Meta::GROUP_COVER_ID, true );
 			update_post_meta( $group_id, Meta::GROUP_COVER_ID, (int) $args['cover_id'] );
+
+			if ( $previous_cover !== (int) $args['cover_id'] ) {
+				Uploads::reclaim( $previous_cover );
+			}
 		}
 
-		if ( isset( $args['avatar_id'] ) ) {
+		if ( isset( $args['avatar_id'] ) && ( 0 === (int) $args['avatar_id'] || Uploads::owned_by( (int) $args['avatar_id'], $actor_id ) ) ) {
+			$previous_avatar = (int) get_post_thumbnail_id( $group_id );
 			(int) $args['avatar_id'] > 0 ? set_post_thumbnail( $group_id, (int) $args['avatar_id'] ) : delete_post_thumbnail( $group_id );
+
+			if ( $previous_avatar !== (int) $args['avatar_id'] ) {
+				Uploads::reclaim( $previous_avatar );
+			}
 		}
 
 		if ( count( $post ) > 1 ) {
@@ -330,7 +343,9 @@ final class Groups implements Bootable {
 			'id'           => $group_id,
 			'name'         => $post ? html_entity_decode( $post->post_title, ENT_QUOTES, 'UTF-8' ) : '',
 			'slug'         => $post ? $post->post_name : '',
-			'description'  => $post ? apply_filters( 'the_content', $post->post_content ) : '', // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core hook.
+			// Member-written text: formatted, never run through `the_content`,
+			// which would execute shortcodes and dynamic blocks for every viewer.
+			'description'  => $post ? wpautop( wp_kses_post( $post->post_content ) ) : '',
 			'visibility'   => $this->visibility( $group_id ),
 			'member_count' => $row ? (int) $row->member_count : 0,
 			'avatar'       => get_the_post_thumbnail_url( $group_id, 'thumbnail' ) ?: '',
@@ -353,7 +368,15 @@ final class Groups implements Bootable {
 	public function on_save( int $post_id, ?WP_Post $post = null ): void {
 		$post = $post ?? get_post( $post_id );
 
-		if ( ! $post || wp_is_post_revision( $post_id ) || 'publish' !== $post->post_status ) {
+		if ( ! $post || wp_is_post_revision( $post_id ) ) {
+			return;
+		}
+
+		// A trashed or unpublished group is gone from the community until it
+		// is back: without an index row Privacy denies every viewer.
+		if ( 'publish' !== $post->post_status ) {
+			$this->groups->delete( $post_id );
+
 			return;
 		}
 

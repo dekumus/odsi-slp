@@ -69,7 +69,7 @@ final class MembersController {
 			array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'profile' ),
-				'permission_callback' => '__return_true',
+				'permission_callback' => fn (): bool => $this->directory->can_view( get_current_user_id() ),
 				'args'                => array( 'id' => RestServiceProvider::int_arg() ),
 			)
 		);

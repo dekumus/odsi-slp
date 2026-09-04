@@ -78,6 +78,43 @@ final class BridgeTest extends TestCase {
 		self::assertStringContainsString( 'completed the course', $feed['items'][0]['action'] );
 	}
 
+	public function test_unpublished_courses_never_reach_the_feed(): void {
+		$c    = $this->lms->standard_course( array( 'post_status' => 'private' ) );
+		$user = $this->lms->learner();
+		$this->lms->enrollment()->enroll( $user, $c['course'], array( 'source' => 'manual' ) );
+
+		self::assertSame( array(), $this->learning_items( $user ), 'A private course title must not be announced to every member.' );
+
+		wp_update_post(
+			array(
+				'ID'          => $c['course'],
+				'post_status' => 'publish',
+			)
+		);
+		$second = $this->lms->learner();
+		$this->lms->enrollment()->enroll( $second, $c['course'] );
+		self::assertCount( 1, $this->learning_items( $second ), 'Once published, enrollment is announced.' );
+	}
+
+	public function test_link_syncs_every_enrollment_not_just_the_first_page(): void {
+		$organiser = $this->social->member();
+		$group     = $this->social->group( $organiser, 'private', 'Big cohort' );
+		$course    = $this->lms->course();
+		$learners  = array();
+
+		add_filter( 'odsi_lms_emails_enabled', '__return_false' );
+
+		for ( $i = 0; $i < 205; $i++ ) {
+			$learners[] = $this->lms->enrolled_learner( $course );
+		}
+
+		self::assertTrue( Bridge::instance()->container()->get( GroupLinkage::class )->link( $course, $group ) );
+
+		$members = $this->social->service( GroupMemberRepository::class );
+		self::assertSame( 206, $members->count( $group ), 'Organiser plus all 205 learners.' );
+		self::assertTrue( $members->is_active( $group, $learners[204] ) );
+	}
+
 	public function test_failed_quiz_posts_nothing(): void {
 		$c    = $this->lms->standard_course( array( 'meta' => array( '_odsi_linear_progression' => 0 ) ) );
 		$user = $this->lms->enrolled_learner( $c['course'] );

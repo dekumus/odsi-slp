@@ -151,15 +151,22 @@ final class EnrollmentListTable extends \WP_List_Table {
 			'reset'  => __( 'Reset progress', 'odsi-lms' ),
 			'remove' => __( 'Remove', 'odsi-lms' ),
 		) as $operation => $label ) {
-			$actions[ $operation ] = sprintf(
-				'<form method="post" action="%1$s" style="display:inline">%2$s<input type="hidden" name="action" value="odsi_lms_report_action" /><input type="hidden" name="do" value="%3$s" /><input type="hidden" name="course_id" value="%4$d" /><input type="hidden" name="user_id" value="%5$d" /><button type="submit" class="button-link">%6$s</button></form>',
-				esc_url( admin_url( 'admin-post.php' ) ),
-				wp_nonce_field( ReportsScreen::nonce_action(), '_wpnonce', true, false ),
-				esc_attr( $operation ),
-				$this->course_id,
-				(int) $item['user_id'],
-				esc_html( $label )
+			// A link, not a nested form: the table already sits inside the
+			// screen's filter form and browsers drop forms nested in forms.
+			$url = wp_nonce_url(
+				add_query_arg(
+					array(
+						'action'    => 'odsi_lms_report_action',
+						'do'        => $operation,
+						'course_id' => $this->course_id,
+						'user_id'   => (int) $item['user_id'],
+					),
+					admin_url( 'admin-post.php' )
+				),
+				ReportsScreen::nonce_action()
 			);
+
+			$actions[ $operation ] = sprintf( '<a href="%1$s"%2$s>%3$s</a>', esc_url( $url ), 'remove' === $operation ? ' class="submitdelete"' : '', esc_html( $label ) );
 		}
 
 		return sprintf( '<strong>%s</strong><br /><span class="description">%s</span>%s', esc_html( (string) $item['display_name'] ), esc_html( (string) $item['email'] ), $this->row_actions( $actions ) );

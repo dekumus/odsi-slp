@@ -42,6 +42,11 @@ Gravatar. Maximum dimensions and file types are admin settings with defaults of
 **SOC-MEM-004** Cover image: as `SOC-MEM-003`, displayed on the profile header
 only.
 
+**SOC-MEM-004b** An attachment id offered as an avatar or cover (member or
+group) is accepted only when the actor uploaded it or may edit it; a replaced
+image this plugin stored is deleted. Uploads are capped at 5 MB
+(`odsi_social_image_max_bytes`), 8192 px a side, and ten per member per hour.
+
 **SOC-MEM-004a** Uploads arrive through a plain multipart form at
 `/members/{nicename}/edit/` (the member's own page; admins may edit anyone's)
 or through `POST /members/me/{avatar|cover}`. The file must decode as an image
@@ -329,6 +334,13 @@ Moderators may manage content and members per the state machine but not
 settings or roles. Promotion and demotion is organiser-only; an organiser may
 demote themselves only when another organiser exists.
 
+**SOC-GRP-005a** The group post type is not public: no core REST endpoint,
+sitemap, feed, search result or `?odsi_social_group=` query exposes a group,
+so a hidden group's existence is knowable only through the community routes
+that apply `SOC-GRP-005`. A trashed group leaves the community (its posts are
+invisible) until it is restored. Descriptions are formatted text; they never
+run shortcodes or dynamic blocks.
+
 **SOC-GRP-006a** Organisers manage a group at `/groups/{slug}/manage/`: name,
 description, visibility, photo and cover through a multipart form, and the
 member lists (approve or decline requests; promote, demote, remove, ban,
@@ -446,6 +458,24 @@ participant, the last message excerpt, and the unread count. Paginated.
 **SOC-MSG-007** A message's content is visible only to the thread's
 participants and to no admin screen in v1. Admins may see thread metadata
 (participants, counts) for moderation and may delete a thread outright.
+
+
+**SOC-NOT-009** Notifications go only to members who can still see the item
+(`Privacy::can_view`), so someone removed from a private group hears nothing
+more about its posts.
+
+### Abuse limits — `SOC-ABUSE`
+
+**SOC-ABUSE-001** Per-member sliding-window limits (filter
+`odsi_social_rate_limits`) bound posts, comments, connection requests,
+messages, group invitations, group creation and image uploads; exceeding one
+returns 429 with `odsi_social_rate_limited`. A withdrawn, declined or removed
+connection rests for an hour (`odsi_social_connection_cooldown`) before either
+side may request again.
+
+**SOC-ABUSE-002** Rendered activity delivered over REST is filtered with
+`wp_kses_post` exactly like template output, and @mentions are rewritten in
+text nodes only, never inside a tag.
 
 ---
 

@@ -50,6 +50,11 @@ final class PostTypes implements Bootable {
 	 * Register all post types.
 	 */
 	public function register(): void {
+		if ( '1' === get_option( 'odsi_lms_flush_rewrites' ) ) {
+			delete_option( 'odsi_lms_flush_rewrites' );
+			add_action( 'wp_loaded', 'flush_rewrite_rules' );
+		}
+
 		foreach ( self::definitions() as $post_type => $args ) {
 			register_post_type( $post_type, $args );
 		}
@@ -66,7 +71,7 @@ final class PostTypes implements Bootable {
 				__( 'Courses', 'odsi-lms' ),
 				__( 'Course', 'odsi-lms' ),
 				array(
-					'has_archive'  => 'courses',
+					'has_archive'  => sanitize_title( (string) ( new \ODSI\LMS\Support\Settings() )->get( 'course_archive_slug' ) ) ?: 'courses',
 					'rewrite'      => array(
 						'slug'       => 'course',
 						'with_front' => false,
@@ -164,6 +169,12 @@ final class PostTypes implements Bootable {
 				)
 			),
 		);
+
+		// Lessons, topics and quizzes are reached through their course, never
+		// through site search, where an excerpt would leak locked content.
+		foreach ( self::trackable() as $step_type ) {
+			$definitions[ $step_type ]['exclude_from_search'] = true;
+		}
 
 		/**
 		 * Filters the LMS post type definitions before registration.

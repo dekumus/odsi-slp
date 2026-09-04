@@ -96,6 +96,12 @@ final class Connections {
 			return new WP_Error( 'odsi_social_connection_exists', __( 'A connection or request already exists.', 'odsi-social' ) );
 		}
 
+		// Withdraw-and-request loops would notify the target every time; after
+		// a withdrawal or removal the pair rests before a new request.
+		if ( get_transient( "odsi_social_conn_cooldown_{$actor_id}_{$target_id}" ) ) {
+			return new WP_Error( 'odsi_social_connection_cooldown', __( 'You recently withdrew a request to this member. Try again later.', 'odsi-social' ), array( 'status' => 429 ) );
+		}
+
 		$this->connections->request( $actor_id, $target_id );
 
 		/**
@@ -161,6 +167,19 @@ final class Connections {
 		}
 
 		$this->connections->delete( (int) $row->id );
+
+		/**
+		 * Filters how long a pair rests after a withdrawal, decline or removal
+		 * before either side may send a new request.
+		 *
+		 * @param int $seconds Seconds; one hour by default.
+		 */
+		$cooldown = (int) apply_filters( 'odsi_social_connection_cooldown', HOUR_IN_SECONDS );
+
+		if ( $cooldown > 0 ) {
+			set_transient( "odsi_social_conn_cooldown_{$actor_id}_{$other_id}", 1, $cooldown );
+			set_transient( "odsi_social_conn_cooldown_{$other_id}_{$actor_id}", 1, $cooldown );
+		}
 
 		if ( ConnectionRepository::STATUS_ACCEPTED === (string) $row->status ) {
 			$this->members->adjust( $actor_id, 'connection_count', -1 );

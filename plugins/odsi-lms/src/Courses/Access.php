@@ -45,6 +45,8 @@ final class Access implements Bootable {
 	 */
 	public function boot(): void {
 		add_filter( 'the_content', array( $this, 'filter_content' ), 20 );
+		add_filter( 'get_the_excerpt', array( $this, 'filter_excerpt' ), 20, 2 );
+		add_filter( 'the_excerpt_rss', array( $this, 'filter_excerpt_rss' ), 20 );
 		add_filter( 'odsi_lms_resume_can_open', array( $this, 'filter_resume_can_open' ), 10, 3 );
 	}
 
@@ -68,6 +70,11 @@ final class Access implements Bootable {
 	public function can_access_course( int $user_id, int $course_id ): bool {
 		if ( $this->can_manage( $user_id, $course_id ) ) {
 			return true;
+		}
+
+		// A course that is not published has no learners yet, whatever its mode.
+		if ( 'publish' !== get_post_status( $course_id ) ) {
+			return false;
 		}
 
 		$mode = (string) get_post_meta( $course_id, Meta::ACCESS_MODE, true );
@@ -103,7 +110,9 @@ final class Access implements Bootable {
 			return true;
 		}
 
-		if ( ! $this->can_access_course( $user_id, $course_id ) ) {
+		// Drafts are the author's; a learner cannot open, complete or attempt
+		// them before they are published, even with a sequential id in hand.
+		if ( 'publish' !== get_post_status( $object_id ) || ! $this->can_access_course( $user_id, $course_id ) ) {
 			return false;
 		}
 
@@ -129,17 +138,16 @@ final class Access implements Bootable {
 	 * @return string
 	 */
 	public function filter_content( string $content ): string {
-		// Block themes render the_content from the post-content block outside a
-		// classic loop, so in_the_loop() is not a usable guard; compare ids instead.
-		if ( ! is_singular() || is_admin() ) {
+		// Every place WordPress renders a step's content passes through here:
+		// the singular page, block-theme query loops, feeds, search excerpts and
+		// the core REST API's `content.rendered`. There is deliberately no
+		// is_singular() guard, because that is exactly what let feeds and REST
+		// bypass the lock (LMS-ACC-002/007).
+		if ( is_admin() && ! wp_doing_ajax() && ! ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
 			return $content;
 		}
 
 		$post_id = get_the_ID();
-
-		if ( (int) $post_id !== (int) get_queried_object_id() ) {
-			return $content;
-		}
 
 		if ( ! $post_id ) {
 			return $content;
@@ -168,6 +176,43 @@ final class Access implements Bootable {
 	}
 
 	/**
+	 * A hand-written excerpt bypasses `the_content`, so archives, search and
+	 * the REST API would show it for a locked step. Blank it instead.
+	 *
+	 * @param string        $excerpt Excerpt.
+	 * @param \WP_Post|null $post    Post.
+	 */
+	public function filter_excerpt( string $excerpt, ?\WP_Post $post = null ): string {
+		if ( ! $post || ! in_array( $post->post_type, PostTypes::trackable(), true ) ) {
+			return $excerpt;
+		}
+
+		return '' === $this->lock_reason( get_current_user_id(), (int) $post->ID ) ? $excerpt : '';
+	}
+
+	/**
+	 * Feed excerpts run through a different filter with no post argument.
+	 *
+	 * @param string $excerpt Excerpt.
+	 */
+	public function filter_excerpt_rss( string $excerpt ): string {
+		$post = get_post();
+
+		return $post ? $this->filter_excerpt( $excerpt, $post ) : $excerpt;
+	}
+
+	/**
+	 * The content a viewer may see for a step: the notice when locked, else ''.
+	 *
+	 * @param int $object_id Step post id.
+	 */
+	public function filter_content_for( int $object_id ): string {
+		$reason = $this->lock_reason( get_current_user_id(), $object_id );
+
+		return '' === $reason ? '' : $this->locked_notice( $object_id, get_current_user_id(), $reason );
+	}
+
+	/**
 	 * Why a user cannot open a node: `enroll`, `drip`, `progression`, or '' when they can.
 	 *
 	 * Evaluated in that order so the most fundamental reason wins (LMS-ACC-006).
@@ -182,7 +227,7 @@ final class Access implements Bootable {
 			return '';
 		}
 
-		if ( ! $this->can_access_course( $user_id, $course_id ) ) {
+		if ( ! $this->can_access_course( $user_id, $course_id ) || 'publish' !== get_post_status( $object_id ) ) {
 			return 'enroll';
 		}
 

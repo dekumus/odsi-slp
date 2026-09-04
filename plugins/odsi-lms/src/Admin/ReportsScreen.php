@@ -198,15 +198,15 @@ final class ReportsScreen implements Bootable {
 	public function handle_action(): void {
 		check_admin_referer( self::NONCE );
 
-		$course_id = absint( $_POST['course_id'] ?? 0 );
+		$course_id = absint( $_REQUEST['course_id'] ?? 0 );
 		$actor     = get_current_user_id();
 
 		if ( ! $this->report->can_report( $actor, $course_id ) ) {
 			wp_die( esc_html__( 'You cannot manage this course.', 'odsi-lms' ) );
 		}
 
-		$operation = sanitize_key( (string) ( $_POST['do'] ?? '' ) );
-		$user_id   = absint( $_POST['user_id'] ?? 0 );
+		$operation = sanitize_key( (string) ( $_REQUEST['do'] ?? '' ) );
+		$user_id   = absint( $_REQUEST['user_id'] ?? 0 );
 
 		if ( 'enroll' === $operation ) {
 			$needle = sanitize_text_field( wp_unslash( (string) ( $_POST['user'] ?? '' ) ) );

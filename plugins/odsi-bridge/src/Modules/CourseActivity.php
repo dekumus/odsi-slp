@@ -115,6 +115,12 @@ final class CourseActivity implements Bootable, ActivityRenderer {
 			return;
 		}
 
+		// A draft or private course is not public knowledge; the feed must not
+		// announce its title or who is on it.
+		if ( 'publish' !== get_post_status( $course_id ) || 'publish' !== get_post_status( $item_id ) ) {
+			return;
+		}
+
 		$group_id = $this->settings->enabled( 'group_linkage' ) ? $this->links->group_for( $course_id ) : 0;
 
 		\ODSI\Social\Plugin::instance()->container()->get( Activity::class )->post(

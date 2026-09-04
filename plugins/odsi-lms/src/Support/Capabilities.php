@@ -129,8 +129,19 @@ final class Capabilities {
 		foreach ( self::roles() as $slug => $role ) {
 			$inherited = get_role( $role['inherits'] );
 			$caps      = $inherited instanceof \WP_Role ? $inherited->capabilities : array( 'read' => true );
+			$existing  = get_role( $slug );
 
-			remove_role( $slug );
+			// Re-activation must not throw away an admin's edits to the role.
+			if ( $existing instanceof \WP_Role ) {
+				foreach ( array_keys( array_filter( $caps ) ) as $cap ) {
+					if ( ! $existing->has_cap( $cap ) ) {
+						$existing->add_cap( $cap );
+					}
+				}
+
+				continue;
+			}
+
 			add_role( $slug, $role['label'], $caps );
 		}
 

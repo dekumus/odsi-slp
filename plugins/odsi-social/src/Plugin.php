@@ -239,7 +239,8 @@ final class Plugin {
 			static fn ( Container $c ): object => new Listeners(
 				$c->get( Notifications::class ),
 				$c->get( ActivityRepository::class ),
-				$c->get( GroupMemberRepository::class )
+				$c->get( GroupMemberRepository::class ),
+				$c->get( Privacy::class )
 			)
 		);
 		$c->set( Emails::class, static fn ( Container $c ): object => new Emails( $c->get( Notifications::class ) ) );
