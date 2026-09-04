@@ -251,3 +251,80 @@ coupling them in the schema cannot be undone.
 
 **Cost.** The personal feed query unions two edge tables. It is bounded and
 indexed; see the schema document.
+
+---
+
+## ADR-013 — Activity comments live in the activity table
+
+**Status:** Accepted
+
+**Decision.** A comment is an activity row whose `parent_id` is the item it
+comments on. Comments are one level deep; a reply to a comment is re-parented to
+the item.
+
+**Why.** A comment is subject to everything an item is — privacy inheritance,
+mentions, profile feeds, deletion cascade — and one table gives all of that one
+code path. The feed read pattern (N items, three latest comments each) costs the
+same either way: a `UNION ALL` of per-parent `LIMIT 3` sub-selects on
+`(parent_id, date_recorded, id)`.
+
+**Cost.** The hottest table is larger; feed indexes lead with a `parent_id`
+column that is always zero for item reads.
+
+---
+
+## ADR-014 — Notifications collapse at write time
+
+**Status:** Accepted
+
+**Decision.** Repeated events on the same `(recipient, component, action,
+item)` update the existing unread notification row rather than adding one. The
+mechanism is a nullable `collapse_key` with a unique index on
+`(user_id, collapse_key)`; marking a row read nulls the key.
+
+**Why.** Notifications are read far more often than written. Folding at write
+time makes the unread list an indexed scan and the unread count a row count.
+Nulling the key on read makes "the next event after reading opens a new row"
+fall out of the index rather than out of logic.
+
+**Cost.** `actor_count` counts events, not distinct actors, beyond a check
+against the previous actor. Exact distinct counts would need read-time
+grouping, which we judged not worth it.
+
+---
+
+## ADR-015 — Groups get an index table beside their post
+
+**Status:** Accepted
+
+**Decision.** A group's authored content is an `odsi_social_group` post
+(ADR-002). Its query-serving attributes — visibility, slug, member count,
+last-active — are mirrored into `odsi_social_groups`, keyed by post id, and
+kept in step on every save.
+
+**Why.** The feed privacy predicate needs group visibility on every row it
+evaluates. Joining `wp_posts` and `wp_postmeta` inside the hottest query in the
+plugin is the kind of decision that works in development and fails at scale.
+A narrow index table joined on its primary key costs almost nothing.
+
+**Cost.** Two writes per group save, and a consistency job in the daily
+maintenance that re-mirrors any drift.
+
+---
+
+## ADR-016 — The privacy rule has one owner and two representations
+
+**Status:** Accepted
+
+**Decision.** `Activity\Privacy` is the only class that reads an item's
+`privacy` or a group's visibility. It exposes `can_view()` for single items
+and `where_clause()` for feed queries. A single test table drives both.
+
+**Why.** The functional spec fixes the rule as a decision table. A rule that is
+implemented once in PHP and once in SQL is still one rule if a single test
+proves the two agree on every row; a rule implemented ad hoc in five read paths
+is five rules. The class is the enforcement point: any other class touching
+those columns fails review.
+
+**Cost.** Grant-style overrides via `odsi_social_can_view_activity` cannot be
+pushed into SQL; they apply to single items only, and the docblock says so.

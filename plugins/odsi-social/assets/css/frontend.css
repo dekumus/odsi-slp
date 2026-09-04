@@ -1,0 +1,112 @@
+/**
+ * ODSI Social front-end styles. Token-based so themes restyle by redefining
+ * the custom properties on `.odsi-social`.
+ */
+
+.odsi-social,
+.odsi-social-feed,
+.odsi-social-directory,
+.odsi-social-profile,
+.odsi-social-group,
+.odsi-social-notifications,
+.odsi-social-messages {
+	--odsi-social-accent: #2563eb;
+	--odsi-social-surface: #f5f6f8;
+	--odsi-social-border: #d9dce1;
+	--odsi-social-muted: #5b6470;
+	--odsi-social-radius: 8px;
+}
+
+.odsi-social-avatar {
+	border-radius: 50%;
+	flex: none;
+	height: 48px;
+	object-fit: cover;
+	width: 48px;
+}
+
+.odsi-social-avatar--small { height: 32px; width: 32px; }
+.odsi-social-avatar--large { height: 128px; width: 128px; }
+
+.odsi-social-button {
+	background: var(--odsi-social-accent, #2563eb);
+	border: 0;
+	border-radius: var(--odsi-social-radius, 8px);
+	color: #fff;
+	cursor: pointer;
+	display: inline-block;
+	font: inherit;
+	padding: 0.5rem 1rem;
+	text-decoration: none;
+}
+
+.odsi-social-button:disabled { cursor: progress; opacity: 0.6; }
+
+.odsi-social-post-form,
+.odsi-social-comment-form,
+.odsi-social-message-form,
+.odsi-social-create-group {
+	background: var(--odsi-social-surface, #f5f6f8);
+	border-radius: var(--odsi-social-radius, 8px);
+	display: grid;
+	gap: 0.5rem;
+	margin-bottom: 1.5rem;
+	padding: 1rem;
+}
+
+.odsi-social-post-form textarea,
+.odsi-social-comment-form textarea,
+.odsi-social-message-form textarea {
+	border: 1px solid var(--odsi-social-border, #d9dce1);
+	border-radius: var(--odsi-social-radius, 8px);
+	font: inherit;
+	padding: 0.5rem;
+	width: 100%;
+}
+
+.odsi-social-post-form__controls { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+.odsi-social-item {
+	border: 1px solid var(--odsi-social-border, #d9dce1);
+	border-radius: var(--odsi-social-radius, 8px);
+	margin-bottom: 1rem;
+	padding: 1rem;
+}
+
+.odsi-social-item__header { align-items: center; display: flex; gap: 0.75rem; margin-bottom: 0.75rem; }
+.odsi-social-item__time { color: var(--odsi-social-muted, #5b6470); font-size: 0.8125rem; text-decoration: none; }
+.odsi-social-item__footer { border-top: 1px solid var(--odsi-social-border, #d9dce1); display: flex; gap: 0.5rem; margin-top: 0.75rem; padding-top: 0.5rem; }
+.odsi-social-item__footer button { background: none; border: 0; color: var(--odsi-social-muted, #5b6470); cursor: pointer; font: inherit; padding: 0.25rem 0.5rem; }
+.odsi-social-item__footer button.is-active { color: var(--odsi-social-accent, #2563eb); font-weight: 600; }
+
+.odsi-social-comments { border-left: 2px solid var(--odsi-social-border, #d9dce1); margin-top: 0.75rem; padding-left: 0.75rem; }
+.odsi-social-comment { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+.odsi-social-comment-form { margin-bottom: 0; }
+
+.odsi-social-cards { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); list-style: none; margin: 1rem 0; padding: 0; }
+.odsi-social-card { border: 1px solid var(--odsi-social-border, #d9dce1); border-radius: var(--odsi-social-radius, 8px); padding: 1rem; text-align: center; }
+.odsi-social-card a { display: grid; gap: 0.5rem; justify-items: center; text-decoration: none; }
+.odsi-social-card__meta { color: var(--odsi-social-muted, #5b6470); display: block; font-size: 0.8125rem; margin-top: 0.25rem; }
+
+.odsi-social-directory__filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+
+.odsi-social-profile__cover { background-position: center; background-size: cover; border-radius: var(--odsi-social-radius, 8px); height: 200px; }
+.odsi-social-profile__header { align-items: center; display: flex; gap: 1.5rem; margin: 1rem 0; }
+.odsi-social-profile__counts { color: var(--odsi-social-muted, #5b6470); }
+.odsi-social-profile__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.odsi-social-profile__fields dl { display: grid; gap: 0.25rem 1rem; grid-template-columns: max-content 1fr; }
+
+.odsi-social-notifications__list, .odsi-social-threads { list-style: none; margin: 0; padding: 0; }
+.odsi-social-notification, .odsi-social-thread a { align-items: center; border-bottom: 1px solid var(--odsi-social-border, #d9dce1); display: flex; gap: 0.75rem; padding: 0.75rem 0; text-decoration: none; }
+.odsi-social-notification.is-new, .odsi-social-thread.is-unread { font-weight: 600; }
+.odsi-social-notifications__toolbar { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+.odsi-social-badge { background: var(--odsi-social-accent, #2563eb); border-radius: 999px; color: #fff; font-size: 0.75rem; margin-left: auto; padding: 0.125rem 0.5rem; }
+.odsi-social-thread__excerpt { color: var(--odsi-social-muted, #5b6470); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.odsi-social-thread__messages { display: grid; gap: 0.75rem; margin-bottom: 1rem; }
+.odsi-social-message { background: var(--odsi-social-surface, #f5f6f8); border-radius: var(--odsi-social-radius, 8px); max-width: 80%; padding: 0.75rem; }
+.odsi-social-message.is-mine { background: var(--odsi-social-accent, #2563eb); color: #fff; justify-self: end; }
+.odsi-social-message time { display: block; font-size: 0.75rem; opacity: 0.7; }
+
+.odsi-social-notice { background: var(--odsi-social-surface, #f5f6f8); border-radius: var(--odsi-social-radius, 8px); padding: 1rem; }
+.odsi-social-feed__empty { color: var(--odsi-social-muted, #5b6470); }

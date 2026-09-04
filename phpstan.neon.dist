@@ -7,16 +7,20 @@ includes:
 
 parameters:
   level: 6
-  # Add plugins/odsi-social/src and plugins/odsi-bridge/src here as they land.
+  # Add plugins/odsi-bridge/src here when it lands.
   paths:
     - plugins/odsi-lms/src
     - plugins/odsi-lms/odsi-lms.php
     - plugins/odsi-lms/uninstall.php
+    - plugins/odsi-social/src
+    - plugins/odsi-social/odsi-social.php
+    - plugins/odsi-social/uninstall.php
   excludePaths:
     - */vendor/*
     - */node_modules/*
   scanFiles:
     - plugins/odsi-lms/odsi-lms.php
+    - plugins/odsi-social/odsi-social.php
   bootstrapFiles:
     - tests/phpstan-bootstrap.php
   treatPhpDocTypesAsCertain: false

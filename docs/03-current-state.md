@@ -8,7 +8,7 @@ when you change what it describes.
 | Plugin | State |
 | --- | --- |
 | `odsi-lms` | Kernel, data layer, content model, services and REST proven by 30 unit and 79 integration tests against WordPress 7.1 on MariaDB. PHPCS and PHPStan level 6 clean. Not yet exercised in a browser. |
-| `odsi-social` | Empty directory. Nothing written. |
+| `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens. 113 integration tests including the full privacy decision table through both PHP and SQL. PHPCS and PHPStan level 6 clean. Not yet exercised in a browser. |
 | `odsi-bridge` | Empty directory. Nothing written. |
 
 Verification so far: the integration suite boots WordPress core with the
@@ -17,6 +17,51 @@ derivation, progress, access, the quiz lifecycle and every REST route against a
 real database. What has **not** happened: nobody has clicked through the
 front end in a browser, and the E2E flow is written but cannot pass until the
 quiz player exists. **Treat the LMS as a tested engine with an unproven UI.**
+
+## `odsi-social` — what exists
+
+Architecture in `docs/specs/20-social-architecture.md`, tables in
+`docs/specs/21-social-schema.md`. The kernel is a copy of the LMS kernel under
+`ODSI\Social\` (ADR-004); the layout mirrors it file for file.
+
+- **Data**: `Database\Schema` with fifteen tables (activity, activity meta,
+  reactions, groups index, group members, members index, three profile tables,
+  connections, follows, notifications, threads, participants, messages); one
+  repository per table under `Repositories\`.
+- **Activity**: `Privacy` (the one rule, `can_view()` + `where_clause()`),
+  `Activity` (post, comment, edit, delete, idempotent external post), `Feed`
+  (four scopes, cursor pagination, fixed query budget), `Reactions`,
+  `Mentions`, `Renderers`.
+- **Connections**: `Connections` (state machine), `Follows`.
+- **Groups**: `Groups` (create atomically with organiser, settings, delete
+  cascade, index mirroring), `Membership` (state machine, organiser
+  invariant, successor promotion), `GroupActivity` (joined/created items).
+- **Notifications**: `Notifications` (write-time collapse, counts, retention),
+  `Listeners` (the spec's trigger table), `Renderers`.
+- **Messages**: `Messages` (pair threads, per-participant delete, unread).
+- **Members**: `Presence`, `Profiles` (visibility-filtered view, field values,
+  avatar/cover, message setting), `ProfileFields`, `Directory`, `Lifecycle`
+  (account deletion cleanup).
+- **Interfaces**: REST `odsi-social/v1` with six controllers; `Frontend\Router`
+  for `/members/`, `/groups/`, `/activity/`, `/notifications/`, `/messages/`;
+  `Frontend\Shortcodes` dispatching to templates under `templates/`; admin
+  settings and profile-field screens; progressive-enhancement JS and CSS.
+
+### Known gaps in the social plugin
+
+1. **No browser verification** and no E2E flow yet.
+2. **Avatar and cover upload UI** — the services accept attachment ids; nothing
+   on the front end uploads a file.
+3. **Profile edit form** on the front end — values are writable over REST only.
+4. **Group settings UI** on the front end — organisers change settings over
+   REST only.
+5. **Reaction and comment "who" lists** — counts are shown; the lists are not.
+6. **No object caching** beyond per-request repository caches and the unread
+   counters.
+7. **Feed benchmark** asserts a query budget; nothing asserts a time bound
+   under a seeded load.
+8. **Email delivery** of notifications (v2; the `odsi_social_notification_created`
+   hook is the seam).
 
 ## `odsi-lms` — what exists
 
@@ -158,6 +203,15 @@ Struck-through items are closed.
 | `LMS-QZ-*` | integration `QuizTest` | 15 |
 | `LMS-IF` REST, `LMS-ACC-007` | integration `RestTest` | 9 |
 | Learner flow in a browser | e2e | 1, blocked on gap 7 |
+| Social schema, ADR-005 scan | integration `social/SchemaTest` | 20 |
+| Privacy decision table, both representations | integration `social/PrivacyTest` | 42 |
+| `SOC-ACT-*` | integration `social/ActivityTest` | 13 |
+| `SOC-CON-*` | integration `social/ConnectionsTest` | 5 |
+| `SOC-GRP-*` | integration `social/GroupsTest` | 9 |
+| `SOC-NOT-*` | integration `social/NotificationsTest` | 8 |
+| `SOC-MSG-*` | integration `social/MessagesTest` | 5 |
+| `SOC-MEM-*` | integration `social/MembersTest` | 6 |
+| Social REST, ADR-011 | integration `social/RestTest` | 6 |
 
 ## Open questions
 

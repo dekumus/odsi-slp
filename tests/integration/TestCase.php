@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace ODSI\Tests\Integration;
 
 use ODSI\Tests\Fixtures\LmsFactory;
+use ODSI\Tests\Fixtures\SocialFactory;
 use WP_UnitTestCase;
 
 /**
@@ -26,12 +27,18 @@ abstract class TestCase extends WP_UnitTestCase {
 	protected LmsFactory $lms;
 
 	/**
+	 * Social fixture factory for the current test.
+	 */
+	protected SocialFactory $social;
+
+	/**
 	 * Set up fixtures.
 	 */
 	public function set_up(): void {
 		parent::set_up();
 
-		$this->lms = new LmsFactory( $this->factory() );
+		$this->lms    = new LmsFactory( $this->factory() );
+		$this->social = new SocialFactory( $this->factory() );
 	}
 
 	/**
