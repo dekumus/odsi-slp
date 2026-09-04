@@ -16,6 +16,7 @@ use ODSI\LMS\Admin\CourseBuilder;
 use ODSI\LMS\Admin\GradingScreen;
 use ODSI\LMS\Admin\ReportsScreen;
 use ODSI\LMS\Assignments\Assignments;
+use ODSI\LMS\Blocks\Blocks;
 use ODSI\LMS\Certificates\Certificates;
 use ODSI\LMS\Contracts\Bootable;
 use ODSI\LMS\Courses\Access;
@@ -184,6 +185,7 @@ final class Plugin {
 				$c->get( Templates::class )
 			)
 		);
+		$c->set( Blocks::class, static fn ( Container $c ): object => new Blocks( $c->get( Shortcodes::class ) ) );
 		$c->set( CertificateRepository::class, static fn (): object => new CertificateRepository() );
 		$c->set( EnrollmentReport::class, static fn ( Container $c ): object => new EnrollmentReport( $c->get( Progress::class ) ) );
 		$c->set( Certificates::class, static fn ( Container $c ): object => new Certificates( $c->get( CertificateRepository::class ), $c->get( Templates::class ) ) );
@@ -239,6 +241,7 @@ final class Plugin {
 			Assets::class,
 			Templates::class,
 			Shortcodes::class,
+			Blocks::class,
 			ContentDecorator::class,
 			RestServiceProvider::class,
 		);

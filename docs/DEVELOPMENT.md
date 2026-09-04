@@ -126,11 +126,11 @@ keys). It must never be defined on a real site.
 
 ## Building the editor bundle
 
-The LMS course builder is React source in
-`plugins/odsi-lms/assets/src/course-builder/`, compiled by
-`@wordpress/scripts` (`webpack.config.js` at the root) into
-`plugins/odsi-lms/assets/build/`. The build output is committed so the
-plugin works from a plain checkout; rebuild and commit it whenever the
+Editor-side React lives under each plugin's `assets/src/` (the LMS course
+builder and blocks, the community blocks) and is compiled by
+`@wordpress/scripts` (`webpack.config.js` at the root, one configuration per
+plugin) into that plugin's `assets/build/`. The build output is committed so
+the plugins work from a plain checkout; rebuild and commit it whenever the
 source changes:
 
 ```sh

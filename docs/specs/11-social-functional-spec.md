@@ -463,6 +463,11 @@ group, site feed, notifications, messages — are PHP templates under
 JavaScript adds in-page posting, commenting, reacting, infinite scroll and
 unread badges.
 
+**SOC-IF-004** Blocks `odsi-social/activity-feed`, `member-directory` and
+`group-directory` are dynamic and render through the matching shortcode code
+path inside the block wrapper; the editor shows the server-rendered result and
+front-end assets load on any singular post containing one of them.
+
 **SOC-IF-003** Routing uses rewrite rules for `/members/`, `/members/{nicename}/`,
 `/groups/`, `/groups/{slug}/`, `/activity/`, `/notifications/`, `/messages/`,
 each mapped to a virtual page rendered through the theme's page template. The

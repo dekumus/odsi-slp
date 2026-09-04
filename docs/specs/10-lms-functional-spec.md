@@ -521,6 +521,14 @@ used in full; there is no partial merge.
 JavaScript. JavaScript enhances "mark complete" and "enroll" into in-page
 actions and renders the quiz player; without it, the quiz page shows a notice.
 
+**LMS-IF-004** Blocks `odsi-lms/course-outline`, `course-progress`,
+`enroll-button`, `my-courses` and `course-grid` are dynamic: they render
+through the same code as the matching shortcode, wrapped in the block's
+wrapper element, so a block and a shortcode never drift apart and share
+template overrides (`LMS-IF-002`). The editor shows the server-rendered
+result. Front-end assets load on any singular post that contains one of
+these blocks.
+
 ---
 
 ## 9. Permission matrix

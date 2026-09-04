@@ -21,6 +21,7 @@ use ODSI\Social\Connections\Follows;
 use ODSI\Social\Contracts\Bootable;
 use ODSI\Social\Database\Migrator;
 use ODSI\Social\Frontend\Router;
+use ODSI\Social\Blocks\Blocks;
 use ODSI\Social\Frontend\Shortcodes;
 use ODSI\Social\Frontend\Templates;
 use ODSI\Social\Groups\GroupActivity;
@@ -281,6 +282,7 @@ final class Plugin {
 
 		// Interfaces.
 		$c->set( Shortcodes::class, static fn ( Container $c ): object => new Shortcodes( $c ) );
+		$c->set( Blocks::class, static fn ( Container $c ): object => new Blocks( $c->get( Shortcodes::class ) ) );
 		$c->set( RestServiceProvider::class, static fn ( Container $c ): object => new RestServiceProvider( $c ) );
 		$c->set( AdminMenu::class, static fn ( Container $c ): object => new AdminMenu( $c->get( Settings::class ), $c->get( ProfileFields::class ) ) );
 		$c->set( Maintenance::class, static fn ( Container $c ): object => new Maintenance( $c->get( Notifications::class ), $c->get( Messages::class ), $c->get( Settings::class ) ) );
@@ -312,6 +314,7 @@ final class Plugin {
 			Profiles::class,
 			Lifecycle::class,
 			Shortcodes::class,
+			Blocks::class,
 			RestServiceProvider::class,
 			Maintenance::class,
 		);

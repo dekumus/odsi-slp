@@ -1,0 +1,14 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "odsi-social/member-directory",
+	"title": "Member directory",
+	"category": "odsi",
+	"icon": "groups",
+	"description": "Searchable list of community members.",
+	"keywords": [ "members", "directory", "community" ],
+	"textdomain": "odsi-social",
+	"supports": { "html": false, "align": [ "wide", "full" ] },
+	"editorScript": "odsi-social-blocks",
+	"style": "odsi-social"
+}

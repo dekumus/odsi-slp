@@ -130,6 +130,7 @@ final class Shortcodes implements Bootable {
 				'items'           => $page['items'],
 				'next_cursor'     => $page['next_cursor'],
 				'viewer_id'       => $viewer,
+				'show_tabs'       => (bool) $atts['show_tabs'],
 				'can_post'        => $viewer > 0 && in_array( $atts['scope'], array( Feed::SCOPE_SITE, Feed::SCOPE_PERSONAL, Feed::SCOPE_GROUP ), true ),
 				'privacy_choices' => \ODSI\Social\Activity\Privacy::choices(),
 			)

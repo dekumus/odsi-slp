@@ -1,0 +1,17 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "odsi-lms/course-outline",
+	"title": "Course outline",
+	"category": "odsi",
+	"icon": "list-view",
+	"description": "The lessons, topics and quizzes of a course with the viewer's progress and locks.",
+	"keywords": [ "course", "lesson", "lms" ],
+	"textdomain": "odsi-lms",
+	"attributes": {
+		"courseId": { "type": "integer", "default": 0 }
+	},
+	"supports": { "html": false, "align": [ "wide", "full" ] },
+	"editorScript": "odsi-lms-blocks",
+	"style": "odsi-lms"
+}

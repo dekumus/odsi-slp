@@ -7,8 +7,8 @@ when you change what it describes.
 
 | Plugin | State |
 | --- | --- |
-| `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 99 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
-| `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens. 114 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
+| `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 102 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
+| `odsi-social` | Built: kernel, 15 custom tables, 13 repositories, every v1 domain service, REST namespace, virtual-page router, templates, admin screens, blocks. 116 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 8 integration tests. |
 
 Verification so far: the integration suite boots WordPress core with the
@@ -72,7 +72,9 @@ Architecture in `docs/specs/20-social-architecture.md`, tables in
   (account deletion cleanup).
 - **Interfaces**: REST `odsi-social/v1` with six controllers; `Frontend\Router`
   for `/members/`, `/groups/`, `/activity/`, `/notifications/`, `/messages/`;
-  `Frontend\Shortcodes` dispatching to templates under `templates/`; admin
+  `Frontend\Shortcodes` dispatching to templates under `templates/`; blocks
+  `odsi-social/activity-feed`, `member-directory`, `group-directory`
+  (`Blocks\Blocks`, editor bundle in `assets/build/blocks.js`); admin
   settings and profile-field screens; progressive-enhancement JS and CSS.
 
 ### Known gaps in the social plugin
@@ -206,9 +208,13 @@ stores `_odsi_lesson_id` and inherits `_odsi_course_id` from it. Ordering is
 - Front end: content-injected course UI on any theme; classic-theme templates
   for course, lesson, quiz and archive; shortcodes `odsi_course_outline`,
   `odsi_course_progress`, `odsi_enroll_button`, `odsi_my_courses`,
-  `odsi_course_grid`, `odsi_certificate_verify`, `odsi_my_certificates`; a
-  quiz player (`assets/js/quiz-player.js`) rendering questions, timing,
-  submission and results; token-based CSS.
+  `odsi_course_grid`, `odsi_certificate_verify`, `odsi_my_certificates`;
+  blocks `odsi-lms/course-outline`, `course-progress`, `enroll-button`,
+  `my-courses`, `course-grid` rendering through the shortcode code
+  (`Blocks\Blocks`, editor bundle `assets/build/blocks.js`, "ODSI" block
+  category shared with the community plugin); a quiz player
+  (`assets/js/quiz-player.js`) rendering questions, timing, submission and
+  results; token-based CSS.
 
 ### Extension points already published
 
@@ -240,7 +246,8 @@ Numbering is kept from the original list. Struck-through items are closed.
    backed by `Rest\BuilderController`, covered by `BuilderTest` and the
    `lms-course-builder` E2E flow. Drag and drop is not implemented; ordering
    is by move buttons.
-6. **No blocks.** Shortcodes and content injection only.
+6. ~~No blocks.~~ Closed: five LMS blocks and three community blocks, dynamic,
+   with server-rendered editor previews (LMS-IF-004, SOC-IF-004).
 7. ~~The quiz player is a mount point.~~ Closed; proven by the E2E flow.
 8. ~~Manual grading has no interface.~~ Closed: the Grading screen.
 9. ~~No object caching.~~ Closed for outlines. Progress reads are still
@@ -274,9 +281,11 @@ Numbering is kept from the original list. Struck-through items are closed.
 | `LMS-ADM-*`, `LMS-ENR-007/012`, certificates, cache, CSV | integration `HardeningTest` | 9 |
 | Builder routes: tree, add, reorder, detach, ownership | integration `BuilderTest` | 2 |
 | `LMS-ASN-*` service, uploads, REST, grading scope | integration `AssignmentsTest` | 9 |
+| `LMS-IF-004` block registration and rendering | integration `BlocksTest` | 3 |
 | Learner flow in a browser | e2e `lms-learner-flow` | 1, passing |
 | Course builder in the editor | e2e `lms-course-builder` | 1, passing |
 | Assignment hand-in and approval in a browser | e2e `lms-assignment` | 1, passing |
+| Blocks on a page and in the editor | e2e `blocks` | 1, passing |
 | Member flow in a browser | e2e `social-member-flow` | 1, passing |
 | Social schema, ADR-005 scan | integration `social/SchemaTest` | 20 |
 | Privacy decision table, both representations | integration `social/PrivacyTest` | 42 |
@@ -287,6 +296,7 @@ Numbering is kept from the original list. Struck-through items are closed.
 | `SOC-MSG-*` | integration `social/MessagesTest` | 5 |
 | `SOC-MEM-*` | integration `social/MembersTest` | 6 |
 | Social REST, ADR-011 | integration `social/RestTest` | 6 |
+| `SOC-IF-004` blocks | integration `social/BlocksTest` | 2 |
 | Integration contract end to end | integration `bridge/BridgeTest` | 8 |
 
 ## Open questions

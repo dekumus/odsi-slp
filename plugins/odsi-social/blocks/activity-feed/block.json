@@ -1,0 +1,19 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "odsi-social/activity-feed",
+	"title": "Activity feed",
+	"category": "odsi",
+	"icon": "format-status",
+	"description": "The community activity stream with a post form for members.",
+	"keywords": [ "activity", "feed", "community" ],
+	"textdomain": "odsi-social",
+	"attributes": {
+		"scope": { "type": "string", "default": "site" },
+		"perPage": { "type": "integer", "default": 0 },
+		"showTabs": { "type": "boolean", "default": false }
+	},
+	"supports": { "html": false, "align": [ "wide", "full" ] },
+	"editorScript": "odsi-social-blocks",
+	"style": "odsi-social"
+}

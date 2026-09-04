@@ -1,0 +1,17 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "odsi-lms/enroll-button",
+	"title": "Enroll button",
+	"category": "odsi",
+	"icon": "welcome-learn-more",
+	"description": "Enroll, log in or continue, depending on who is looking.",
+	"keywords": [ "course", "enroll", "lms" ],
+	"textdomain": "odsi-lms",
+	"attributes": {
+		"courseId": { "type": "integer", "default": 0 }
+	},
+	"supports": { "html": false },
+	"editorScript": "odsi-lms-blocks",
+	"style": "odsi-lms"
+}

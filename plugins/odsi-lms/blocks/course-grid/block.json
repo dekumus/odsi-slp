@@ -1,0 +1,18 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "odsi-lms/course-grid",
+	"title": "Course grid",
+	"category": "odsi",
+	"icon": "grid-view",
+	"description": "A grid of published courses, optionally from one category.",
+	"keywords": [ "course", "catalogue", "lms" ],
+	"textdomain": "odsi-lms",
+	"attributes": {
+		"perPage": { "type": "integer", "default": 9 },
+		"category": { "type": "string", "default": "" }
+	},
+	"supports": { "html": false, "align": [ "wide", "full" ] },
+	"editorScript": "odsi-lms-blocks",
+	"style": "odsi-lms"
+}

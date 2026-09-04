@@ -1,0 +1,17 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "odsi-lms/course-progress",
+	"title": "Course progress",
+	"category": "odsi",
+	"icon": "chart-bar",
+	"description": "The viewer's progress bar for a course.",
+	"keywords": [ "course", "progress", "lms" ],
+	"textdomain": "odsi-lms",
+	"attributes": {
+		"courseId": { "type": "integer", "default": 0 }
+	},
+	"supports": { "html": false },
+	"editorScript": "odsi-lms-blocks",
+	"style": "odsi-lms"
+}
