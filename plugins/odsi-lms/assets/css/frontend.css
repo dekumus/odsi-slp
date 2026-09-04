@@ -1,0 +1,127 @@
+/**
+ * ODSI LMS front-end styles.
+ *
+ * Scoped to plugin class names and built on custom properties so a theme can
+ * restyle the whole plugin by redefining the tokens below.
+ */
+
+.odsi-lms-course,
+.odsi-lms-lesson,
+.odsi-lms-quiz,
+.odsi-lms-archive {
+	--odsi-lms-accent: #2563eb;
+	--odsi-lms-surface: #f5f6f8;
+	--odsi-lms-border: #d9dce1;
+	--odsi-lms-muted: #5b6470;
+	--odsi-lms-radius: 6px;
+}
+
+.odsi-lms-progress__track {
+	background: var(--odsi-lms-surface, #f5f6f8);
+	border-radius: 999px;
+	height: 8px;
+	overflow: hidden;
+	width: 100%;
+}
+
+.odsi-lms-progress__fill {
+	background: var(--odsi-lms-accent, #2563eb);
+	height: 100%;
+	transition: width 200ms ease-out;
+}
+
+.odsi-lms-progress__label {
+	color: var(--odsi-lms-muted, #5b6470);
+	font-size: 0.875rem;
+	margin: 0.5rem 0 0;
+}
+
+.odsi-lms-outline {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.odsi-lms-outline__item {
+	align-items: center;
+	border-bottom: 1px solid var(--odsi-lms-border, #d9dce1);
+	display: flex;
+	gap: 0.75rem;
+	justify-content: space-between;
+	padding: 0.75rem 0;
+}
+
+.odsi-lms-outline__item--depth-1 {
+	padding-left: 1.5rem;
+}
+
+.odsi-lms-outline__item--depth-2 {
+	padding-left: 3rem;
+}
+
+.odsi-lms-outline__item.is-locked .odsi-lms-outline__title {
+	color: var(--odsi-lms-muted, #5b6470);
+	cursor: not-allowed;
+}
+
+.odsi-lms-outline__status {
+	color: var(--odsi-lms-accent, #2563eb);
+	font-size: 0.8125rem;
+	white-space: nowrap;
+}
+
+.odsi-lms-button {
+	background: var(--odsi-lms-accent, #2563eb);
+	border: 0;
+	border-radius: var(--odsi-lms-radius, 6px);
+	color: #fff;
+	cursor: pointer;
+	display: inline-block;
+	font: inherit;
+	padding: 0.625rem 1.25rem;
+	text-decoration: none;
+}
+
+.odsi-lms-button:disabled {
+	cursor: progress;
+	opacity: 0.6;
+}
+
+.odsi-lms-grid {
+	display: grid;
+	gap: 1.5rem;
+	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.odsi-lms-card {
+	border: 1px solid var(--odsi-lms-border, #d9dce1);
+	border-radius: var(--odsi-lms-radius, 6px);
+	overflow: hidden;
+	padding-bottom: 1rem;
+}
+
+.odsi-lms-card__title {
+	margin: 1rem 1rem 0.5rem;
+}
+
+.odsi-lms-card__excerpt {
+	color: var(--odsi-lms-muted, #5b6470);
+	margin: 0 1rem;
+}
+
+.odsi-lms-locked {
+	background: var(--odsi-lms-surface, #f5f6f8);
+	border-radius: var(--odsi-lms-radius, 6px);
+	padding: 1.5rem;
+}
+
+.odsi-lms-my-courses {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.odsi-lms-my-courses__item {
+	border-bottom: 1px solid var(--odsi-lms-border, #d9dce1);
+	padding: 1rem 0;
+}

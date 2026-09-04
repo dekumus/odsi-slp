@@ -1,0 +1,250 @@
+<?php
+/**
+ * Content access rules.
+ *
+ * @package ODSI\LMS
+ */
+
+declare( strict_types = 1 );
+
+namespace ODSI\LMS\Courses;
+
+use ODSI\LMS\Contracts\Bootable;
+use ODSI\LMS\PostTypes\PostTypes;
+use ODSI\LMS\Repositories\EnrollmentRepository;
+use ODSI\LMS\Repositories\ProgressRepository;
+use ODSI\LMS\Support\Capabilities;
+use ODSI\LMS\Support\Meta;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Decides what a given user is allowed to open.
+ *
+ * Three rules compose here: enrollment (are they on the course), drip (has the
+ * step unlocked yet) and linear progression (did they finish the previous step).
+ */
+final class Access implements Bootable {
+
+	/**
+	 * Constructor.
+	 *
+	 * @param EnrollmentRepository $enrollments Enrollment storage.
+	 * @param ProgressRepository   $progress    Progress storage.
+	 * @param Structure            $structure   Course outline resolver.
+	 */
+	public function __construct(
+		private EnrollmentRepository $enrollments,
+		private ProgressRepository $progress,
+		private Structure $structure
+	) {
+	}
+
+	/**
+	 * Register hooks.
+	 */
+	public function boot(): void {
+		add_filter( 'the_content', array( $this, 'filter_content' ), 20 );
+	}
+
+	/**
+	 * Whether a user may open a course.
+	 *
+	 * @param int $user_id   User id, or 0 for a logged out visitor.
+	 * @param int $course_id Course post id.
+	 */
+	public function can_access_course( int $user_id, int $course_id ): bool {
+		if ( $this->can_manage( $user_id, $course_id ) ) {
+			return true;
+		}
+
+		$mode = (string) get_post_meta( $course_id, Meta::ACCESS_MODE, true );
+
+		if ( 'open' === $mode ) {
+			return true;
+		}
+
+		$allowed = $user_id > 0 && $this->enrollments->has_access( $user_id, $course_id );
+
+		/**
+		 * Filters whether a user may access a course.
+		 *
+		 * @param bool $allowed   Whether access is granted.
+		 * @param int  $user_id   User id.
+		 * @param int  $course_id Course post id.
+		 */
+		return (bool) apply_filters( 'odsi_lms_can_access_course', $allowed, $user_id, $course_id );
+	}
+
+	/**
+	 * Whether a user may open a single lesson, topic or quiz.
+	 *
+	 * @param int $user_id   User id.
+	 * @param int $object_id Step post id.
+	 */
+	public function can_access_step( int $user_id, int $object_id ): bool {
+		$course_id = $this->structure->course_id_for( $object_id );
+
+		if ( $this->can_manage( $user_id, $course_id ) ) {
+			return true;
+		}
+
+		if ( ! $this->can_access_course( $user_id, $course_id ) ) {
+			return false;
+		}
+
+		$allowed = $this->is_dripped( $user_id, $object_id, $course_id )
+			&& $this->passes_linear_progression( $user_id, $object_id, $course_id );
+
+		/**
+		 * Filters whether a user may access a single course step.
+		 *
+		 * @param bool $allowed   Whether access is granted.
+		 * @param int  $user_id   User id.
+		 * @param int  $object_id Step post id.
+		 * @param int  $course_id Course post id.
+		 */
+		return (bool) apply_filters( 'odsi_lms_can_access_step', $allowed, $user_id, $object_id, $course_id );
+	}
+
+	/**
+	 * Replace locked content with a notice on the front end.
+	 *
+	 * @param string $content Post content.
+	 *
+	 * @return string
+	 */
+	public function filter_content( string $content ): string {
+		if ( ! is_singular() || ! in_the_loop() || ! is_main_query() ) {
+			return $content;
+		}
+
+		$post_id = get_the_ID();
+
+		if ( ! $post_id ) {
+			return $content;
+		}
+
+		$user_id = get_current_user_id();
+		$type    = (string) get_post_type( $post_id );
+
+		if ( PostTypes::COURSE === $type ) {
+			// The course page itself stays readable; it is the sales and outline
+			// page. Individual steps are what get locked.
+			return $content;
+		}
+
+		if ( ! in_array( $type, PostTypes::trackable(), true ) ) {
+			return $content;
+		}
+
+		if ( $this->can_access_step( $user_id, $post_id ) ) {
+			return $content;
+		}
+
+		return $this->locked_notice( $post_id, $user_id );
+	}
+
+	/**
+	 * Whether the drip schedule has released a step for this user.
+	 *
+	 * @param int $user_id   User id.
+	 * @param int $object_id Step post id.
+	 * @param int $course_id Course post id.
+	 */
+	private function is_dripped( int $user_id, int $object_id, int $course_id ): bool {
+		$type = (string) get_post_meta( $object_id, Meta::DRIP_TYPE, true );
+
+		if ( '' === $type || 'none' === $type ) {
+			return true;
+		}
+
+		$value = (string) get_post_meta( $object_id, Meta::DRIP_VALUE, true );
+
+		if ( 'date' === $type ) {
+			return '' === $value || strtotime( $value ) <= time();
+		}
+
+		if ( 'days_after_enrollment' === $type ) {
+			$enrollment = $this->enrollments->find_for( $user_id, $course_id );
+
+			if ( ! $enrollment ) {
+				return false;
+			}
+
+			$unlocks = strtotime( (string) $enrollment->enrolled_at ) + ( (int) $value * DAY_IN_SECONDS );
+
+			return $unlocks <= time();
+		}
+
+		return true;
+	}
+
+	/**
+	 * Whether the previous step has been completed, when the course is linear.
+	 *
+	 * @param int $user_id   User id.
+	 * @param int $object_id Step post id.
+	 * @param int $course_id Course post id.
+	 */
+	private function passes_linear_progression( int $user_id, int $object_id, int $course_id ): bool {
+		if ( ! get_post_meta( $course_id, Meta::LINEAR_PROGRESSION, true ) ) {
+			return true;
+		}
+
+		$previous = $this->structure->previous_step( $course_id, $object_id );
+
+		if ( null === $previous ) {
+			return true;
+		}
+
+		return $this->progress->is_completed( $user_id, $previous['id'] );
+	}
+
+	/**
+	 * Whether the user is an instructor or admin for this course.
+	 *
+	 * @param int $user_id   User id.
+	 * @param int $course_id Course post id.
+	 */
+	private function can_manage( int $user_id, int $course_id ): bool {
+		if ( $user_id <= 0 ) {
+			return false;
+		}
+
+		if ( user_can( $user_id, Capabilities::MANAGE ) ) {
+			return true;
+		}
+
+		return $course_id > 0 && (int) get_post_field( 'post_author', $course_id ) === $user_id;
+	}
+
+	/**
+	 * Markup shown in place of locked content.
+	 *
+	 * @param int $object_id Step post id.
+	 * @param int $user_id   User id.
+	 */
+	private function locked_notice( int $object_id, int $user_id ): string {
+		$course_id = $this->structure->course_id_for( $object_id );
+
+		$message = $user_id > 0
+			? __( 'This lesson is not available yet. Complete the previous step or wait for it to unlock.', 'odsi-lms' )
+			: __( 'Please log in and enroll on this course to view this lesson.', 'odsi-lms' );
+
+		$html = sprintf(
+			'<div class="odsi-lms-locked"><p>%s</p>',
+			esc_html( $message )
+		);
+
+		if ( $course_id > 0 ) {
+			$html .= sprintf(
+				'<p><a class="odsi-lms-locked__link" href="%s">%s</a></p>',
+				esc_url( (string) get_permalink( $course_id ) ),
+				esc_html__( 'Back to the course', 'odsi-lms' )
+			);
+		}
+
+		return $html . '</div>';
+	}
+}

@@ -1,0 +1,28 @@
+# Dependencies
+/vendor/
+**/vendor/
+/node_modules/
+**/node_modules/
+
+# Build output
+**/assets/build/
+**/build/
+*.zip
+
+# Tooling caches
+.phpunit.result.cache
+.phpcs-cache
+.php-cs-fixer.cache
+/.phpstan/
+
+# Local config
+.env
+.env.local
+/wp-cli.local.yml
+
+# Editors / OS
+.idea/
+.vscode/
+*.sublime-*
+.DS_Store
+Thumbs.db

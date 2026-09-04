@@ -1,0 +1,21 @@
+{
+	"name": "odsi/odsi-lms",
+	"description": "Course, lesson, quiz and progress engine for the ODSI social learning platform.",
+	"type": "wordpress-plugin",
+	"license": "GPL-2.0-or-later",
+	"require": {
+		"php": ">=8.1"
+	},
+	"autoload": {
+		"psr-4": {
+			"ODSI\\LMS\\": "src/"
+		}
+	},
+	"config": {
+		"optimize-autoloader": true,
+		"sort-packages": true,
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}
