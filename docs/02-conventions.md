@@ -81,6 +81,23 @@ one.
   as documented variables — they never query.
 - CSS is scoped to plugin class names and built on custom properties so a theme
   restyles by redefining tokens.
+- **Shared design tokens.** Both plugins derive their own tokens
+  (`--odsi-lms-*`, `--odsi-social-*`) from one shared set, so a theme styles
+  the whole platform by defining these once on `:root` or `body`:
+
+  | Token | Meaning | Fallback |
+  | --- | --- | --- |
+  | `--odsi-accent` | Buttons, progress, active states | `#2563eb` |
+  | `--odsi-accent-contrast` | Text on the accent | `#ffffff` |
+  | `--odsi-surface` | Cards, tracks, quiet backgrounds | `#f5f6f8` |
+  | `--odsi-border` | Hairlines and input borders | `#d9dce1` |
+  | `--odsi-muted` | Secondary text | `#5b6470` |
+  | `--odsi-radius` | Corner radius of buttons, cards and inputs | `8px` |
+
+  A plugin never reads a shared token directly in a rule; it reads its own
+  token, whose default is the shared one. Adding a token means adding it to
+  both plugins and to this table. The bundled `odsi-learn` theme maps the set
+  onto its `theme.json` palette (ADR-019).
 - JavaScript is progressive enhancement: every control it binds to is a real
   element rendered by PHP.
 - No jQuery in new code.

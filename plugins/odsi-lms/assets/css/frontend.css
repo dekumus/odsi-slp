@@ -1,19 +1,20 @@
 /**
  * ODSI LMS front-end styles.
  *
- * Scoped to plugin class names and built on custom properties so a theme can
- * restyle the whole plugin by redefining the tokens below.
+ * Scoped to plugin class names and built on custom properties. Every plugin
+ * token defaults to a shared `--odsi-*` token, so a theme restyles the LMS,
+ * the community plugin and its own blocks together by defining the shared
+ * set once (on `:root` or `body`); the values below are only the fallback
+ * when no theme does. The contract is documented in docs/02-conventions.md.
  */
 
-.odsi-lms-course,
-.odsi-lms-lesson,
-.odsi-lms-quiz,
-.odsi-lms-archive {
-	--odsi-lms-accent: #2563eb;
-	--odsi-lms-surface: #f5f6f8;
-	--odsi-lms-border: #d9dce1;
-	--odsi-lms-muted: #5b6470;
-	--odsi-lms-radius: 6px;
+:root {
+	--odsi-lms-accent: var(--odsi-accent, #2563eb);
+	--odsi-lms-accent-contrast: var(--odsi-accent-contrast, #ffffff);
+	--odsi-lms-surface: var(--odsi-surface, #f5f6f8);
+	--odsi-lms-border: var(--odsi-border, #d9dce1);
+	--odsi-lms-muted: var(--odsi-muted, #5b6470);
+	--odsi-lms-radius: var(--odsi-radius, 8px);
 }
 
 .odsi-lms-progress__track {
@@ -73,8 +74,8 @@
 .odsi-lms-button {
 	background: var(--odsi-lms-accent, #2563eb);
 	border: 0;
-	border-radius: var(--odsi-lms-radius, 6px);
-	color: #fff;
+	border-radius: var(--odsi-lms-radius, 8px);
+	color: var(--odsi-lms-accent-contrast, #fff);
 	cursor: pointer;
 	display: inline-block;
 	font: inherit;
@@ -95,7 +96,7 @@
 
 .odsi-lms-card {
 	border: 1px solid var(--odsi-lms-border, #d9dce1);
-	border-radius: var(--odsi-lms-radius, 6px);
+	border-radius: var(--odsi-lms-radius, 8px);
 	overflow: hidden;
 	padding-bottom: 1rem;
 }
@@ -111,7 +112,7 @@
 
 .odsi-lms-locked {
 	background: var(--odsi-lms-surface, #f5f6f8);
-	border-radius: var(--odsi-lms-radius, 6px);
+	border-radius: var(--odsi-lms-radius, 8px);
 	padding: 1.5rem;
 }
 
@@ -128,7 +129,7 @@
 
 .odsi-lms-quiz__question {
 	border: 1px solid var(--odsi-lms-border, #d9dce1);
-	border-radius: var(--odsi-lms-radius, 6px);
+	border-radius: var(--odsi-lms-radius, 8px);
 	margin-bottom: 1rem;
 	padding: 1rem;
 }
@@ -151,7 +152,7 @@
 	padding: 0.75em 1em;
 	border-left: 4px solid var(--odsi-lms-border, #d9dce1);
 	background: var(--odsi-lms-surface, #f5f6f8);
-	border-radius: var(--odsi-lms-radius, 6px);
+	border-radius: var(--odsi-lms-radius, 8px);
 	margin-bottom: 1em;
 }
 

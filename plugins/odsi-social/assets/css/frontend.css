@@ -1,20 +1,17 @@
 /**
- * ODSI Social front-end styles. Token-based so themes restyle by redefining
- * the custom properties on `.odsi-social`.
+ * ODSI Social front-end styles. Token-based: every plugin token defaults to
+ * a shared `--odsi-*` token, so a theme restyles this plugin and the LMS
+ * together by defining the shared set once (see docs/02-conventions.md).
+ * The values below are only the fallback when no theme does.
  */
 
-.odsi-social,
-.odsi-social-feed,
-.odsi-social-directory,
-.odsi-social-profile,
-.odsi-social-group,
-.odsi-social-notifications,
-.odsi-social-messages {
-	--odsi-social-accent: #2563eb;
-	--odsi-social-surface: #f5f6f8;
-	--odsi-social-border: #d9dce1;
-	--odsi-social-muted: #5b6470;
-	--odsi-social-radius: 8px;
+:root {
+	--odsi-social-accent: var(--odsi-accent, #2563eb);
+	--odsi-social-accent-contrast: var(--odsi-accent-contrast, #ffffff);
+	--odsi-social-surface: var(--odsi-surface, #f5f6f8);
+	--odsi-social-border: var(--odsi-border, #d9dce1);
+	--odsi-social-muted: var(--odsi-muted, #5b6470);
+	--odsi-social-radius: var(--odsi-radius, 8px);
 }
 
 .odsi-social-avatar {
@@ -32,7 +29,7 @@
 	background: var(--odsi-social-accent, #2563eb);
 	border: 0;
 	border-radius: var(--odsi-social-radius, 8px);
-	color: #fff;
+	color: var(--odsi-social-accent-contrast, #fff);
 	cursor: pointer;
 	display: inline-block;
 	font: inherit;
