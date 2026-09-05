@@ -188,6 +188,12 @@ if ( class_exists( '\ODSI\LMS\Plugin' ) ) {
 	}
 
 	echo "LMS: course '{$course}' with 2 lessons, 2 topics, a quiz and a paid follow-on course. Learners enrolled.\n";
+
+	// The course archive is automatic (the plugin registers it), but
+	// "My Courses" is a personalised shortcode with no default route, so a
+	// fresh install has no page for it. Create one.
+	$my_courses = odsi_demo_post( 'page', 'My Courses', array( 'post_content' => '<!-- wp:shortcode -->[odsi_my_courses]<!-- /wp:shortcode -->' ) );
+	echo "LMS: 'My Courses' page ready at " . get_permalink( $my_courses ) . "\n";
 } else {
 	echo "LMS plugin not active, skipping.\n";
 }
