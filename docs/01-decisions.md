@@ -380,3 +380,43 @@ over REST. The admin edit screen uses the classic editor.
 override `templates/groups/*` instead. Attachments parented to a group inherit
 its non-public status.
 
+---
+
+## ADR-019 — One block theme carries the shared design language
+
+**Status:** accepted
+
+**Context.** Both plugins style their own components from CSS custom
+properties, and ADR-017 renders their front-end UI through `the_content` so
+any theme works. That leaves a site owner with three visual vocabularies on
+one page: the theme's, the LMS's and the community plugin's. Matching them
+meant editing three stylesheets by hand, and nothing shipped a front page,
+a course archive, or a menu that knew where the community lives.
+
+**Decision.** The plugins read one shared token set (`--odsi-accent`,
+`--odsi-accent-contrast`, `--odsi-surface`, `--odsi-border`, `--odsi-muted`,
+`--odsi-radius`) with their own names as fallbacks, so any theme restyles both
+by defining six properties. The repository ships a block theme,
+`themes/odsi-learn`, that does exactly that from its `theme.json` palette and
+adds the pieces neither plugin can own: block templates for the course,
+lesson, topic and quiz post types and the course archive, a front page built
+from patterns that use the plugins' blocks, and a dynamic `platform-menu`
+block that lists the courses archive, the learner dashboard page, the
+community sections and log in / log out according to which plugins are
+active and who is looking.
+
+The theme obeys the plugin boundary from the other side: it never references
+an `ODSI\LMS\*` or `ODSI\Social\*` class. It asks `post_type_exists()`,
+`shortcode_exists()`, and the public `odsi_social_page_url` filter, and it
+degrades to a plain blog theme when neither plugin is active. Its stylesheet
+loads after both plugin stylesheets and harmonises their buttons, cards and
+forms with the theme's own; it never redefines plugin layout.
+
+**Consequences.** Site owners who want the integrated look activate the
+theme and edit colours once in the Site Editor. Owners with an existing theme
+keep it and set the six tokens (docs/02-conventions.md, "Shared design
+tokens"). The theme has its own integration suite (`composer test:theme`,
+booted with the theme active) and an end-to-end spec that skips itself when
+another theme is running. CI runs the browser suite against this theme, so
+the plugins are now proven on a bundled block theme rather than only on
+the WordPress default.

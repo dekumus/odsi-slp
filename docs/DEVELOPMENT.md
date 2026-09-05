@@ -80,6 +80,13 @@ The bootstrap loads all three plugins as must-use plugins and runs each
 `Installer::activate()`. `WP_TESTS_DIR` points at the test library
 (default `/tmp/wordpress-tests-lib`).
 
+`tests/integration/theme/` proves the `odsi-learn` theme. A theme's
+`functions.php` only loads at bootstrap, so the suite cannot switch theme per
+test: `composer test:theme` sets `ODSI_TEST_THEME=odsi-learn`, which makes the
+bootstrap register `themes/` as a theme directory and force the active theme
+before WordPress loads. Without that variable every theme test skips, and
+`composer test:integration` excludes the group entirely.
+
 ### End to end
 
 `tests/e2e/`. Playwright driving a real browser against a running site. Two
@@ -149,8 +156,10 @@ matches the source. Rebuild before you commit.
 
 `bin/package.sh` builds the editor bundles and writes one installable zip
 per plugin to `dist/` (`odsi-lms-<version>.zip` and so on), containing only
-what a site needs: no bundle sources, no dev files. Upload them through
-**Plugins → Add New → Upload Plugin**, or unzip into `wp-content/plugins/`.
+what a site needs: no bundle sources, no dev files, plus
+`odsi-learn-<version>.zip` for the theme. Upload plugin zips through
+**Plugins → Add New → Upload Plugin** (or unzip into `wp-content/plugins/`)
+and the theme through **Appearance → Themes → Add New → Upload Theme**.
 The bridge zip must be activated after the other two.
 
 ## Static analysis
@@ -183,6 +192,7 @@ tests/unit/               PHPUnit + Brain Monkey
 tests/integration/        WordPress core test framework
 tests/fixtures/           Factories shared by integration tests
 tests/e2e/                Playwright
+themes/odsi-learn/        Block theme (ADR-019); wp-env and serve-local.sh activate it
 phpcs.xml.dist            Coding standards
 phpstan.neon.dist         Static analysis
 phpunit.unit.xml.dist     Unit suite config

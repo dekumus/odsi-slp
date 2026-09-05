@@ -14,7 +14,7 @@
 		"env:cli": "wp-env run cli wp",
 		"lint": "npm run lint:php && npm run lint:js",
 		"lint:php": "composer lint",
-		"lint:js": "eslint plugins/*/assets/js plugins/*/assets/src tests/e2e --ext .js,.jsx,.ts,.tsx",
+		"lint:js": "eslint plugins/*/assets/js plugins/*/assets/src themes/*/blocks tests/e2e --ext .js,.jsx,.ts,.tsx",
 		"analyse": "composer analyse",
 		"check:boundaries": "bash bin/check-plugin-boundaries.sh",
 		"test": "npm run check:boundaries && composer test && npm run test:e2e",

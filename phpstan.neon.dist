@@ -17,6 +17,8 @@ parameters:
     - plugins/odsi-bridge/src
     - plugins/odsi-bridge/odsi-bridge.php
     - plugins/odsi-bridge/uninstall.php
+    - themes/odsi-learn/functions.php
+    - themes/odsi-learn/blocks
   excludePaths:
     - */vendor/*
     - */node_modules/*

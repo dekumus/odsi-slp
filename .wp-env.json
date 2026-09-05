@@ -6,6 +6,7 @@
 		"./plugins/odsi-social",
 		"./plugins/odsi-bridge"
 	],
+	"themes": [ "./themes/odsi-learn" ],
 	"config": {
 		"WP_DEBUG": true,
 		"WP_DEBUG_LOG": true,

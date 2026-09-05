@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 #
 # Build installable plugin zips into dist/: one per plugin, containing only
-# what a site needs (no sources for the editor bundles, no dev files).
+# what a site needs (no sources for the editor bundles, no dev files), plus
+# the odsi-learn theme.
 #
-#   bin/package.sh            # builds assets, then zips all three plugins
+#   bin/package.sh            # builds assets, then zips the plugins and the theme
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DIST="${ODSI_DIST_DIR:-$ROOT/dist}"
@@ -22,5 +23,13 @@ for plugin in odsi-lms odsi-social odsi-bridge; do
 		-x "$plugin/composer.json" \
 		-x "$plugin/.gitignore" \
 		-x "*/.DS_Store" )
+	echo "$out"
+done
+
+for theme in odsi-learn; do
+	version="$(sed -n 's/^Version: *\([0-9.]*\).*/\1/p' "themes/$theme/style.css" | head -1)"
+	out="$DIST/$theme-${version:-dev}.zip"
+	rm -f "$out"
+	( cd themes && zip -qr "$out" "$theme" -x "*/.DS_Store" )
 	echo "$out"
 done

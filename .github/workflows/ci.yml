@@ -119,6 +119,7 @@ jobs:
         env:
           WP_TESTS_DB_HOST: 127.0.0.1
       - run: composer test:integration
+      - run: composer test:theme
 
   activation:
     name: Each plugin activates alone

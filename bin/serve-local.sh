@@ -80,6 +80,10 @@ PHP
 	wp plugin activate odsi-lms || true
 	wp plugin activate odsi-social || true
 	wp plugin activate odsi-bridge || true
+	if [ -d "$ROOT/themes/odsi-learn" ]; then
+		ln -sfn "$ROOT/themes/odsi-learn" "$SITE_DIR/wp-content/themes/odsi-learn"
+		wp theme activate odsi-learn || true
+	fi
 	wp rewrite structure '/%postname%/' --hard
 fi
 

@@ -179,6 +179,38 @@ categories in the editor. Templates live in each plugin's `templates/`
 directory; copy one to `your-theme/odsi-lms/` or `your-theme/odsi-social/`
 to override it.
 
+### The ODSI Learn theme
+
+If you do not already have a theme you love, activate **ODSI Learn**
+(`themes/odsi-learn`, also built as a zip by `bin/package.sh`). It gives
+WordPress, the courses and the community one look:
+
+- The header and footer carry a **Platform menu** that builds itself: the
+  courses archive, "My courses" once you publish a page containing
+  `[odsi_my_courses]`, Activity / Members / Groups when the community plugin
+  is active, and Notifications / Messages / Log out for signed-in members.
+- The front page shows a hero, the latest courses and the community feed.
+  Edit it under **Appearance → Editor → Templates → Front Page**, or drop the
+  **ODSI Learn** patterns into any page.
+- Courses, lessons, topics and quizzes have their own templates; the course
+  archive is a card grid.
+- Colours live in one place: **Appearance → Editor → Styles → Colours**.
+  Changing *Accent* recolours every plugin button and progress bar too.
+
+Keeping your own theme? Define six CSS variables once (for example in
+**Appearance → Customize → Additional CSS**) and both plugins follow:
+
+```css
+:root {
+	--odsi-accent: #2f5bea;
+	--odsi-accent-contrast: #ffffff;
+	--odsi-surface: #f4f6fb;
+	--odsi-border: #dfe3ec;
+	--odsi-muted: #5b6470;
+	--odsi-radius: 8px;
+}
+```
+
 ## 8. The bridge
 
 **Learning → Community bridge** switches three modules:

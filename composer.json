@@ -37,10 +37,12 @@
 		"lint:fix": "phpcbf",
 		"analyse": "phpstan analyse --memory-limit=1G",
 		"test:unit": "phpunit -c phpunit.unit.xml.dist",
-		"test:integration": "phpunit -c phpunit.integration.xml.dist",
+		"test:integration": "phpunit -c phpunit.integration.xml.dist --exclude-group theme",
+		"test:theme": "ODSI_TEST_THEME=odsi-learn phpunit -c phpunit.integration.xml.dist --testsuite theme",
 		"test": [
 			"@test:unit",
-			"@test:integration"
+			"@test:integration",
+			"@test:theme"
 		]
 	},
 	"config": {

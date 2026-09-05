@@ -66,6 +66,7 @@ docs/                    Specs, decisions and agent briefs
 plugins/odsi-lms/        LMS plugin (built and tested, see docs/03-current-state.md)
 plugins/odsi-social/     Community plugin (built and tested)
 plugins/odsi-bridge/     Integration plugin (built and tested; needs both others)
+themes/odsi-learn/       Block theme; may use plugin hooks and post types, never plugin classes
 ```
 
 ## Working agreements

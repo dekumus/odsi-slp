@@ -1,0 +1,18 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "odsi-learn/platform-menu",
+	"title": "Platform menu",
+	"category": "theme",
+	"icon": "menu",
+	"description": "Links to the courses, the learner dashboard and the community, built from whichever ODSI plugins are active.",
+	"keywords": [ "menu", "navigation", "courses", "community" ],
+	"textdomain": "odsi-learn",
+	"attributes": {
+		"variant": { "type": "string", "default": "header", "enum": [ "header", "footer", "inline" ] },
+		"showAccount": { "type": "boolean", "default": true }
+	},
+	"supports": { "html": false, "reusable": false, "multiple": true },
+	"editorScript": "odsi-learn-platform-menu-editor",
+	"render": "file:./render.php"
+}

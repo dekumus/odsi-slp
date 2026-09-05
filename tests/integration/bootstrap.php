@@ -34,6 +34,22 @@ define( 'WP_TESTS_CONFIG_FILE_PATH', $odsi_tests_dir . '/wp-tests-config.php' );
 
 require_once $odsi_tests_dir . '/includes/functions.php';
 
+// The theme suite runs with the odsi-learn block theme active. The theme's
+// functions.php only loads at bootstrap, so the switch has to happen before
+// wp-settings.php resolves the active theme, not inside a test.
+$odsi_test_theme = (string) getenv( 'ODSI_TEST_THEME' );
+
+if ( '' !== $odsi_test_theme ) {
+	tests_add_filter(
+		'muplugins_loaded',
+		static function () use ( $odsi_root ): void {
+			register_theme_directory( $odsi_root . '/themes' );
+		}
+	);
+	tests_add_filter( 'pre_option_template', static fn() => $odsi_test_theme );
+	tests_add_filter( 'pre_option_stylesheet', static fn() => $odsi_test_theme );
+}
+
 tests_add_filter(
 	'muplugins_loaded',
 	static function () use ( $odsi_root ): void {

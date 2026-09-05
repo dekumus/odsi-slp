@@ -8,9 +8,11 @@ independent GPL plugins plus an optional bridge.
 | [`odsi-lms`](plugins/odsi-lms) | Courses, lessons, topics, quizzes, assignments, enrollment, progress, reports, certificates, cohorts, course builder, learner emails | 170 tests + browser E2E passing |
 | [`odsi-social`](plugins/odsi-social) | Profiles, activity, groups, connections, notifications, emails, messaging, blocking, reporting and moderation, blocks | 188 tests + browser E2E passing |
 | [`odsi-bridge`](plugins/odsi-bridge) | Course activity in the feed, groups linked to courses, shared progress | Built and tested (15 tests) |
+| [`odsi-learn`](themes/odsi-learn) | Block theme that gives WordPress and both plugins one design language, with templates for every course post type and a self-building platform menu | Built and tested (8 tests + browser E2E) |
 
 Each plugin installs and works alone. The bridge activates only when both are
-present.
+present. The theme is optional: any theme works, and one that sets six CSS
+variables restyles both plugins at once (ADR-019).
 
 ## Status
 
@@ -20,8 +22,8 @@ community plugin (privacy, feeds, groups, connections, notifications, messages,
 REST), and the bridge between them (course events in the feed, groups linked
 to courses, shared progress). PHPCS and PHPStan level 6 are clean across all
 three, and the LMS learner flow, the editor's course builder and the community
-member flow pass end to end in a real browser against a fresh install with the
-default block theme.
+member flow pass end to end in a real browser against a fresh install running
+the bundled `odsi-learn` block theme.
 Read
 [`docs/03-current-state.md`](docs/03-current-state.md) for the honest inventory.
 

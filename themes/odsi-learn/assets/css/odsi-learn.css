@@ -1,0 +1,561 @@
+/**
+ * ODSI Learn theme styles.
+ *
+ * Three layers:
+ *   1. The shared `--odsi-*` design tokens both plugins read, mapped onto the
+ *      theme.json palette so one palette edit restyles WordPress, the LMS
+ *      and the community plugin together.
+ *   2. Theme-owned components: header menu, cards, sections.
+ *   3. Harmonisation of plugin components (buttons, cards, forms) with the
+ *      core button and input styling, plus page layouts for course steps
+ *      and community pages.
+ *
+ * Loaded after both plugin stylesheets, and also as the editor stylesheet.
+ */
+
+/* 1. Shared tokens ------------------------------------------------------ */
+
+:root,
+.editor-styles-wrapper {
+	--odsi-accent: var(--wp--preset--color--accent);
+	--odsi-accent-contrast: var(--wp--preset--color--base);
+	--odsi-surface: var(--wp--preset--color--surface);
+	--odsi-border: var(--wp--preset--color--border);
+	--odsi-muted: var(--wp--preset--color--muted);
+	--odsi-radius: var(--wp--custom--odsi--radius, 8px);
+	--odsi-learn-shadow: var(--wp--custom--odsi--shadow, 0 1px 2px rgba(20, 33, 61, 0.06), 0 8px 24px rgba(20, 33, 61, 0.06));
+}
+
+/* Make the block editor mirror the front end. */
+.editor-styles-wrapper {
+	background: var(--wp--preset--color--base);
+	color: var(--wp--preset--color--contrast);
+}
+
+/* 2. Theme components ---------------------------------------------------- */
+
+/* Skip link and focus ring */
+:focus-visible {
+	outline: 2px solid var(--wp--preset--color--accent);
+	outline-offset: 2px;
+}
+
+.odsi-learn-header .wp-block-site-title a {
+	text-decoration: none;
+}
+
+.odsi-learn-header .wp-block-site-logo img {
+	border-radius: 50%;
+}
+
+.odsi-learn-menu__list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem 0.5rem;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.odsi-learn-menu__link {
+	border-radius: 999px;
+	color: var(--wp--preset--color--contrast);
+	display: inline-block;
+	font-size: var(--wp--preset--font-size--small);
+	font-weight: 500;
+	padding: 0.4rem 0.85rem;
+	text-decoration: none;
+	transition: background-color 120ms ease-out, color 120ms ease-out;
+}
+
+.odsi-learn-menu__link:hover,
+.odsi-learn-menu__link:focus-visible {
+	background: var(--wp--preset--color--surface);
+	color: var(--wp--preset--color--accent-dark);
+}
+
+.odsi-learn-menu__link[aria-current="page"] {
+	background: var(--wp--preset--color--accent);
+	color: var(--wp--preset--color--base);
+}
+
+.odsi-learn-menu__item--login .odsi-learn-menu__link,
+.odsi-learn-menu__item--logout .odsi-learn-menu__link {
+	border: 1px solid var(--wp--preset--color--border);
+}
+
+.odsi-learn-menu--footer .odsi-learn-menu__list {
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.odsi-learn-menu--footer .odsi-learn-menu__link {
+	color: var(--wp--preset--color--muted);
+	padding: 0.2rem 0;
+}
+
+.odsi-learn-menu--footer .odsi-learn-menu__link:hover,
+.odsi-learn-menu--footer .odsi-learn-menu__link[aria-current="page"] {
+	background: none;
+	color: var(--wp--preset--color--accent-dark);
+}
+
+.odsi-learn-menu--inline {
+	margin-top: var(--wp--preset--spacing--40);
+}
+
+/* Cards used by the theme's query loops */
+.odsi-learn-cards {
+	gap: var(--wp--preset--spacing--40);
+}
+
+.odsi-learn-card,
+.is-style-odsi-card {
+	background: var(--wp--preset--color--base);
+	border: 1px solid var(--wp--preset--color--border);
+	border-radius: var(--wp--custom--odsi--radius-large, 14px);
+	overflow: hidden;
+	transition: box-shadow 160ms ease-out, transform 160ms ease-out;
+}
+
+.odsi-learn-card:hover,
+.odsi-learn-card:focus-within {
+	box-shadow: var(--odsi-learn-shadow);
+	transform: translateY(-2px);
+}
+
+.odsi-learn-card .wp-block-post-featured-image,
+.odsi-learn-card .wp-block-post-featured-image img {
+	margin: 0;
+	width: 100%;
+}
+
+.odsi-learn-card .wp-block-post-title {
+	margin: 0;
+}
+
+.odsi-learn-card .wp-block-post-title a {
+	text-decoration: none;
+}
+
+.odsi-learn-card .wp-block-post-excerpt__more-text {
+	display: none;
+}
+
+.odsi-learn-card__body > * + * {
+	margin-top: 0.5rem;
+}
+
+.is-style-odsi-card {
+	padding: var(--wp--preset--spacing--40);
+}
+
+/* Quiet button style */
+.wp-block-button.is-style-odsi-quiet .wp-block-button__link {
+	background: transparent;
+	border: 1px solid currentColor;
+	color: inherit;
+}
+
+/* Sections */
+.odsi-learn-section > .wp-block-group + * {
+	margin-top: var(--wp--preset--spacing--40);
+}
+
+.odsi-learn-hero .wp-block-heading {
+	letter-spacing: -0.02em;
+}
+
+.odsi-learn-hero p {
+	color: rgba(255, 255, 255, 0.85);
+}
+
+.odsi-learn-hero .is-style-odsi-quiet .wp-block-button__link {
+	border-color: rgba(255, 255, 255, 0.5);
+	color: var(--wp--preset--color--base);
+}
+
+/* Course archive page: the core query loop */
+.odsi-learn-courses .wp-block-post-terms a {
+	text-decoration: none;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+
+/* 3. Plugin harmonisation ---------------------------------------------- */
+
+/* Course grid pagination and the core query pagination share one look */
+.odsi-lms-grid__pagination,
+.wp-block-query-pagination {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem;
+	justify-content: center;
+	margin-top: var(--wp--preset--spacing--40);
+}
+
+.odsi-lms-grid__pagination a,
+.odsi-lms-grid__pagination span,
+.wp-block-query-pagination a,
+.wp-block-query-pagination .page-numbers {
+	border-radius: 999px;
+	display: inline-block;
+	min-width: 2.25rem;
+	padding: 0.35rem 0.75rem;
+	text-align: center;
+	text-decoration: none;
+}
+
+.odsi-lms-grid__pagination .current,
+.wp-block-query-pagination .page-numbers.current {
+	background: var(--wp--preset--color--accent);
+	color: var(--wp--preset--color--base);
+}
+
+.odsi-lms-grid__pagination a:hover,
+.wp-block-query-pagination a:hover {
+	background: var(--wp--preset--color--surface);
+}
+
+
+/* Buttons: plugin buttons match the core button */
+.odsi-lms-button,
+.odsi-social-button {
+	border-radius: var(--odsi-radius);
+	font-weight: 500;
+	line-height: 1.2;
+	padding: 0.7rem 1.4rem;
+	transition: background-color 120ms ease-out, opacity 120ms ease-out;
+}
+
+.odsi-lms-button:hover,
+.odsi-social-button:hover {
+	background: var(--wp--preset--color--accent-dark);
+	color: var(--wp--preset--color--base);
+}
+
+.odsi-social-button--quiet:hover,
+.odsi-social-button--quiet:focus-visible {
+	background: var(--wp--preset--color--surface);
+	color: var(--wp--preset--color--contrast);
+}
+
+/* Cards: plugin cards get the same shape and hover as theme cards */
+.odsi-lms-card,
+.odsi-social-card,
+.odsi-social-item,
+.odsi-lms-my-courses__item,
+.odsi-social-thread,
+.odsi-social-notification {
+	background: var(--wp--preset--color--base);
+	border-radius: var(--wp--custom--odsi--radius-large, 14px);
+}
+
+.odsi-lms-card:hover,
+.odsi-social-card:hover {
+	box-shadow: var(--odsi-learn-shadow);
+}
+
+.odsi-lms-card__title a,
+.odsi-social-card a,
+.odsi-lms-my-courses__link,
+.odsi-lms-outline__title,
+.odsi-social-member-list__name {
+	text-decoration: none;
+}
+
+.odsi-lms-card__title a:hover,
+.odsi-lms-my-courses__link:hover,
+.odsi-lms-outline__title:hover {
+	color: var(--wp--preset--color--accent-dark);
+	text-decoration: underline;
+}
+
+/* Forms: inputs match the theme's inputs */
+.odsi-lms-course input:not([type="submit"]):not([type="checkbox"]):not([type="radio"]),
+.odsi-lms-quiz input:not([type="submit"]):not([type="checkbox"]):not([type="radio"]),
+.odsi-lms-assignment input:not([type="submit"]):not([type="checkbox"]):not([type="radio"]),
+.odsi-social textarea,
+.odsi-social input:not([type="submit"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.odsi-social select,
+.odsi-lms-quiz textarea,
+.odsi-lms-assignment textarea,
+.wp-block-post-comments-form input:not([type="submit"]):not([type="checkbox"]),
+.wp-block-post-comments-form textarea,
+.wp-block-search__input {
+	background: var(--wp--preset--color--base);
+	border: 1px solid var(--wp--preset--color--border);
+	border-radius: var(--odsi-radius);
+	color: var(--wp--preset--color--contrast);
+	font: inherit;
+	padding: 0.6rem 0.75rem;
+}
+
+.odsi-social textarea:focus,
+.odsi-social input:focus,
+.odsi-lms-quiz input:focus,
+.odsi-lms-quiz textarea:focus,
+.wp-block-search__input:focus {
+	border-color: var(--wp--preset--color--accent);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--wp--preset--color--accent) 20%, transparent);
+	outline: none;
+}
+
+/* Progress bars: visible track even at 0%, success colour when complete */
+.odsi-lms-progress__track {
+	background: var(--wp--preset--color--surface);
+	box-shadow: inset 0 0 0 1px var(--wp--preset--color--border);
+}
+
+/* Learner dashboard: one card per course */
+.odsi-lms-my-courses {
+	display: grid;
+	gap: var(--wp--preset--spacing--30);
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.odsi-lms-my-courses__item {
+	border: 1px solid var(--wp--preset--color--border);
+	display: grid;
+	gap: 0.5rem 1rem;
+	grid-template-columns: 1fr auto;
+	padding: var(--wp--preset--spacing--40);
+}
+
+.odsi-lms-my-courses__link {
+	font-weight: 600;
+	grid-column: 1;
+}
+
+.odsi-lms-my-courses__item .odsi-lms-progress__track {
+	grid-column: 1;
+}
+
+.odsi-lms-my-courses__percentage {
+	color: var(--wp--preset--color--muted);
+	font-size: var(--wp--preset--font-size--small);
+	grid-column: 2;
+	grid-row: 1 / span 2;
+	align-self: center;
+}
+
+.odsi-lms-progress.is-complete .odsi-lms-progress__fill {
+	background: var(--wp--preset--color--success);
+}
+
+/* Notices */
+.odsi-social-notice--success,
+.odsi-lms-verify__ok {
+	border-left: 4px solid var(--wp--preset--color--success);
+}
+
+.odsi-social-notice--error,
+.odsi-lms-verify__bad,
+.odsi-lms-assignment__error {
+	border-left: 4px solid var(--wp--preset--color--danger);
+}
+
+/* Course page: hero band + body */
+.odsi-learn-course__hero {
+	border-radius: var(--wp--custom--odsi--radius-large, 14px);
+}
+
+.odsi-learn-course__hero .wp-block-post-title {
+	margin-top: 0.25rem;
+}
+
+.odsi-learn-course__hero .wp-block-post-terms a {
+	font-size: 0.75rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-decoration: none;
+	text-transform: uppercase;
+}
+
+.odsi-learn-course__body .odsi-lms-course__header,
+.odsi-learn-course__body .odsi-lms-course__title {
+	display: none; /* the template already rendered the title */
+}
+
+.odsi-learn-course__body .odsi-lms-enroll {
+	background: var(--wp--preset--color--surface);
+	border-radius: var(--wp--custom--odsi--radius-large, 14px);
+	margin: var(--wp--preset--spacing--40) 0;
+	padding: var(--wp--preset--spacing--40);
+}
+
+
+/* Lesson, topic, quiz: a focused reading column with the outline below */
+.odsi-learn-focus .odsi-learn-main {
+	--wp--style--global--content-size: 720px;
+}
+
+.odsi-learn-step__body .odsi-lms-lesson__title,
+.odsi-learn-step__body .odsi-lms-quiz__title {
+	display: none; /* the template already rendered the title */
+}
+
+.odsi-learn-step__body .odsi-lms-lesson__footer {
+	border-top: 1px solid var(--wp--preset--color--border);
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	justify-content: flex-end;
+	margin-top: var(--wp--preset--spacing--50);
+	padding-top: var(--wp--preset--spacing--40);
+}
+
+.odsi-learn-step__body .odsi-lms-complete.is-complete {
+	background: var(--wp--preset--color--success);
+	opacity: 1;
+}
+
+.odsi-learn-step__body .odsi-lms-lesson__outline {
+	background: var(--wp--preset--color--surface);
+	border-radius: var(--wp--custom--odsi--radius-large, 14px);
+	margin-top: var(--wp--preset--spacing--50);
+	padding: var(--wp--preset--spacing--40);
+}
+
+.odsi-learn-step__body .odsi-lms-lesson__outline .odsi-lms-outline__item {
+	border-bottom-color: var(--wp--preset--color--border);
+}
+
+.odsi-learn-step--quiz .odsi-lms-quiz__player {
+	margin-top: var(--wp--preset--spacing--40);
+}
+
+.odsi-learn-step--quiz .odsi-lms-quiz__info,
+.odsi-learn-step--quiz .odsi-lms-quiz__status {
+	background: var(--wp--preset--color--surface);
+	border-radius: var(--wp--custom--odsi--radius-large, 14px);
+	padding: var(--wp--preset--spacing--40);
+}
+
+.odsi-learn-step--quiz .odsi-lms-quiz__question {
+	border: 1px solid var(--wp--preset--color--border);
+	border-radius: var(--wp--custom--odsi--radius-large, 14px);
+	margin: var(--wp--preset--spacing--30) 0;
+	padding: var(--wp--preset--spacing--40);
+}
+
+.odsi-learn-step--quiz .odsi-lms-quiz__prompt {
+	font-weight: 600;
+	margin-top: 0;
+}
+
+.odsi-learn-step--quiz .odsi-lms-quiz__option {
+	border-radius: var(--odsi-radius);
+	display: block;
+	padding: 0.5rem 0.75rem;
+}
+
+.odsi-learn-step--quiz .odsi-lms-quiz__option:hover {
+	background: var(--wp--preset--color--surface);
+}
+
+.odsi-learn-step--quiz .odsi-lms-quiz__clock {
+	color: var(--wp--preset--color--warning);
+	font-family: var(--wp--preset--font-family--mono);
+}
+
+.odsi-learn-step--quiz .odsi-lms-quiz__error {
+	color: var(--wp--preset--color--danger);
+}
+
+/* Course outline section in the course page */
+.odsi-learn-course__body .odsi-lms-course__outline {
+	margin-top: var(--wp--preset--spacing--50);
+}
+
+/* Plugin lists never show bullets, whatever the theme's list styles say */
+.odsi-social-feed__items,
+.odsi-social-comments,
+.odsi-social-cards,
+.odsi-social-member-list,
+.odsi-social-notifications__list,
+.odsi-social-threads,
+.odsi-social-thread__messages,
+.odsi-social-reactors,
+.odsi-lms-outline,
+.odsi-lms-my-courses,
+.odsi-lms-my-certificates,
+.odsi-lms-assignment__history,
+.odsi-lms-enroll__prerequisites,
+.odsi-learn-menu__list {
+	list-style: none;
+	margin-left: 0;
+	padding-left: 0;
+}
+
+/* Community pages render through the page template. Profiles and groups
+   carry their own header, so the page title would repeat the name. */
+.odsi-learn-community .odsi-learn-page:has(.odsi-social-profile__header) > .wp-block-post-title {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+}
+
+.odsi-learn-community .odsi-social-profile__header h2 {
+	font-size: var(--wp--preset--font-size--x-large);
+	margin: 0 0 0.25rem;
+}
+
+.odsi-learn-community .odsi-social-profile__cover {
+	border-radius: var(--wp--custom--odsi--radius-large, 14px);
+}
+
+.odsi-social-feed__tabs a {
+	border-radius: 999px;
+	padding: 0.35rem 0.85rem;
+	text-decoration: none;
+}
+
+.odsi-learn-community .odsi-social-feed__tabs a.is-active,
+.odsi-social-feed__tabs a.is-active {
+	background: var(--wp--preset--color--accent);
+	color: var(--wp--preset--color--base);
+}
+
+/* Avatars */
+.odsi-social-avatar {
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+	.odsi-learn-card,
+	.odsi-learn-card:hover,
+	.odsi-lms-card,
+	.odsi-learn-menu__link,
+	.odsi-lms-progress__fill,
+	.odsi-lms-button,
+	.odsi-social-button {
+		transition: none;
+		transform: none;
+	}
+}
+
+/* Small screens */
+@media (max-width: 640px) {
+	.odsi-learn-header__bar {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.odsi-learn-menu__list {
+		gap: 0.25rem;
+	}
+
+	.odsi-learn-hero {
+		padding-left: var(--wp--preset--spacing--40);
+		padding-right: var(--wp--preset--spacing--40);
+	}
+}

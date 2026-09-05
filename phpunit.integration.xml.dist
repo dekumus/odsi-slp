@@ -26,6 +26,10 @@
     <testsuite name="bridge">
       <directory suffix="Test.php">tests/integration/bridge</directory>
     </testsuite>
+    <!-- Runs only with ODSI_TEST_THEME=odsi-learn; every test skips otherwise. -->
+    <testsuite name="theme">
+      <directory suffix="Test.php">tests/integration/theme</directory>
+    </testsuite>
   </testsuites>
   <php>
     <const name="WP_TESTS_PHPUNIT_POLYFILLS_PATH" value="vendor/yoast/phpunit-polyfills"/>

@@ -49,7 +49,7 @@ test.describe( 'Blocks', () => {
 		const inlineGrid = page.locator( '.wp-block-odsi-lms-course-grid .odsi-lms-grid' );
 		await expect( editorGrid.or( inlineGrid ).first() ).toContainText( `Block course ${ stamp }`, { timeout: 20000 } );
 
-		const registered = await page.evaluate( () => window.wp.blocks.getBlockTypes().filter( ( b ) => b.name.startsWith( 'odsi-' ) ).map( ( b ) => b.name ).sort() );
+		const registered = await page.evaluate( () => window.wp.blocks.getBlockTypes().filter( ( b ) => b.name.startsWith( 'odsi-lms/' ) || b.name.startsWith( 'odsi-social/' ) ).map( ( b ) => b.name ).sort() );
 		expect( registered ).toEqual( [
 			'odsi-lms/course-grid',
 			'odsi-lms/course-outline',

@@ -5,6 +5,7 @@
 	<file>plugins/odsi-lms</file>
 	<file>plugins/odsi-social</file>
 	<file>plugins/odsi-bridge</file>
+	<file>themes/odsi-learn</file>
 	<file>tests</file>
 
 	<exclude-pattern>*/vendor/*</exclude-pattern>
@@ -61,6 +62,7 @@
 				<element value="odsi-lms"/>
 				<element value="odsi-social"/>
 				<element value="odsi-bridge"/>
+				<element value="odsi-learn"/>
 			</property>
 		</properties>
 	</rule>
