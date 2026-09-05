@@ -11,15 +11,18 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+
+$odsi_lms_label_id = 'odsi-lms-progress-label-' . (int) $course_id;
 ?>
 <div class="odsi-lms-progress" data-course-id="<?php echo esc_attr( (string) $course_id ); ?>">
 	<div class="odsi-lms-progress__track" role="progressbar"
 		aria-valuenow="<?php echo esc_attr( (string) $percentage ); ?>"
 		aria-valuemin="0" aria-valuemax="100"
-		aria-label="<?php esc_attr_e( 'Course progress', 'odsi-lms' ); ?>">
+		aria-label="<?php esc_attr_e( 'Course progress', 'odsi-lms' ); ?>"
+		aria-describedby="<?php echo esc_attr( $odsi_lms_label_id ); ?>">
 		<div class="odsi-lms-progress__fill" style="width: <?php echo esc_attr( (string) $percentage ); ?>%"></div>
 	</div>
-	<p class="odsi-lms-progress__label">
+	<p class="odsi-lms-progress__label" id="<?php echo esc_attr( $odsi_lms_label_id ); ?>">
 		<?php
 		printf(
 			/* translators: 1: steps completed, 2: total steps, 3: percentage. */

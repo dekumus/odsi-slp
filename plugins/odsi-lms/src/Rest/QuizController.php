@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace ODSI\LMS\Rest;
 
 use ODSI\LMS\Courses\Access;
+use ODSI\LMS\Courses\Structure;
 use ODSI\LMS\Quizzes\QuizService;
 use WP_Error;
 use WP_REST_Request;
@@ -26,12 +27,14 @@ final class QuizController {
 	/**
 	 * Constructor.
 	 *
-	 * @param QuizService $quizzes Quiz lifecycle service.
-	 * @param Access      $access  Access rules.
+	 * @param QuizService $quizzes   Quiz lifecycle service.
+	 * @param Access      $access    Access rules.
+	 * @param Structure   $structure Outline, for the step after the quiz.
 	 */
 	public function __construct(
 		private QuizService $quizzes,
-		private Access $access
+		private Access $access,
+		private Structure $structure
 	) {
 	}
 
@@ -203,6 +206,8 @@ final class QuizController {
 			);
 		}//end foreach
 
+		$best = $this->quizzes->repository()->best_attempt( $user_id, $quiz_id );
+
 		return new WP_REST_Response(
 			array(
 				'quiz_id'            => $quiz_id,
@@ -210,6 +215,13 @@ final class QuizController {
 				'pass_mark'          => (float) get_post_meta( $quiz_id, \ODSI\LMS\Support\Meta::PASS_MARK, true ),
 				'time_limit'         => (int) get_post_meta( $quiz_id, \ODSI\LMS\Support\Meta::TIME_LIMIT, true ),
 				'attempts_remaining' => $this->quizzes->attempts_remaining( $user_id, $quiz_id ),
+				// So the player can say "Resume" and show the learner's standing
+				// result before they decide to sit the quiz again (LMS-QZ-021).
+				'has_open_attempt'   => $this->quizzes->has_open_attempt( $user_id, $quiz_id ),
+				'best'               => $best ? array(
+					'percentage' => (float) $best->percentage,
+					'passed'     => (bool) $best->passed,
+				) : null,
 			)
 		);
 	}
@@ -253,6 +265,17 @@ final class QuizController {
 
 			return $result;
 		}
+
+		$user_id   = get_current_user_id();
+		$quiz_id   = (int) $attempt->quiz_id;
+		$course_id = $this->structure->course_id_for( $quiz_id );
+		$next      = $course_id > 0 ? $this->structure->next_step( $course_id, $quiz_id ) : null;
+		$next_open = $next && $this->access->can_access_step( $user_id, (int) $next['id'] );
+
+		// Where to go from the result screen (LMS-IF-005).
+		$result['attempts_remaining'] = $this->quizzes->attempts_remaining( $user_id, $quiz_id );
+		$result['course_url']         = $course_id > 0 ? (string) get_permalink( $course_id ) : '';
+		$result['next_url']           = $next_open ? (string) get_permalink( (int) $next['id'] ) : '';
 
 		return new WP_REST_Response( $result );
 	}

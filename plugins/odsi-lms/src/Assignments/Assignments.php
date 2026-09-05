@@ -310,6 +310,19 @@ final class Assignments implements Bootable {
 	}
 
 	/**
+	 * Largest upload a submission may carry, in bytes. The front end reads the
+	 * same number so its pre-flight check and the server agree (LMS-ASN-010).
+	 */
+	public static function max_bytes(): int {
+		/**
+		 * Filters the maximum assignment upload size in bytes.
+		 *
+		 * @param int $bytes Bytes; defaults to the site's upload limit.
+		 */
+		return (int) apply_filters( 'odsi_lms_assignment_max_bytes', wp_max_upload_size() );
+	}
+
+	/**
 	 * File extensions a submission may carry.
 	 *
 	 * @return array<string, string> Extension pattern => mime type, as `get_allowed_mime_types()`.
@@ -357,12 +370,7 @@ final class Assignments implements Bootable {
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 		require_once ABSPATH . 'wp-admin/includes/media.php';
 
-		/**
-		 * Filters the maximum assignment upload size in bytes.
-		 *
-		 * @param int $bytes Bytes; defaults to the site's upload limit.
-		 */
-		$max = (int) apply_filters( 'odsi_lms_assignment_max_bytes', wp_max_upload_size() );
+		$max = self::max_bytes();
 
 		if ( (int) ( $file['size'] ?? 0 ) > $max ) {
 			return new WP_Error(

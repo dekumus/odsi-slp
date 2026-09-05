@@ -13,6 +13,7 @@ use ODSI\Social\Activity\Privacy;
 use ODSI\Social\Contracts\Bootable;
 use ODSI\Social\Members\ProfileFields;
 use ODSI\Social\Support\Capabilities;
+use ODSI\Social\Support\Labels;
 use ODSI\Social\Support\Settings;
 
 defined( 'ABSPATH' ) || exit;
@@ -100,8 +101,14 @@ final class AdminMenu implements Bootable {
 	 */
 	public function render_settings(): void {
 		echo '<div class="wrap"><h1>' . esc_html__( 'Community settings', 'odsi-social' ) . '</h1>';
+
+		if ( ! empty( $_GET['updated'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- feedback flag after a nonce-checked save.
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Settings saved.', 'odsi-social' ) . '</p></div>';
+		}
+
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( self::NONCE );
+		echo '<style>.odsi-social-admin__choice{display:inline-block;margin-right:1em}</style>';
 		echo '<input type="hidden" name="action" value="odsi_social_save_settings" /><table class="form-table">';
 
 		foreach ( $this->fields() as $key => [ $label, $type ] ) {
@@ -115,7 +122,7 @@ final class AdminMenu implements Bootable {
 
 				case 'privacy_set':
 					foreach ( Privacy::choices() as $choice ) {
-						echo '<label style="margin-right:1em"><input type="checkbox" name="' . esc_attr( $key ) . '[]" value="' . esc_attr( $choice ) . '" ' . checked( in_array( $choice, (array) $value, true ), true, false ) . ' /> ' . esc_html( self::privacy_label( $choice ) ) . '</label>';
+						echo '<label class="odsi-social-admin__choice"><input type="checkbox" name="' . esc_attr( $key ) . '[]" value="' . esc_attr( $choice ) . '" ' . checked( in_array( $choice, (array) $value, true ), true, false ) . ' /> ' . esc_html( Labels::privacy( $choice ) ) . '</label> ';
 					}
 					break;
 
@@ -123,7 +130,7 @@ final class AdminMenu implements Bootable {
 					echo '<select id="' . esc_attr( $key ) . '" name="' . esc_attr( $key ) . '">';
 
 					foreach ( Privacy::choices() as $choice ) {
-						echo '<option value="' . esc_attr( $choice ) . '" ' . selected( (string) $value, $choice, false ) . '>' . esc_html( self::privacy_label( $choice ) ) . '</option>';
+						echo '<option value="' . esc_attr( $choice ) . '" ' . selected( (string) $value, $choice, false ) . '>' . esc_html( Labels::privacy( $choice ) ) . '</option>';
 					}
 
 					echo '</select>';
@@ -143,21 +150,6 @@ final class AdminMenu implements Bootable {
 		echo '</table>';
 		submit_button();
 		echo '</form></div>';
-	}
-
-	/**
-	 * Human label for a privacy level.
-	 *
-	 * @param string $choice Level.
-	 */
-	private static function privacy_label( string $choice ): string {
-		return match ( $choice ) {
-			Privacy::PUBLIC      => __( 'Everyone', 'odsi-social' ),
-			Privacy::MEMBERS     => __( 'Members', 'odsi-social' ),
-			Privacy::CONNECTIONS => __( 'Connections', 'odsi-social' ),
-			Privacy::ONLY_ME     => __( 'Only me', 'odsi-social' ),
-			default              => $choice,
-		};
 	}
 
 	/**
@@ -254,12 +246,13 @@ final class AdminMenu implements Bootable {
 	 */
 	public function render_profile_fields(): void {
 		echo '<div class="wrap"><h1>' . esc_html__( 'Profile fields', 'odsi-social' ) . '</h1>';
+		echo '<style>.odsi-social-admin__add-field{margin:1em 0}.odsi-social-admin__inline{display:inline}</style>';
 
 		foreach ( $this->fields->structure() as $section ) {
 			echo '<h2>' . esc_html( (string) $section['group']->name ) . '</h2><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Field', 'odsi-social' ) . '</th><th>' . esc_html__( 'Type', 'odsi-social' ) . '</th><th>' . esc_html__( 'Required', 'odsi-social' ) . '</th><th>' . esc_html__( 'Default visibility', 'odsi-social' ) . '</th><th></th></tr></thead><tbody>';
 
 			foreach ( $section['fields'] as $field ) {
-				echo '<tr><td>' . esc_html( (string) $field->name ) . '</td><td>' . esc_html( (string) $field->type ) . '</td><td>' . ( (int) $field->required ? esc_html__( 'Yes', 'odsi-social' ) : esc_html__( 'No', 'odsi-social' ) ) . '</td><td>' . esc_html( (string) $field->default_visibility ) . '</td><td>';
+				echo '<tr><td>' . esc_html( (string) $field->name ) . '</td><td>' . esc_html( (string) $field->type ) . '</td><td>' . ( (int) $field->required ? esc_html__( 'Yes', 'odsi-social' ) : esc_html__( 'No', 'odsi-social' ) ) . '</td><td>' . esc_html( Labels::privacy( (string) $field->default_visibility ) ) . '</td><td>';
 				$this->action_form( 'delete_field', array( 'field_id' => (int) $field->id ), __( 'Delete', 'odsi-social' ) );
 				echo '</td></tr>';
 			}
@@ -273,7 +266,8 @@ final class AdminMenu implements Bootable {
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( self::NONCE );
 		echo '<input type="hidden" name="action" value="odsi_social_profile_fields" /><input type="hidden" name="do" value="add_group" />';
-		echo '<input type="text" name="name" required placeholder="' . esc_attr__( 'Group name', 'odsi-social' ) . '" /> ';
+		echo '<label class="screen-reader-text" for="odsi-social-new-group">' . esc_html__( 'Group name', 'odsi-social' ) . '</label>';
+		echo '<input type="text" id="odsi-social-new-group" name="name" required placeholder="' . esc_attr__( 'Group name', 'odsi-social' ) . '" /> ';
 		submit_button( __( 'Add group', 'odsi-social' ), 'secondary', 'submit', false );
 		echo '</form></div>';
 	}
@@ -284,23 +278,31 @@ final class AdminMenu implements Bootable {
 	 * @param int $group_id Group.
 	 */
 	private function add_field_form( int $group_id ): void {
-		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="margin:1em 0">';
+		$prefix = 'odsi-social-field-' . $group_id;
+
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="odsi-social-admin__add-field">';
 		wp_nonce_field( self::NONCE );
 		echo '<input type="hidden" name="action" value="odsi_social_profile_fields" /><input type="hidden" name="do" value="add_field" /><input type="hidden" name="group_id" value="' . esc_attr( (string) $group_id ) . '" />';
-		echo '<input type="text" name="name" required placeholder="' . esc_attr__( 'Field name', 'odsi-social' ) . '" /> <select name="type">';
+		echo '<label class="screen-reader-text" for="' . esc_attr( $prefix . '-name' ) . '">' . esc_html__( 'Field name', 'odsi-social' ) . '</label>';
+		echo '<input type="text" id="' . esc_attr( $prefix . '-name' ) . '" name="name" required placeholder="' . esc_attr__( 'Field name', 'odsi-social' ) . '" /> ';
+		echo '<label class="screen-reader-text" for="' . esc_attr( $prefix . '-type' ) . '">' . esc_html__( 'Field type', 'odsi-social' ) . '</label>';
+		echo '<select id="' . esc_attr( $prefix . '-type' ) . '" name="type">';
 
 		foreach ( ProfileFields::TYPES as $type ) {
 			echo '<option value="' . esc_attr( $type ) . '">' . esc_html( $type ) . '</option>';
 		}
 
-		echo '</select> <select name="default_visibility">';
+		echo '</select> ';
+		echo '<label class="screen-reader-text" for="' . esc_attr( $prefix . '-visibility' ) . '">' . esc_html__( 'Default visibility', 'odsi-social' ) . '</label>';
+		echo '<select id="' . esc_attr( $prefix . '-visibility' ) . '" name="default_visibility">';
 
 		foreach ( ProfileFields::VISIBILITIES as $visibility ) {
-			echo '<option value="' . esc_attr( $visibility ) . '">' . esc_html( $visibility ) . '</option>';
+			echo '<option value="' . esc_attr( $visibility ) . '">' . esc_html( Labels::privacy( $visibility ) ) . '</option>';
 		}
 
 		echo '</select> <label><input type="checkbox" name="required" value="1" /> ' . esc_html__( 'Required', 'odsi-social' ) . '</label> ';
-		echo '<input type="text" name="options" placeholder="' . esc_attr__( 'Options, comma separated', 'odsi-social' ) . '" /> ';
+		echo '<label class="screen-reader-text" for="' . esc_attr( $prefix . '-options' ) . '">' . esc_html__( 'Options, comma separated', 'odsi-social' ) . '</label>';
+		echo '<input type="text" id="' . esc_attr( $prefix . '-options' ) . '" name="options" placeholder="' . esc_attr__( 'Options, comma separated', 'odsi-social' ) . '" /> ';
 		submit_button( __( 'Add field', 'odsi-social' ), 'secondary', 'submit', false );
 		echo '</form>';
 	}
@@ -313,7 +315,7 @@ final class AdminMenu implements Bootable {
 	 * @param string             $label  Button label.
 	 */
 	private function action_form( string $operation, array $hidden, string $label ): void {
-		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="display:inline">';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="odsi-social-admin__inline">';
 		wp_nonce_field( self::NONCE );
 		echo '<input type="hidden" name="action" value="odsi_social_profile_fields" /><input type="hidden" name="do" value="' . esc_attr( $operation ) . '" />';
 

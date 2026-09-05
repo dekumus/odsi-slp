@@ -125,6 +125,55 @@ final class RestTest extends TestCase {
 		self::assertSame( 400, $closed->get_status() );
 	}
 
+	public function test_if_005_complete_and_submit_say_where_to_go_next(): void {
+		$c    = $this->lms->standard_course();
+		$user = $this->lms->enrolled_learner( $c['course'] );
+
+		$done = $this->as_user( $user, fn () => $this->rest( 'POST', self::NS . "/steps/{$c['lesson1']}/complete" ) )->get_data();
+		self::assertSame( 1, $done['completed_count'] );
+		self::assertSame( 6, $done['total'] );
+		self::assertFalse( $done['course_complete'] );
+		self::assertSame( get_permalink( $c['course'] ), $done['course_url'] );
+		self::assertSame( $c['lesson2'], $done['next_id'], 'Lesson 1 gated lesson 2; completing it unlocks the next link.' );
+		self::assertSame( get_permalink( $c['lesson2'] ), $done['next_url'] );
+
+		$this->as_user( $user, fn () => $this->rest( 'POST', self::NS . "/steps/{$c['topic21']}/complete" ) );
+		$topic = $this->as_user( $user, fn () => $this->rest( 'POST', self::NS . "/steps/{$c['topic22']}/complete" ) )->get_data();
+		self::assertSame( $c['quiz2'], $topic['next_id'] );
+
+		$questions = $this->as_user( $user, fn () => $this->rest( 'GET', self::NS . "/quizzes/{$c['quiz2']}/questions" ) )->get_data();
+		self::assertNull( $questions['best'], 'No closed attempt yet.' );
+		self::assertFalse( $questions['has_open_attempt'] );
+
+		$attempt = $this->as_user( $user, fn () => $this->rest( 'POST', self::NS . "/quizzes/{$c['quiz2']}/attempts" ) )->get_data()['attempt_id'];
+		self::assertTrue( $this->as_user( $user, fn () => $this->rest( 'GET', self::NS . "/quizzes/{$c['quiz2']}/questions" ) )->get_data()['has_open_attempt'] );
+
+		$failed = $this->as_user( $user, fn () => $this->rest( 'POST', self::NS . "/attempts/{$attempt}/submit", array( 'answers' => array( $c['question'] => 1 ) ) ) )->get_data();
+		self::assertFalse( $failed['passed'] );
+		self::assertSame( '', $failed['next_url'], 'Lesson 3 stays locked behind a failed quiz.' );
+		self::assertSame( get_permalink( $c['course'] ), $failed['course_url'] );
+		self::assertNull( $failed['attempts_remaining'], 'Unlimited attempts.' );
+
+		$best = $this->as_user( $user, fn () => $this->rest( 'GET', self::NS . "/quizzes/{$c['quiz2']}/questions" ) )->get_data()['best'];
+		self::assertSame(
+			array(
+				'percentage' => 0.0,
+				'passed'     => false,
+			),
+			$best
+		);
+
+		$attempt = $this->as_user( $user, fn () => $this->rest( 'POST', self::NS . "/quizzes/{$c['quiz2']}/attempts" ) )->get_data()['attempt_id'];
+		$passed  = $this->as_user( $user, fn () => $this->rest( 'POST', self::NS . "/attempts/{$attempt}/submit", array( 'answers' => array( $c['question'] => 0 ) ) ) )->get_data();
+		self::assertTrue( $passed['passed'] );
+		self::assertSame( get_permalink( $c['lesson3'] ), $passed['next_url'] );
+
+		$last = $this->as_user( $user, fn () => $this->rest( 'POST', self::NS . "/steps/{$c['lesson3']}/complete" ) )->get_data();
+		self::assertTrue( $last['course_complete'] );
+		self::assertSame( '', $last['next_url'] );
+		self::assertSame( 100.0, $last['percentage'] );
+	}
+
 	public function test_quiz_locked_behind_gate_over_rest(): void {
 		$c    = $this->lms->standard_course();
 		$user = $this->lms->enrolled_learner( $c['course'] );

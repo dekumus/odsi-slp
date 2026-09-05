@@ -95,6 +95,10 @@ final class ActivityController {
 							'type'    => 'integer',
 							'default' => 0,
 						),
+						'render'   => array(
+							'type'    => 'boolean',
+							'default' => false,
+						),
 					),
 				),
 			)
@@ -139,6 +143,10 @@ final class ActivityController {
 					'content' => array(
 						'type'     => 'string',
 						'required' => true,
+					),
+					'render'  => array(
+						'type'    => 'boolean',
+						'default' => false,
 					),
 				),
 			)
@@ -237,7 +245,21 @@ final class ActivityController {
 			return RestServiceProvider::respond( $item );
 		}
 
-		return new WP_REST_Response( $this->feed->hydrate( array( $item ), get_current_user_id() )[0], 201 );
+		$presented = $this->feed->hydrate( array( $item ), get_current_user_id() )[0];
+
+		// As with the feed, `render=1` adds the item as the page renders it,
+		// so the script can show the new post without reloading.
+		if ( $request['render'] ) {
+			$presented['html'] = $this->templates->render(
+				'parts/activity-item',
+				array(
+					'item'      => $presented,
+					'viewer_id' => get_current_user_id(),
+				)
+			);
+		}
+
+		return new WP_REST_Response( $presented, 201 );
 	}
 
 	/**
@@ -316,7 +338,20 @@ final class ActivityController {
 			return RestServiceProvider::respond( $comment );
 		}
 
-		return new WP_REST_Response( $this->feed->present( $comment, get_current_user_id(), array() ), 201 );
+		$presented = $this->feed->present( $comment, get_current_user_id(), array() );
+
+		if ( $request['render'] ) {
+			$presented['html'] = $this->templates->render(
+				'parts/activity-comment',
+				array(
+					'comment'   => $presented,
+					'item_id'   => (int) $request['id'],
+					'viewer_id' => get_current_user_id(),
+				)
+			);
+		}
+
+		return new WP_REST_Response( $presented, 201 );
 	}
 
 	/**

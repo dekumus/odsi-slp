@@ -5,8 +5,8 @@ independent GPL plugins plus an optional bridge.
 
 | Plugin | Role | Status |
 | --- | --- | --- |
-| [`odsi-lms`](plugins/odsi-lms) | Courses, lessons, topics, quizzes, assignments, enrollment, progress, reports, certificates, cohorts, course builder, learner emails | 170 tests + browser E2E passing |
-| [`odsi-social`](plugins/odsi-social) | Profiles, activity, groups, connections, notifications, emails, messaging, blocking, reporting and moderation, blocks | 188 tests + browser E2E passing |
+| [`odsi-lms`](plugins/odsi-lms) | Courses, lessons, topics, quizzes, assignments, enrollment, progress, reports, certificates, cohorts, course builder, learner emails | 182 tests + browser E2E passing |
+| [`odsi-social`](plugins/odsi-social) | Profiles, activity, groups, connections, notifications, emails, messaging, blocking, reporting and moderation, blocks | 202 tests + browser E2E passing |
 | [`odsi-bridge`](plugins/odsi-bridge) | Course activity in the feed, groups linked to courses, shared progress | Built and tested (15 tests) |
 | [`odsi-learn`](themes/odsi-learn) | Block theme that gives WordPress and both plugins one design language, with templates for every course post type and a self-building platform menu | Built and tested (8 tests + browser E2E) |
 

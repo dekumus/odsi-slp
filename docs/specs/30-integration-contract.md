@@ -87,6 +87,10 @@ course, through `GET /odsi-bridge/v1/groups/{id}/progress` and the
 `[odsi_group_progress]` shortcode. Non-members receive 404 (ADR-011); visitors
 get the REST layer's 401; community admins may read any linked group. The
 percentage is read from the LMS's `Courses\Progress` service, never recomputed.
+The shortcode renders a labelled `section.odsi-bridge-progress` whose bars
+reuse the LMS's `odsi-lms-progress` markup and stylesheet (the bridge enqueues
+the `odsi-lms` style and attaches its own list layout to it), so a theme that
+has styled the LMS has styled this too.
 
 ## 6. Ordering and idempotency rules
 

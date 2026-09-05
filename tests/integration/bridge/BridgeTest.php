@@ -319,6 +319,19 @@ final class BridgeTest extends TestCase {
 		self::assertSame( 200, $this->as_user( $learner, fn () => $this->rest( 'GET', "/odsi-bridge/v1/groups/{$group}/progress" ) )->get_status() );
 		self::assertSame( 404, $this->as_user( $outsider, fn () => $this->rest( 'GET', "/odsi-bridge/v1/groups/{$group}/progress" ) )->get_status() );
 		self::assertInstanceOf( WP_Error::class, $visibility->progress( $owner, $this->social->group( $owner ) ), 'Unlinked group: 404.' );
+
+		// The shortcode reuses the LMS progress markup and stylesheet so a
+		// theme that styled the LMS has styled this (contract § 5).
+		do_action( 'wp_enqueue_scripts' );
+		$html = $this->as_user( $learner, static fn (): string => do_shortcode( '[odsi_group_progress group_id="' . $group . '"]' ) );
+		self::assertStringContainsString( '<section class="odsi-bridge-progress" aria-labelledby="odsi-bridge-progress-heading-' . $group . '">', $html );
+		self::assertStringContainsString( '<h2 class="odsi-bridge-progress__heading"', $html );
+		self::assertSame( 2, substr_count( $html, '<li class="odsi-bridge-progress__member">' ) );
+		self::assertStringContainsString( '<div class="odsi-lms-progress odsi-bridge-progress__bar"><div class="odsi-lms-progress__track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="16.67" aria-label="Progress of ' . get_userdata( $learner )->display_name . '">', $html );
+		self::assertStringNotContainsString( '<progress', $html );
+		self::assertTrue( wp_style_is( ProgressVisibility::LMS_STYLE, 'enqueued' ) );
+		self::assertStringContainsString( '.odsi-bridge-progress__member{', implode( '', (array) wp_styles()->get_data( ProgressVisibility::LMS_STYLE, 'after' ) ) );
+		self::assertSame( '', $this->as_user( $outsider, static fn (): string => do_shortcode( '[odsi_group_progress group_id="' . $group . '"]' ) ), 'Outsiders see nothing, not even an empty list.' );
 	}
 
 	public function test_modules_can_be_switched_off(): void {

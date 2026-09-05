@@ -15,6 +15,7 @@ use ODSI\LMS\Courses\Enrollment;
 use ODSI\LMS\Courses\Progress;
 use ODSI\LMS\Courses\Structure;
 use ODSI\LMS\PostTypes\PostTypes;
+use ODSI\LMS\Repositories\EnrollmentRepository;
 use ODSI\LMS\Support\Meta;
 use WP_Query;
 
@@ -80,6 +81,8 @@ final class Shortcodes implements Bootable {
 				'completed' => $this->progress->repository()->completed_ids( $user_id, $course_id ),
 				'access'    => $this->access,
 				'user_id'   => $user_id,
+				// The step being read, so the outline can mark it `aria-current`.
+				'current'   => is_singular() && ! is_admin() ? (int) get_queried_object_id() : 0,
 			)
 		);
 	}
@@ -123,19 +126,26 @@ final class Shortcodes implements Bootable {
 		}
 
 		$user_id = get_current_user_id();
+		$row     = $user_id > 0 ? $this->enrollment->repository()->find_for( $user_id, $course_id ) : null;
+		$status  = $row ? EnrollmentRepository::effective_status( $row ) : '';
 
 		$is_enrolled = $user_id > 0 && $this->enrollment->is_enrolled( $user_id, $course_id );
 		$resume_id   = $is_enrolled ? $this->progress->resume_step( $user_id, $course_id ) : 0;
+		$format      = (string) get_option( 'date_format' );
 
 		return $this->templates->render(
 			'parts/enroll-button',
 			array(
-				'course_id'   => $course_id,
-				'user_id'     => $user_id,
-				'is_enrolled' => $is_enrolled,
-				'access_mode' => (string) get_post_meta( $course_id, Meta::ACCESS_MODE, true ) ?: 'free',
-				'missing'     => $user_id > 0 ? $this->access->missing_prerequisites( $user_id, $course_id ) : array(),
-				'next_step'   => $resume_id > 0 ? array( 'id' => $resume_id ) : ( $this->structure->outline( $course_id )[0] ?? null ),
+				'course_id'    => $course_id,
+				'user_id'      => $user_id,
+				'is_enrolled'  => $is_enrolled,
+				'access_mode'  => (string) get_post_meta( $course_id, Meta::ACCESS_MODE, true ) ?: 'free',
+				'missing'      => $user_id > 0 ? $this->access->missing_prerequisites( $user_id, $course_id ) : array(),
+				'next_step'    => $resume_id > 0 ? array( 'id' => $resume_id ) : ( $this->structure->outline( $course_id )[0] ?? null ),
+				'status'       => $status,
+				'expires_at'   => $row && ! empty( $row->expires_at ) ? wp_date( $format, (int) strtotime( (string) $row->expires_at . ' UTC' ) ) : '',
+				'completed_at' => $row && ! empty( $row->completed_at ) ? wp_date( $format, (int) strtotime( (string) $row->completed_at . ' UTC' ) ) : '',
+				'login_url'    => wp_login_url( (string) get_permalink( $course_id ) ),
 			)
 		);
 	}
@@ -154,12 +164,26 @@ final class Shortcodes implements Bootable {
 		}
 
 		$status     = '' !== $atts['status'] ? (string) $atts['status'] : null;
-		$course_ids = $this->enrollment->courses_for( $user_id, $status );
+		$course_ids = array();
+		$statuses   = array();
+
+		foreach ( $this->enrollment->repository()->for_user( $user_id, $status ) as $row ) {
+			$course_id = (int) $row->course_id;
+
+			// A course that was deleted or unpublished has nothing to open.
+			if ( PostTypes::COURSE !== get_post_type( $course_id ) || 'publish' !== get_post_status( $course_id ) ) {
+				continue;
+			}
+
+			$course_ids[]           = $course_id;
+			$statuses[ $course_id ] = EnrollmentRepository::effective_status( $row );
+		}
 
 		return $this->templates->render(
 			'parts/my-courses',
 			array(
 				'course_ids' => $course_ids,
+				'statuses'   => $statuses,
 				'progress'   => $this->progress,
 				'user_id'    => $user_id,
 			)

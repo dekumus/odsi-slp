@@ -73,26 +73,38 @@ test.describe( 'LMS learner flow', () => {
 		await expect( page.locator( '.odsi-lms-locked' ) ).toBeVisible();
 		await expect( page.getByText( 'Second lesson.' ) ).toHaveCount( 0 );
 
-		// Complete lesson one.
+		// Complete lesson one. The quiz is the next step and is gated on this
+		// lesson, so its navigation entry is locked text until the click lands,
+		// then becomes a link without a reload (LMS-IF-005).
 		await page.goto( `/?p=${ ids.lesson1 }` );
 		await expect( page.getByText( 'First lesson.' ) ).toBeVisible();
+		const nav = page.getByRole( 'navigation', { name: /course navigation/i } );
+		await expect( nav.getByRole( 'link', { name: /back to the course/i } ) ).toBeVisible();
+		await expect( nav.locator( '.odsi-lms-step-nav__link--locked' ) ).toContainText( 'Checkpoint quiz' );
 		await page.getByRole( 'button', { name: /mark complete/i } ).click();
 		await expect( page.getByRole( 'button', { name: /completed/i } ) ).toBeVisible();
+		await expect( page.getByRole( 'status' ).filter( { hasText: /step completed/i } ) ).toBeVisible();
+		await expect( nav.getByRole( 'link', { name: /next.*checkpoint quiz/i } ) ).toBeVisible();
+		await expect( page.locator( '.odsi-lms-outline__item--complete' ) ).toHaveCount( 1 );
 
-		// Take and pass the quiz.
-		await page.goto( `/?p=${ ids.quiz }` );
+		// Take and pass the quiz; the result offers the next step.
+		await nav.getByRole( 'link', { name: /next.*checkpoint quiz/i } ).click();
 		const player = page.locator( '.odsi-lms-quiz__player' );
 		await expect( player ).toBeVisible();
+		await expect( player.getByText( 'Pass mark: 50%' ) ).toBeVisible();
 		await player.getByRole( 'button', { name: /start/i } ).click();
 		await player.getByLabel( 'Yes' ).check();
 		await player.getByRole( 'button', { name: /submit/i } ).click();
 		await expect( player.getByText( /passed/i ) ).toBeVisible();
+		await expect( player.getByText( /correct/i ) ).toBeVisible();
 
-		// Lesson two is now open; completing it finishes the course.
-		await page.goto( `/?p=${ ids.lesson2 }` );
+		// Lesson two opened with the pass; completing it finishes the course.
+		await player.getByRole( 'link', { name: /continue to the next step/i } ).click();
+		await expect( page ).toHaveURL( new RegExp( `p=${ ids.lesson2 }|lesson-two` ) );
 		await expect( page.getByText( 'Second lesson.' ) ).toBeVisible();
 		await page.getByRole( 'button', { name: /mark complete/i } ).click();
 		await expect( page.getByRole( 'button', { name: /completed/i } ) ).toBeVisible();
+		await expect( page.getByRole( 'status' ).filter( { hasText: /finished the course/i } ) ).toBeVisible();
 
 		await page.goto( `/?p=${ ids.course }` );
 		await expect( page.locator( '.odsi-lms-progress__label' ) ).toContainText( '100' );

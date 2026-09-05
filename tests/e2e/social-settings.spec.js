@@ -63,7 +63,7 @@ test.describe( 'Social settings', () => {
 		await page.locator( '#odsi-group-name' ).fill( `Private circle ${ stamp } renamed` );
 		await page.getByRole( 'button', { name: /save settings/i } ).click();
 		await expect( page.locator( '.odsi-social-notice--success' ) ).toBeVisible();
-		await expect( page.locator( '.odsi-social-settings h2' ) ).toContainText( 'renamed' );
+		await expect( page.locator( 'h1' ) ).toContainText( 'renamed' );
 
 		await page.getByRole( 'button', { name: /^approve$/i } ).click();
 		await expect( page.locator( '.odsi-social-settings' ) ).not.toContainText( 'request to join' );

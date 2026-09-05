@@ -114,20 +114,19 @@ final class GroupActivity implements Bootable, ActivityRenderer {
 	 * @param object $item Activity row.
 	 */
 	public function action( object $item ): string {
-		$user  = get_userdata( (int) $item->user_id );
-		$name  = $user ? $user->display_name : __( 'A former member', 'odsi-social' );
+		$name  = Renderers::author_link( (int) $item->user_id );
 		$group = get_post( (int) $item->primary_item_id );
-		$title = $group ? $group->post_title : __( 'a group', 'odsi-social' );
+		$title = $group ? html_entity_decode( $group->post_title, ENT_QUOTES, 'UTF-8' ) : __( 'a group', 'odsi-social' );
 		$url   = (string) apply_filters( 'odsi_social_group_url', '', (int) $item->primary_item_id );
 		$link  = sprintf( '<a href="%s">%s</a>', esc_url( $url ), esc_html( $title ) );
 
 		if ( 'created_group' === (string) $item->type ) {
-			/* translators: 1: member name, 2: group link. */
-			return sprintf( esc_html__( '%1$s created the group %2$s', 'odsi-social' ), esc_html( $name ), $link );
+			/* translators: 1: member name (linked), 2: group link. */
+			return sprintf( esc_html__( '%1$s created the group %2$s', 'odsi-social' ), $name, $link );
 		}
 
-		/* translators: 1: member name, 2: group link. */
-		return sprintf( esc_html__( '%1$s joined the group %2$s', 'odsi-social' ), esc_html( $name ), $link );
+		/* translators: 1: member name (linked), 2: group link. */
+		return sprintf( esc_html__( '%1$s joined the group %2$s', 'odsi-social' ), $name, $link );
 	}
 
 	/**

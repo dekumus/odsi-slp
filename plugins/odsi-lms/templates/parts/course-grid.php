@@ -2,6 +2,10 @@
 /**
  * Course catalogue grid.
  *
+ * Each card carries exactly one link (the title), stretched over the whole
+ * card by CSS, so keyboard and screen-reader users meet one control per
+ * course rather than two links to the same place.
+ *
  * @var \WP_Query $query Course query.
  *
  * @package ODSI\LMS
@@ -10,7 +14,7 @@
 defined( 'ABSPATH' ) || exit;
 
 if ( ! $query->have_posts() ) {
-	printf( '<p class="odsi-lms-grid__empty">%s</p>', esc_html__( 'No courses found.', 'odsi-lms' ) );
+	printf( '<p class="odsi-lms-notice odsi-lms-grid__empty">%s</p>', esc_html__( 'No courses found.', 'odsi-lms' ) );
 
 	return;
 }
@@ -22,14 +26,16 @@ if ( ! $query->have_posts() ) {
 		?>
 		<article class="odsi-lms-card">
 			<?php if ( has_post_thumbnail() ) : ?>
-				<a class="odsi-lms-card__media" href="<?php the_permalink(); ?>">
-					<?php the_post_thumbnail( 'medium_large' ); ?>
-				</a>
+				<div class="odsi-lms-card__media">
+					<?php the_post_thumbnail( 'medium_large', array( 'class' => 'odsi-lms-card__image' ) ); ?>
+				</div>
 			<?php endif; ?>
-			<h3 class="odsi-lms-card__title">
-				<a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
-			</h3>
-			<p class="odsi-lms-card__excerpt"><?php echo esc_html( get_the_excerpt() ); ?></p>
+			<h2 class="odsi-lms-card__title">
+				<a class="odsi-lms-card__link" href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+			</h2>
+			<?php if ( has_excerpt() || '' !== get_the_content() ) : ?>
+				<p class="odsi-lms-card__excerpt"><?php echo esc_html( wp_strip_all_tags( get_the_excerpt() ) ); ?></p>
+			<?php endif; ?>
 		</article>
 		<?php
 	endwhile;

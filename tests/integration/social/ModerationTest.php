@@ -472,7 +472,7 @@ final class ModerationTest extends TestCase {
 		// Profile actions: block and report for members, neither on an admin's profile, nothing for visitors.
 		$this->route( 'members', 'rest-blocked', '' );
 		$html = $this->as_user( $a, fn (): string => $this->social->service( Shortcodes::class )->render_page() );
-		self::assertStringContainsString( 'odsi-social-block" data-user-id="' . $b . '"', $html );
+		self::assertStringContainsString( 'odsi-social-hero__block" data-user-id="' . $b . '"', $html );
 		self::assertStringContainsString( 'data-object-type="member" data-object-id="' . $b . '"', $html );
 		self::assertStringContainsString( 'odsi-social-report-form', $html, 'The profile feed carries the report form.' );
 
@@ -487,9 +487,9 @@ final class ModerationTest extends TestCase {
 				'can_moderate' => false,
 			)
 		);
-		self::assertStringNotContainsString( 'odsi-social-block', $html );
-		self::assertStringNotContainsString( 'odsi-social-report', $html );
-		self::assertStringNotContainsString( 'odsi-social-block', $this->social->service( Shortcodes::class )->render_page() );
+		self::assertStringNotContainsString( 'odsi-social-hero__block', $html );
+		self::assertStringNotContainsString( 'odsi-social-hero__report', $html );
+		self::assertStringNotContainsString( 'odsi-social-hero__block', $this->social->service( Shortcodes::class )->render_page() );
 	}
 
 	public function test_mem_010_deleting_a_user_removes_their_blocks(): void {
@@ -836,7 +836,7 @@ final class ModerationTest extends TestCase {
 		self::assertStringContainsString( 'data-object-type="activity" data-object-id="' . $item . '"', $html );
 		self::assertStringContainsString( 'data-object-type="comment"', $html );
 		self::assertStringNotContainsString( 'data-object-type="activity" data-object-id="' . $mine . '"', $html, 'Never on your own post.' );
-		self::assertSame( 1, substr_count( $html, 'class="odsi-social-report-form"' ), 'One form per page.' );
+		self::assertSame( 1, substr_count( $html, '<dialog class="odsi-social-report-dialog"' ), 'One form per page.' );
 		self::assertStringContainsString( '<option value="harassment">', $html );
 
 		self::assertStringNotContainsString( 'odsi-social-report', $this->social->service( Shortcodes::class )->render_feed( array() ), 'Visitors cannot report.' );
@@ -844,7 +844,7 @@ final class ModerationTest extends TestCase {
 		$this->route( 'groups', 'reportable', '' );
 		$html = $this->as_user( $viewer, fn (): string => $this->social->service( Shortcodes::class )->render_page() );
 		self::assertStringContainsString( 'data-object-type="group" data-object-id="' . $group . '"', $html );
-		self::assertSame( 1, substr_count( $html, 'class="odsi-social-report-form"' ), 'A non-member still gets the form without the feed.' );
+		self::assertSame( 1, substr_count( $html, '<dialog class="odsi-social-report-dialog"' ), 'A non-member still gets the form without the feed.' );
 
 		self::assertSame(
 			401,

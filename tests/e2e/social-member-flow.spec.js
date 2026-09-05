@@ -38,32 +38,36 @@ test.describe( 'Social member flow', () => {
 		await postForm.locator( 'textarea' ).fill( `Hello from Ana ${ stamp }` );
 		await postForm.locator( 'select[name="privacy"]' ).selectOption( 'public' );
 		await postForm.getByRole( 'button', { name: /^post$/i } ).click();
-		await expect( anaPage.locator( '.odsi-social-item' ).first() ).toContainText( `Hello from Ana ${ stamp }` );
+		await expect( anaPage.locator( '.odsi-social-feed__items > li article.odsi-social-item' ).first() ).toContainText( `Hello from Ana ${ stamp }` );
+		await expect( postForm.locator( 'textarea' ) ).toHaveValue( '' );
+		await expect( anaPage.locator( 'h1' ) ).toHaveText( 'Activity' );
 
 		// Ben sees it on the site feed (it is public), comments and likes.
 		await benPage.goto( '/activity/' );
 		const item = benPage.locator( '.odsi-social-item', { hasText: `Hello from Ana ${ stamp }` } ).first();
 		await expect( item ).toBeVisible();
-		await item.locator( '.odsi-social-comment-toggle' ).click();
+		await item.locator( '.odsi-social-item__comment-toggle' ).click();
 		await item.locator( '.odsi-social-comment-form textarea' ).fill( `Nice to meet you ${ stamp }` );
 		await item.getByRole( 'button', { name: /post comment/i } ).click();
 		await expect( benPage.locator( '.odsi-social-item', { hasText: `Hello from Ana ${ stamp }` } ).first().locator( '.odsi-social-comment', { hasText: `Nice to meet you ${ stamp }` } ) ).toBeVisible();
 
-		const like = benPage.locator( '.odsi-social-item', { hasText: `Hello from Ana ${ stamp }` } ).first().locator( '.odsi-social-react' );
+		const like = benPage.locator( '.odsi-social-item', { hasText: `Hello from Ana ${ stamp }` } ).first().locator( '.odsi-social-item__react' );
 		await like.click();
 		await expect( like ).toHaveClass( /is-active/ );
-		await expect( like.locator( '.odsi-social-count' ) ).toHaveText( '1' );
+		await expect( like ).toHaveAttribute( 'aria-pressed', 'true' );
+		await expect( like.locator( '.odsi-social-item__count' ) ).toHaveText( '1' );
 
 		// Ben sends Ana a connection request from her profile; Ana accepts.
 		await benPage.goto( `/members/${ ana.username }/` );
 		await expect( benPage.locator( '.odsi-social-profile' ) ).toBeVisible();
-		await benPage.locator( '.odsi-social-connect' ).click();
-		await expect( benPage.locator( '.odsi-social-connect' ) ).toHaveText( /withdraw/i );
+		await benPage.locator( '.odsi-social-hero__connect' ).click();
+		await expect( benPage.locator( '.odsi-social-hero__connect' ) ).toHaveText( /withdraw/i );
 
 		await anaPage.goto( `/members/${ ben.username }/` );
-		await expect( anaPage.locator( '.odsi-social-connect' ) ).toHaveText( /accept/i );
-		await anaPage.locator( '.odsi-social-connect' ).click();
-		await expect( anaPage.locator( '.odsi-social-connect' ) ).toHaveText( /remove/i );
+		await expect( anaPage.locator( '.odsi-social-hero__connect' ) ).toHaveText( /accept/i );
+		await anaPage.locator( '.odsi-social-hero__connect' ).click();
+		await expect( anaPage.locator( '.odsi-social-hero__connect' ) ).toHaveText( /remove/i );
+		await expect( anaPage.locator( '.odsi-social-hero__connect' ) ).toHaveAttribute( 'aria-pressed', 'true' );
 
 		// Ana creates a public group; Ben joins it from the group page.
 		await anaPage.goto( '/groups/' );
@@ -72,13 +76,13 @@ test.describe( 'Social member flow', () => {
 		await create.locator( 'select[name="visibility"]' ).selectOption( 'public' );
 		await create.getByRole( 'button', { name: /create group/i } ).click();
 		await expect( anaPage.locator( '.odsi-social-group' ) ).toBeVisible();
-		await expect( anaPage.locator( '.odsi-social-membership' ) ).toHaveText( /leave group/i );
+		await expect( anaPage.locator( '.odsi-social-hero__membership' ) ).toHaveText( /leave group/i );
 		const groupUrl = anaPage.url();
 
 		await benPage.goto( groupUrl );
-		await benPage.locator( '.odsi-social-membership' ).click();
-		await expect( benPage.locator( '.odsi-social-membership' ) ).toHaveText( /leave group/i );
-		await expect( benPage.locator( '.odsi-social-profile__counts' ) ).toContainText( '2 members' );
+		await benPage.locator( '.odsi-social-hero__membership' ).click();
+		await expect( benPage.locator( '.odsi-social-hero__membership' ) ).toHaveText( /leave group/i );
+		await expect( benPage.locator( '.odsi-social-hero__counts' ) ).toContainText( '2 members' );
 
 		// Ben messages Ana; Ana reads it.
 		await benPage.goto( `/messages/?to=${ ids.ana }` );
@@ -86,15 +90,19 @@ test.describe( 'Social member flow', () => {
 		await expect( compose ).toBeVisible();
 		await compose.locator( 'textarea' ).fill( 'Shall we study together?' );
 		await compose.getByRole( 'button', { name: /send/i } ).click();
-		await expect( benPage.locator( '.odsi-social-thread' ).first() ).toContainText( 'Shall we study together?' );
+		// A first message opens the new conversation's own page.
+		await expect( benPage ).toHaveURL( /\/messages\/\d+\/?$/ );
+		await expect( benPage.locator( '.odsi-social-message' ).first() ).toContainText( 'Shall we study together?' );
 
 		await anaPage.goto( '/messages/' );
 		await expect( anaPage.locator( '.odsi-social-thread.is-unread' ).first() ).toBeVisible();
-		await anaPage.locator( '.odsi-social-thread a' ).first().click();
+		await anaPage.locator( '.odsi-social-thread__link' ).first().click();
 		await expect( anaPage.locator( '.odsi-social-message' ).first() ).toContainText( 'Shall we study together?' );
 		await anaPage.locator( '.odsi-social-message-form textarea' ).fill( 'Yes, tomorrow.' );
 		await anaPage.locator( '.odsi-social-message-form' ).getByRole( 'button', { name: /send/i } ).click();
-		await expect( anaPage.locator( '.odsi-social-message.is-mine' ).last() ).toContainText( 'Yes, tomorrow.' );
+		// The reply is appended to the log without a reload.
+		await expect( anaPage.locator( '.odsi-social-conversation .odsi-social-message.is-mine' ).last() ).toContainText( 'Yes, tomorrow.' );
+		await expect( anaPage.locator( '.odsi-social-message-form textarea' ) ).toHaveValue( '' );
 
 		// Ana's notifications: comment, like, connection request, group join, message.
 		await anaPage.goto( '/notifications/' );
@@ -104,8 +112,15 @@ test.describe( 'Social member flow', () => {
 		await expect( anaPage.locator( '.odsi-social-notifications__list' ) ).toContainText( 'liked your post' );
 		await expect( anaPage.locator( '.odsi-social-notifications__list' ) ).toContainText( 'sent you a connection request' );
 		await expect( anaPage.locator( '.odsi-social-notifications__list' ) ).toContainText( 'sent you a message' );
-		await anaPage.locator( '.odsi-social-read-all' ).click();
+		// Opening the thread already read the message notification (SOC-MSG-004).
+		await expect( anaPage.locator( '.odsi-social-notification.is-new' ) ).toHaveCount( 3 );
+		await anaPage.locator( '.odsi-social-notification__read' ).first().click();
+		await expect( anaPage.locator( '.odsi-social-notification.is-new' ) ).toHaveCount( 2 );
+		await expect( anaPage.locator( '.odsi-social-notifications__count' ) ).toHaveText( '2 unread' );
+		await anaPage.locator( '.odsi-social-notifications__read-all' ).click();
 		await expect( anaPage.locator( '.odsi-social-notification.is-new' ) ).toHaveCount( 0 );
+		await expect( anaPage.locator( '.odsi-social-notifications__count' ) ).toHaveText( '0 unread' );
+		await expect( anaPage.locator( '.odsi-social-notifications__read-all' ) ).toHaveCount( 0 );
 
 		// Ben's: connection accepted.
 		await benPage.goto( '/notifications/' );

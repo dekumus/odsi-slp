@@ -11,6 +11,7 @@ namespace ODSI\LMS\Rest;
 
 use ODSI\LMS\Courses\Access;
 use ODSI\LMS\Courses\Progress;
+use ODSI\LMS\Courses\Structure;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -26,12 +27,14 @@ final class ProgressController {
 	/**
 	 * Constructor.
 	 *
-	 * @param Progress $progress Progress service.
-	 * @param Access   $access   Access rules.
+	 * @param Progress  $progress  Progress service.
+	 * @param Access    $access    Access rules.
+	 * @param Structure $structure Outline, for the step that follows.
 	 */
 	public function __construct(
 		private Progress $progress,
-		private Access $access
+		private Access $access,
+		private Structure $structure
 	) {
 	}
 
@@ -90,12 +93,22 @@ final class ProgressController {
 		}
 
 		$course_id = (int) get_post_meta( $object_id, \ODSI\LMS\Support\Meta::COURSE_ID, true );
+		$next      = $this->structure->next_step( $course_id, $object_id );
+		$next_open = $next && $this->access->can_access_step( $user_id, (int) $next['id'] );
 
+		// Enough for the page to repaint itself without a reload: the bar, its
+		// label, the outline and the "next" link that may have just unlocked.
 		return new WP_REST_Response(
 			array(
-				'completed'  => true,
-				'course_id'  => $course_id,
-				'percentage' => $this->progress->course_percentage( $user_id, $course_id ),
+				'completed'       => true,
+				'course_id'       => $course_id,
+				'percentage'      => $this->progress->course_percentage( $user_id, $course_id ),
+				'completed_count' => $this->progress->completed_count( $user_id, $course_id ),
+				'total'           => $this->structure->total_steps( $course_id ),
+				'course_complete' => $this->progress->has_completed_course( $user_id, $course_id ),
+				'course_url'      => (string) get_permalink( $course_id ),
+				'next_id'         => $next_open ? (int) $next['id'] : 0,
+				'next_url'        => $next_open ? (string) get_permalink( (int) $next['id'] ) : '',
 			)
 		);
 	}

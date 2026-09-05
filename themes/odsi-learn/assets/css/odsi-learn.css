@@ -23,6 +23,8 @@
 	--odsi-border: var(--wp--preset--color--border);
 	--odsi-muted: var(--wp--preset--color--muted);
 	--odsi-radius: var(--wp--custom--odsi--radius, 8px);
+	--odsi-success: var(--wp--preset--color--success);
+	--odsi-danger: var(--wp--preset--color--danger);
 	--odsi-learn-shadow: var(--wp--custom--odsi--shadow, 0 1px 2px rgba(20, 33, 61, 0.06), 0 8px 24px rgba(20, 33, 61, 0.06));
 }
 
@@ -258,7 +260,7 @@
 	box-shadow: var(--odsi-learn-shadow);
 }
 
-.odsi-lms-card__title a,
+.odsi-lms-card__link,
 .odsi-social-card a,
 .odsi-lms-my-courses__link,
 .odsi-lms-outline__title,
@@ -266,7 +268,7 @@
 	text-decoration: none;
 }
 
-.odsi-lms-card__title a:hover,
+.odsi-lms-card__link:hover,
 .odsi-lms-my-courses__link:hover,
 .odsi-lms-outline__title:hover {
 	color: var(--wp--preset--color--accent-dark);
@@ -343,18 +345,20 @@
 	align-self: center;
 }
 
-.odsi-lms-progress.is-complete .odsi-lms-progress__fill {
+.odsi-lms-progress__fill[style*="width: 100%"] {
 	background: var(--wp--preset--color--success);
 }
 
 /* Notices */
 .odsi-social-notice--success,
-.odsi-lms-verify__ok {
+.odsi-lms-notice--success,
+.odsi-lms-verify__result--valid {
 	border-left: 4px solid var(--wp--preset--color--success);
 }
 
 .odsi-social-notice--error,
-.odsi-lms-verify__bad,
+.odsi-lms-notice--error,
+.odsi-lms-verify__result--invalid,
 .odsi-lms-assignment__error {
 	border-left: 4px solid var(--wp--preset--color--danger);
 }
@@ -409,19 +413,19 @@
 	padding-top: var(--wp--preset--spacing--40);
 }
 
-.odsi-learn-step__body .odsi-lms-complete.is-complete {
+.odsi-learn-step__body .odsi-lms-complete--done {
 	background: var(--wp--preset--color--success);
 	opacity: 1;
 }
 
-.odsi-learn-step__body .odsi-lms-lesson__outline {
+.odsi-learn-step__body .odsi-lms-outline-section {
 	background: var(--wp--preset--color--surface);
 	border-radius: var(--wp--custom--odsi--radius-large, 14px);
 	margin-top: var(--wp--preset--spacing--50);
 	padding: var(--wp--preset--spacing--40);
 }
 
-.odsi-learn-step__body .odsi-lms-lesson__outline .odsi-lms-outline__item {
+.odsi-learn-step__body .odsi-lms-outline-section .odsi-lms-outline__item {
 	border-bottom-color: var(--wp--preset--color--border);
 }
 
@@ -468,18 +472,18 @@
 }
 
 /* Course outline section in the course page */
-.odsi-learn-course__body .odsi-lms-course__outline {
+.odsi-learn-course__body .odsi-lms-outline-section {
 	margin-top: var(--wp--preset--spacing--50);
 }
 
 /* Plugin lists never show bullets, whatever the theme's list styles say */
 .odsi-social-feed__items,
-.odsi-social-comments,
+.odsi-social-comment-list,
 .odsi-social-cards,
 .odsi-social-member-list,
 .odsi-social-notifications__list,
 .odsi-social-threads,
-.odsi-social-thread__messages,
+.odsi-social-conversation__list,
 .odsi-social-reactors,
 .odsi-lms-outline,
 .odsi-lms-my-courses,
@@ -494,7 +498,7 @@
 
 /* Community pages render through the page template. Profiles and groups
    carry their own header, so the page title would repeat the name. */
-.odsi-learn-community .odsi-learn-page:has(.odsi-social-profile__header) > .wp-block-post-title {
+.odsi-learn-community .odsi-learn-page:has(.odsi-social-hero__name) > .wp-block-post-title {
 	position: absolute;
 	width: 1px;
 	height: 1px;
@@ -502,12 +506,12 @@
 	clip: rect(0 0 0 0);
 }
 
-.odsi-learn-community .odsi-social-profile__header h2 {
+.odsi-learn-community .odsi-social-hero__name {
 	font-size: var(--wp--preset--font-size--x-large);
 	margin: 0 0 0.25rem;
 }
 
-.odsi-learn-community .odsi-social-profile__cover {
+.odsi-learn-community .odsi-social-hero__cover {
 	border-radius: var(--wp--custom--odsi--radius-large, 14px);
 }
 

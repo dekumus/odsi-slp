@@ -240,20 +240,26 @@ final class Messages {
 		return array(
 			'thread_id' => $thread_id,
 			'other'     => (int) $this->other_participant( $user_id, $thread_id ),
-			'messages'  => array_map(
-				static function ( object $m ): array {
-					$sender = get_userdata( (int) $m->sender_id );
+			'messages'  => array_map( fn ( object $m ): array => $this->present_message( $m ), $messages ),
+		);
+	}
 
-					return array(
-						'id'        => (int) $m->id,
-						'sender_id' => (int) $m->sender_id,
-						'sender'    => $sender ? $sender->display_name : __( 'A former member', 'odsi-social' ),
-						'content'   => Sanitizer::render( (string) $m->content ),
-						'date'      => (string) $m->date_sent,
-					);
-				},
-				$messages
-			),
+	/**
+	 * The presentation shape of one message.
+	 *
+	 * @param object $message Message row.
+	 *
+	 * @return array{id: int, sender_id: int, sender: string, content: string, date: string}
+	 */
+	public function present_message( object $message ): array {
+		$sender = get_userdata( (int) $message->sender_id );
+
+		return array(
+			'id'        => (int) $message->id,
+			'sender_id' => (int) $message->sender_id,
+			'sender'    => $sender ? $sender->display_name : __( 'A former member', 'odsi-social' ),
+			'content'   => Sanitizer::render( (string) $message->content ),
+			'date'      => (string) $message->date_sent,
 		);
 	}
 
@@ -332,7 +338,7 @@ final class Messages {
 	 * @param int $user_id   Member.
 	 * @param int $thread_id Thread.
 	 */
-	private function other_participant( int $user_id, int $thread_id ): ?int {
+	public function other_participant( int $user_id, int $thread_id ): ?int {
 		return $this->other_of( $user_id, $this->threads->participants( $thread_id ) );
 	}
 

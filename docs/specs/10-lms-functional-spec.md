@@ -665,6 +665,44 @@ template overrides (`LMS-IF-002`). The editor shows the server-rendered
 result. Front-end assets load on any singular post that contains one of
 these blocks.
 
+**LMS-IF-005** Every lesson, topic and quiz page carries a step navigation
+(`nav.odsi-lms-step-nav`: back to the course, previous, next) and the course
+outline as a labelled region, both derived from the outline and the access
+rules: a step the viewer cannot open is shown as text marked "Locked", never
+as a link. `POST /steps/{id}/complete` and `POST /attempts/{id}/submit`
+return `next_url` (empty when the next step is still locked) and
+`course_url`, and the completion route also returns `completed_count`,
+`total` and `course_complete`, so the page repaints its progress bar, its
+outline and its "next" link without a reload. `GET /quizzes/{id}/questions`
+adds `has_open_attempt` and the learner's `best` closed attempt
+(`LMS-QZ-021`); submit adds `attempts_remaining`.
+
+**LMS-IF-006** Every learner-facing state has a visible, translated message
+with a next action: no courses, no enrollments (with a link to the catalogue),
+a course with no content, a quiz with no questions, no attempts left, a locked
+step (log in / enroll / not yet / available on a date, with a login link for
+visitors), an expired enrollment (dated, with the enroll button labelled
+"Enroll again"), a completed course ("Review course"), a pending enrollment,
+a paid or closed course, and a visitor on an open course ("Start course").
+Request failures are written into a `role="alert"` region next to the control
+that caused them; buttons are disabled and labelled while a request is in
+flight so nothing can be submitted twice.
+
+**LMS-IF-007** Front-end markup is the accessibility contract a theme can
+rely on: the theme owns the page `h1`, plugin sections start at `h2`; class
+names follow `odsi-lms-<block>__<element>--<modifier>` and every class the
+markup emits has a rule in `assets/css/frontend.css` or is listed there as a
+hook (a test enforces both directions); state is written as text
+("Completed", "Locked", "Correct"), never colour alone; the progress bar is a
+`progressbar` described by its label and its transition respects
+`prefers-reduced-motion`; the quiz player groups each question in a
+`fieldset`, announces starts, submissions, results and timer milestones
+through one polite live region and marks the clock `role="timer"`; the
+assignment form describes its file input with the accepted types and size
+limit the server enforces and validates both before uploading; catalogue
+cards carry exactly one link; every control is a native button, link or
+input and is at least 40px tall.
+
 ---
 
 ## 9. Permission matrix

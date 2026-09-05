@@ -7,8 +7,8 @@ when you change what it describes.
 
 | Plugin | State |
 | --- | --- |
-| `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 140 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
-| `odsi-social` | Built: kernel, 17 custom tables (schema 1.1.0), 15 repositories, every v1 domain service plus blocking, reporting and a moderation queue, REST namespace (seven controllers), virtual-page router, templates, admin screens, blocks, profile and group settings pages, notification emails. 188 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
+| `odsi-lms` | Engine, reports, grading, certificates, cohorts, quiz player and a React course builder in the editor, proven by 30 unit and 152 integration tests, plus the learner flow, the assignment hand-in and the builder end to end in a real browser against WordPress 7.1 with a block theme. PHPCS, PHPStan level 6 and ESLint clean. |
+| `odsi-social` | Built: kernel, 17 custom tables (schema 1.1.1), 15 repositories, every v1 domain service plus blocking, reporting and a moderation queue, REST namespace (seven controllers), virtual-page router, templates, admin screens, blocks, profile and group settings pages, notification emails. 202 integration tests including the full privacy decision table through both PHP and SQL, plus a browser E2E flow (post, comment, like, connect, group, message, notifications) passing against the block theme. PHPCS, PHPStan level 6 and ESLint clean. |
 | `odsi-bridge` | Built: dependency-checked bootstrap that deactivates itself with a notice when either plugin is missing, a link table, three switchable modules plus an uninstall data switch (course activity into the feed, course ↔ group linkage with membership sync, group progress visibility), settings screen, course meta box. 15 integration tests. |
 | `odsi-learn` (theme) | Block theme in `themes/odsi-learn` (ADR-019): `theme.json` palette that feeds both plugins' shared `--odsi-*` tokens, templates for every LMS post type and the course archive, a front page from patterns (hero, courses, community, call to action), a server-rendered `odsi-learn/platform-menu` block, and a stylesheet that harmonises plugin buttons, cards, forms, progress bars and the quiz player with the theme. 8 integration tests booted with the theme active plus a browser spec; the whole E2E suite runs against it in CI. |
 
@@ -21,6 +21,31 @@ found two product bugs on its first runs that no PHP test could have: the
 plugin's templates never applied on block themes (ADR-017), and questions
 created over REST never linked to their quiz because the relationship meta was
 not registered for that post type. Both are fixed.
+
+## Front-end review (this branch)
+
+Both plugins' front ends were reviewed surface by surface against the
+functional specs and the theme, with the result written into
+`tests/integration/lms/FrontendTest.php` and
+`tests/integration/social/FrontendTest.php`, which assert that every class
+the markup emits has a stylesheet rule and that the stylesheets read only
+their own tokens.
+
+LMS: content decoration no longer leaks into excerpts, feeds or secondary
+queries; lesson, topic and quiz pages carry a back / previous / next
+navigation that respects locking; the enroll button knows every enrollment
+state (open, login, prerequisites, completed, expired, pending, paid,
+closed); the outline, progress bar, quiz player and assignment form got
+BEM state modifiers, live regions, labelled regions and 40px targets; the
+complete and submit REST responses say where to go next.
+
+Community: virtual pages are typed as pages at `parse_query`, so block
+themes resolve the page template (and `page-odsi-social-{section}`), the
+page title names the object, and a missing object is a real 404; the feed
+is a list of labelled articles, the report form is a native dialog, every
+input is labelled, every empty state has a next action, and the scripts
+show REST errors inline and never double-submit. Raw keys that were printed
+with `ucfirst` now go through `Support\Labels`.
 
 ## `odsi-bridge` — what exists
 

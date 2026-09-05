@@ -141,13 +141,7 @@ final class MessagesController {
 	public function reply( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$result = $this->messages->reply( get_current_user_id(), (int) $request['thread'], (string) $request['content'] );
 
-		return RestServiceProvider::respond(
-			$result instanceof WP_Error ? $result : array(
-				'message_id' => (int) $result->id,
-				'thread_id'  => (int) $result->thread_id,
-			),
-			201
-		);
+		return RestServiceProvider::respond( $result instanceof WP_Error ? $result : $this->sent( $result ), 201 );
 	}
 
 	/**
@@ -164,12 +158,23 @@ final class MessagesController {
 
 		$result = $this->messages->send( get_current_user_id(), (int) $request['user'], (string) $request['content'] );
 
-		return RestServiceProvider::respond(
-			$result instanceof WP_Error ? $result : array(
-				'message_id' => (int) $result->id,
-				'thread_id'  => (int) $result->thread_id,
-			),
-			201
+		return RestServiceProvider::respond( $result instanceof WP_Error ? $result : $this->sent( $result ), 201 );
+	}
+
+	/**
+	 * The response to a sent message: ids, the thread's URL, and the message
+	 * as the thread page presents it so the script can append it in place.
+	 *
+	 * @param object $message Message row.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function sent( object $message ): array {
+		return array(
+			'message_id' => (int) $message->id,
+			'thread_id'  => (int) $message->thread_id,
+			'url'        => (string) apply_filters( 'odsi_social_thread_url', '', (int) $message->thread_id ),
+			'message'    => $this->messages->present_message( $message ),
 		);
 	}
 

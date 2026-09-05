@@ -91,8 +91,8 @@ final class RestTest extends TestCase {
 			$item     = $rendered->get_data()['items'][0];
 			self::assertCount( 3, $rendered->get_data()['items'] );
 			self::assertStringContainsString( '<article class="odsi-social-item" data-activity-id="' . $item['id'] . '"', $item['html'] );
-			self::assertStringContainsString( 'odsi-social-react', $item['html'], 'Rendered items carry their buttons.' );
-			self::assertStringContainsString( 'odsi-social-delete', $item['html'] );
+			self::assertStringContainsString( 'odsi-social-item__react', $item['html'], 'Rendered items carry their buttons.' );
+			self::assertStringContainsString( 'odsi-social-item__delete', $item['html'] );
 			self::assertStringContainsString( 'odsi-social-comment-form', $item['html'] );
 		} finally {
 			$this->social->service( \ODSI\Social\Support\Settings::class )->update( array( 'feed_per_page' => 20 ) );

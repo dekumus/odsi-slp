@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-04T12:53:17+00:00\n"
+"POT-Creation-Date: 2026-09-05T09:12:06+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: odsi-lms\n"
@@ -68,7 +68,7 @@ msgid "Settings"
 msgstr ""
 
 #: src/Admin/AssignmentMetaBox.php:41
-#: templates/parts/assignment.php:24
+#: templates/parts/assignment.php:28
 msgid "Assignment"
 msgstr ""
 
@@ -193,10 +193,12 @@ msgstr ""
 
 #: src/Admin/EnrollmentListTable.php:52
 #: src/Admin/EnrollmentListTable.php:150
-#: src/Frontend/ContentDecorator.php:132
+#: src/Frontend/ContentDecorator.php:181
 #: src/Reports/EnrollmentReport.php:204
-#: src/Support/Assets.php:72
-#: templates/parts/course-outline.php:54
+#: templates/parts/course-outline.php:62
+#: templates/parts/my-courses.php:28
+#: assets/js/frontend.js:211
+#: assets/js/frontend.js:278
 #: assets/src/blocks/index.js:109
 msgid "Completed"
 msgstr ""
@@ -215,14 +217,17 @@ msgid "Active"
 msgstr ""
 
 #: src/Admin/EnrollmentListTable.php:151
+#: templates/parts/my-courses.php:29
 msgid "Expired"
 msgstr ""
 
 #: src/Admin/EnrollmentListTable.php:152
+#: templates/parts/my-courses.php:31
 msgid "Cancelled"
 msgstr ""
 
 #: src/Admin/EnrollmentListTable.php:153
+#: templates/parts/my-courses.php:30
 msgid "Pending"
 msgstr ""
 
@@ -416,7 +421,7 @@ msgid "Answered"
 msgstr ""
 
 #: src/Admin/ReportsScreen.php:191
-#: src/Support/Assets.php:80
+#: assets/js/quiz-player.js:345
 msgid "Correct"
 msgstr ""
 
@@ -425,7 +430,7 @@ msgid "Average points"
 msgstr ""
 
 #: src/Admin/ReportsScreen.php:191
-#: src/Support/Assets.php:79
+#: assets/js/quiz-player.js:342
 msgid "Awaiting grading"
 msgstr ""
 
@@ -659,7 +664,7 @@ msgid "This step has no assignment."
 msgstr ""
 
 #: src/Assignments/Assignments.php:103
-#: src/Rest/ProgressController.php:79
+#: src/Rest/ProgressController.php:82
 msgid "This step is not available to you yet."
 msgstr ""
 
@@ -680,12 +685,14 @@ msgid "The submission could not be saved."
 msgstr ""
 
 #. translators: %s: size.
-#: src/Assignments/Assignments.php:371
-#, php-format
+#. translators: %s: size limit.
+#: src/Assignments/Assignments.php:379
+#: assets/js/frontend.js:354
+#, php-format,js-format
 msgid "The file is larger than the %s limit."
 msgstr ""
 
-#: src/Assignments/Assignments.php:398
+#: src/Assignments/Assignments.php:406
 msgid "The file could not be uploaded."
 msgstr ""
 
@@ -727,7 +734,13 @@ msgstr ""
 msgid "Please log in and enroll on this course to view this lesson."
 msgstr ""
 
-#: src/Courses/Access.php:479
+#: src/Courses/Access.php:480
+msgid "Log in"
+msgstr ""
+
+#: src/Courses/Access.php:488
+#: src/Frontend/ContentDecorator.php:277
+#: assets/js/quiz-player.js:370
 msgid "Back to the course"
 msgstr ""
 
@@ -737,25 +750,42 @@ msgstr ""
 msgid "Copy of %s"
 msgstr ""
 
-#: src/Frontend/ContentDecorator.php:109
-msgid "Course content"
-msgstr ""
-
-#: src/Frontend/ContentDecorator.php:133
+#: src/Frontend/ContentDecorator.php:182
 msgid "Mark complete"
 msgstr ""
 
-#: src/Frontend/ContentDecorator.php:178
-msgid "Log in to take this quiz."
+#: src/Frontend/ContentDecorator.php:242
+msgid "Log in to take this quiz"
 msgstr ""
 
-#: src/Frontend/ContentDecorator.php:185
-#: src/Support/Assets.php:74
+#: src/Frontend/ContentDecorator.php:246
+#: assets/js/quiz-player.js:142
 msgid "Start quiz"
 msgstr ""
 
-#: src/Frontend/ContentDecorator.php:185
+#: src/Frontend/ContentDecorator.php:247
 msgid "JavaScript is required to take this quiz."
+msgstr ""
+
+#: src/Frontend/ContentDecorator.php:272
+msgid "Course navigation"
+msgstr ""
+
+#: src/Frontend/ContentDecorator.php:281
+msgid "Previous"
+msgstr ""
+
+#: src/Frontend/ContentDecorator.php:285
+msgid "Next"
+msgstr ""
+
+#: src/Frontend/ContentDecorator.php:321
+#: templates/parts/course-outline.php:65
+msgid "Locked"
+msgstr ""
+
+#: src/Frontend/ContentDecorator.php:349
+msgid "Course content"
 msgstr ""
 
 #. translators: %s: course title.
@@ -1042,24 +1072,24 @@ msgstr ""
 msgid "You could not be enrolled on this course."
 msgstr ""
 
-#: src/Rest/ProgressController.php:71
+#: src/Rest/ProgressController.php:74
 msgid "That step does not exist."
 msgstr ""
 
-#: src/Rest/ProgressController.php:87
+#: src/Rest/ProgressController.php:90
 msgid "That step cannot be marked complete directly."
 msgstr ""
 
-#: src/Rest/QuizController.php:128
-#: src/Rest/QuizController.php:174
+#: src/Rest/QuizController.php:131
+#: src/Rest/QuizController.php:177
 msgid "This quiz is not available to you yet."
 msgstr ""
 
-#: src/Rest/QuizController.php:229
+#: src/Rest/QuizController.php:241
 msgid "That quiz attempt does not belong to you."
 msgstr ""
 
-#: src/Rest/QuizController.php:238
+#: src/Rest/QuizController.php:250
 msgid "This quiz is no longer available to you."
 msgstr ""
 
@@ -1075,50 +1105,6 @@ msgstr ""
 msgid "The grade could not be saved."
 msgstr ""
 
-#: src/Support/Assets.php:71
-msgid "Saving…"
-msgstr ""
-
-#: src/Support/Assets.php:73
-msgid "Something went wrong. Please try again."
-msgstr ""
-
-#: src/Support/Assets.php:75
-msgid "Submit answers"
-msgstr ""
-
-#: src/Support/Assets.php:76
-msgid "Back to the quiz"
-msgstr ""
-
-#: src/Support/Assets.php:77
-msgid "You passed!"
-msgstr ""
-
-#: src/Support/Assets.php:78
-msgid "Not this time."
-msgstr ""
-
-#: src/Support/Assets.php:81
-msgid "Incorrect"
-msgstr ""
-
-#: src/Support/Assets.php:82
-msgid "minutes"
-msgstr ""
-
-#: src/Support/Assets.php:83
-msgid "Attempts remaining:"
-msgstr ""
-
-#: src/Support/Assets.php:84
-msgid "Pass mark:"
-msgstr ""
-
-#: src/Support/Assets.php:85
-msgid "Time left:"
-msgstr ""
-
 #: src/Support/Capabilities.php:33
 msgid "Instructor"
 msgstr ""
@@ -1128,43 +1114,61 @@ msgid "Student"
 msgstr ""
 
 #. translators: %s: code.
-#: templates/certificate.php:34
+#: templates/certificate.php:45
 #, php-format
 msgid "Verification code: %s"
 msgstr ""
 
-#: templates/parts/assignment.php:18
+#: templates/certificate.php:49
+msgid "Print or save as PDF"
+msgstr ""
+
+#: templates/parts/assignment.php:21
 msgid "Waiting for review"
 msgstr ""
 
-#: templates/parts/assignment.php:19
+#: templates/parts/assignment.php:22
 msgid "Approved"
 msgstr ""
 
-#: templates/parts/assignment.php:20
+#: templates/parts/assignment.php:23
 msgid "Needs another try"
 msgstr ""
 
 #. translators: 1: points earned, 2: points possible.
-#: templates/parts/assignment.php:33
+#: templates/parts/assignment.php:37
 #, php-format
 msgid "%1$s / %2$s points"
 msgstr ""
 
-#: templates/parts/assignment.php:46
+#: templates/parts/assignment.php:53
 msgid "Your answer"
 msgstr ""
 
-#: templates/parts/assignment.php:50
+#: templates/parts/assignment.php:57
 msgid "Attach a file (optional)"
 msgstr ""
 
-#: templates/parts/assignment.php:54
+#. translators: 1: list of file extensions, 2: size limit.
+#: templates/parts/assignment.php:63
+#, php-format
+msgid "Accepted types: %1$s. Maximum size: %2$s."
+msgstr ""
+
+#: templates/parts/assignment.php:71
 msgid "Hand in"
 msgstr ""
 
-#: templates/parts/assignment.php:57
+#: templates/parts/assignment.php:74
 msgid "JavaScript is required to hand in an assignment."
+msgstr ""
+
+#: templates/parts/assignment.php:79
+msgid "Your submissions"
+msgstr ""
+
+#: templates/parts/certificate-verify.php:14
+msgid "Verify a certificate"
 msgstr ""
 
 #: templates/parts/certificate-verify.php:15
@@ -1190,43 +1194,75 @@ msgstr ""
 msgid "That code is not valid."
 msgstr ""
 
-#: templates/parts/course-grid.php:13
+#: templates/parts/course-grid.php:17
 msgid "No courses found."
 msgstr ""
 
-#: templates/parts/course-grid.php:41
+#: templates/parts/course-grid.php:47
 msgid "Course pages"
 msgstr ""
 
-#: templates/parts/course-outline.php:17
+#: templates/parts/course-outline.php:18
 msgid "This course has no content yet."
 msgstr ""
 
-#: templates/parts/course-outline.php:46
-msgid "Locked"
-msgstr ""
-
-#: templates/parts/enroll-button.php:20
-msgid "Log in to enroll"
-msgstr ""
-
-#: templates/parts/enroll-button.php:23
-msgid "Complete these courses first:"
+#: templates/parts/enroll-button.php:27
+msgid "Start course"
 msgstr ""
 
 #: templates/parts/enroll-button.php:31
+msgid "Log in to enroll"
+msgstr ""
+
+#: templates/parts/enroll-button.php:35
+msgid "Complete these courses first:"
+msgstr ""
+
+#. translators: %s: date.
+#: templates/parts/enroll-button.php:46
+#, php-format
+msgid "You completed this course on %s."
+msgstr ""
+
+#: templates/parts/enroll-button.php:48
+msgid "You completed this course."
+msgstr ""
+
+#: templates/parts/enroll-button.php:53
+msgid "Review course"
+msgstr ""
+
+#: templates/parts/enroll-button.php:57
 msgid "Continue course"
 msgstr ""
 
-#: templates/parts/enroll-button.php:42
+#: templates/parts/enroll-button.php:60
+msgid "Your enrollment is awaiting confirmation."
+msgstr ""
+
+#. translators: %s: date.
+#: templates/parts/enroll-button.php:67
+#, php-format
+msgid "Your access to this course ended on %s. Your progress has been kept."
+msgstr ""
+
+#: templates/parts/enroll-button.php:69
+msgid "Your access to this course has ended. Your progress has been kept."
+msgstr ""
+
+#: templates/parts/enroll-button.php:84
 msgid "This course requires a purchase."
 msgstr ""
 
-#: templates/parts/enroll-button.php:45
+#: templates/parts/enroll-button.php:87
 msgid "Enrollment on this course is by invitation."
 msgstr ""
 
-#: templates/parts/enroll-button.php:49
+#: templates/parts/enroll-button.php:92
+msgid "Enroll again"
+msgstr ""
+
+#: templates/parts/enroll-button.php:94
 msgid "Enroll on this course"
 msgstr ""
 
@@ -1235,28 +1271,245 @@ msgid "Log in to see your courses."
 msgstr ""
 
 #: templates/parts/my-certificates.php:14
-msgid "No certificates yet."
+msgid "No certificates yet. Complete a course that awards one and it will appear here."
 msgstr ""
 
-#: templates/parts/my-courses.php:15
+#: templates/parts/my-certificates.php:24
+msgid "(opens in a new tab)"
+msgstr ""
+
+#: templates/parts/my-courses.php:18
 msgid "You are not enrolled on any courses yet."
 msgstr ""
 
-#. translators: %s: course title.
+#: templates/parts/my-courses.php:20
+msgid "Browse courses"
+msgstr ""
+
 #: templates/parts/my-courses.php:27
+#: assets/src/blocks/index.js:108
+msgid "In progress"
+msgstr ""
+
+#. translators: %s: course title.
+#: templates/parts/my-courses.php:45
 #, php-format
 msgid "Progress on %s"
 msgstr ""
 
-#: templates/parts/progress-bar.php:19
+#: templates/parts/progress-bar.php:21
 #: assets/src/blocks/index.js:78
 msgid "Course progress"
 msgstr ""
 
 #. translators: 1: steps completed, 2: total steps, 3: percentage.
-#: templates/parts/progress-bar.php:26
-#, php-format
+#: templates/parts/progress-bar.php:29
+#: assets/js/frontend.js:187
+#, php-format,js-format
 msgid "%1$d of %2$d steps complete (%3$s%%)"
+msgstr ""
+
+#: assets/js/frontend.js:24
+msgid "Your session has expired. Reload the page and try again."
+msgstr ""
+
+#: assets/js/frontend.js:31
+msgid "Something went wrong. Please try again."
+msgstr ""
+
+#: assets/js/frontend.js:79
+msgid "Could not reach the server. Check your connection and try again."
+msgstr ""
+
+#: assets/js/frontend.js:274
+msgid "Saving…"
+msgstr ""
+
+#: assets/js/frontend.js:289
+msgid "Step completed. You have finished the course."
+msgstr ""
+
+#. translators: %s: percentage.
+#: assets/js/frontend.js:292
+#, js-format
+msgid "Step completed. Course progress: %s%%."
+msgstr ""
+
+#: assets/js/frontend.js:315
+msgid "Enrolling…"
+msgstr ""
+
+#: assets/js/frontend.js:319
+msgid "Enrolled. Loading the course…"
+msgstr ""
+
+#: assets/js/frontend.js:341
+msgid "Write an answer or attach a file before handing in."
+msgstr ""
+
+#. translators: %s: list of accepted file extensions.
+#: assets/js/frontend.js:369
+#, js-format
+msgid "That file type is not accepted. Accepted types: %s."
+msgstr ""
+
+#: assets/js/frontend.js:408
+msgid "Handing in…"
+msgstr ""
+
+#: assets/js/frontend.js:414
+msgid "Handed in. Loading…"
+msgstr ""
+
+#. translators: %s: percentage.
+#: assets/js/quiz-player.js:78
+#, js-format
+msgid "Your best result so far: %s%% (passed)."
+msgstr ""
+
+#. translators: %s: percentage.
+#: assets/js/quiz-player.js:81
+#, js-format
+msgid "Your best result so far: %s%% (not passed)."
+msgstr ""
+
+#: assets/js/quiz-player.js:92
+msgid "This quiz has no questions yet. Check back later."
+msgstr ""
+
+#. translators: %d: number of minutes.
+#: assets/js/quiz-player.js:102
+#, js-format
+msgid "Time limit: %d minute"
+msgid_plural "Time limit: %d minutes"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: number of attempts.
+#: assets/js/quiz-player.js:109
+#, js-format
+msgid "%d attempt remaining"
+msgid_plural "%d attempts remaining"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: pass mark percentage.
+#: assets/js/quiz-player.js:115
+#, js-format
+msgid "Pass mark: %s%%"
+msgstr ""
+
+#. translators: %d: number of questions.
+#: assets/js/quiz-player.js:120
+#, js-format
+msgid "%d question"
+msgid_plural "%d questions"
+msgstr[0] ""
+msgstr[1] ""
+
+#: assets/js/quiz-player.js:130
+#: assets/js/quiz-player.js:374
+msgid "You have used all your attempts at this quiz."
+msgstr ""
+
+#: assets/js/quiz-player.js:136
+msgid "You have an attempt in progress. Resuming keeps its original time limit."
+msgstr ""
+
+#: assets/js/quiz-player.js:142
+msgid "Resume quiz"
+msgstr ""
+
+#: assets/js/quiz-player.js:148
+msgid "Starting…"
+msgstr ""
+
+#: assets/js/quiz-player.js:156
+msgid "Attempt resumed."
+msgstr ""
+
+#: assets/js/quiz-player.js:156
+msgid "Quiz started."
+msgstr ""
+
+#. translators: 1: question number, 2: question title.
+#: assets/js/quiz-player.js:191
+#, js-format
+msgid "%1$d. %2$s"
+msgstr ""
+
+#. translators: %s: number of points.
+#: assets/js/quiz-player.js:196
+#, js-format
+msgid "(%s point)"
+msgid_plural "(%s points)"
+msgstr[0] ""
+msgstr[1] ""
+
+#: assets/js/quiz-player.js:236
+msgid "Submit answers"
+msgstr ""
+
+#: assets/js/quiz-player.js:254
+msgid "Submitting…"
+msgstr ""
+
+#: assets/js/quiz-player.js:255
+msgid "Submitting your answers."
+msgstr ""
+
+#. translators: %s: time as minutes:seconds.
+#: assets/js/quiz-player.js:282
+#, js-format
+msgid "Time left: %s"
+msgstr ""
+
+#. translators: %s: time as minutes:seconds.
+#: assets/js/quiz-player.js:290
+#, js-format
+msgid "%s left."
+msgstr ""
+
+#: assets/js/quiz-player.js:296
+msgid "Time is up. Submitting your answers."
+msgstr ""
+
+#: assets/js/quiz-player.js:306
+msgid "Back to the quiz"
+msgstr ""
+
+#: assets/js/quiz-player.js:317
+msgid "Not this time."
+msgstr ""
+
+#: assets/js/quiz-player.js:320
+msgid "Submitted. Some answers are awaiting grading."
+msgstr ""
+
+#: assets/js/quiz-player.js:323
+msgid "You passed!"
+msgstr ""
+
+#. translators: 1: points earned, 2: points possible, 3: percentage.
+#: assets/js/quiz-player.js:332
+#, js-format
+msgid "%1$s of %2$s points (%3$s%%)"
+msgstr ""
+
+#: assets/js/quiz-player.js:339
+msgid "Incorrect"
+msgstr ""
+
+#: assets/js/quiz-player.js:358
+msgid "Continue to the next step"
+msgstr ""
+
+#: assets/js/quiz-player.js:362
+msgid "Try again"
+msgstr ""
+
+#: assets/js/quiz-player.js:380
+msgid "Quiz result"
 msgstr ""
 
 #: assets/src/blocks/index.js:40
@@ -1281,10 +1534,6 @@ msgstr ""
 
 #: assets/src/blocks/index.js:107
 msgid "All"
-msgstr ""
-
-#: assets/src/blocks/index.js:108
-msgid "In progress"
 msgstr ""
 
 #: assets/src/blocks/index.js:115

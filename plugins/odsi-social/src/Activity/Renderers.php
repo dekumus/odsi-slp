@@ -58,16 +58,37 @@ final class Renderers {
 			return $renderer->action( $item );
 		}
 
-		$author = get_userdata( (int) $item->user_id );
-		$name   = $author ? $author->display_name : __( 'A former member', 'odsi-social' );
+		$name = self::author_link( (int) $item->user_id );
 
 		if ( Activity::TYPE_COMMENT === (string) $item->type ) {
-			/* translators: %s: member name. */
-			return sprintf( esc_html__( '%s commented', 'odsi-social' ), esc_html( $name ) );
+			/* translators: %s: member name, linked to their profile. */
+			return sprintf( esc_html__( '%s commented', 'odsi-social' ), $name );
 		}
 
-		/* translators: %s: member name. */
-		return sprintf( esc_html__( '%s posted an update', 'odsi-social' ), esc_html( $name ) );
+		/* translators: %s: member name, linked to their profile. */
+		return sprintf( esc_html__( '%s posted an update', 'odsi-social' ), $name );
+	}
+
+	/**
+	 * A member's name linked to their profile, escaped, or "A former member"
+	 * once the account is gone (SOC-MEM-010). For action sentences.
+	 *
+	 * @param int $user_id Member.
+	 */
+	public static function author_link( int $user_id ): string {
+		$author = get_userdata( $user_id );
+
+		if ( ! $author ) {
+			return esc_html__( 'A former member', 'odsi-social' );
+		}
+
+		$url = (string) apply_filters( 'odsi_social_member_url', '', $user_id );
+
+		if ( '' === $url ) {
+			return esc_html( $author->display_name );
+		}
+
+		return sprintf( '<a class="odsi-social-item__author" href="%s">%s</a>', esc_url( $url ), esc_html( $author->display_name ) );
 	}
 
 	/**

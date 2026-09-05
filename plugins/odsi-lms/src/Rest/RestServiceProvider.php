@@ -56,11 +56,13 @@ final class RestServiceProvider implements Bootable {
 			),
 			new ProgressController(
 				$this->container->get( Progress::class ),
-				$this->container->get( Access::class )
+				$this->container->get( Access::class ),
+				$this->container->get( Structure::class )
 			),
 			new QuizController(
 				$this->container->get( QuizService::class ),
-				$this->container->get( Access::class )
+				$this->container->get( Access::class ),
+				$this->container->get( Structure::class )
 			),
 			new BuilderController( $this->container->get( Structure::class ) ),
 			new SubmissionController( $this->container->get( Assignments::class ), $this->container->get( EnrollmentReport::class ) ),

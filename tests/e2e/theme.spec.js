@@ -69,4 +69,11 @@ test.describe( 'ODSI Learn theme', () => {
 		await expect( page.locator( '.odsi-learn-course__hero h1' ) ).toHaveText( `Theme course ${ stamp }` );
 		await expect( page.locator( '.odsi-learn-course__body .odsi-lms-enroll' ) ).toBeVisible();
 	} );
+
+	test( 'community pages render through the page template', async ( { page } ) => {
+		await page.goto( '/members/' );
+		await expect( page.locator( 'main.odsi-learn-page' ) ).toBeVisible();
+		await expect( page.locator( '.odsi-learn-hero' ) ).toHaveCount( 0 );
+		await expect( page.locator( 'main .odsi-social-directory' ) ).toBeVisible();
+	} );
 } );

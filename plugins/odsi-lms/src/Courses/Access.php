@@ -467,14 +467,23 @@ final class Access implements Bootable {
 		}//end switch
 
 		$html = sprintf(
-			'<div class="odsi-lms-locked odsi-lms-locked--%1$s"><p>%2$s</p>',
+			'<div class="odsi-lms-locked odsi-lms-locked--%1$s"><p class="odsi-lms-locked__message">%2$s</p>',
 			esc_attr( $reason ),
 			esc_html( $message )
 		);
 
+		// The message tells a visitor to log in; give them the link to do it.
+		if ( $user_id <= 0 && 'enroll' === $reason ) {
+			$html .= sprintf(
+				'<p><a class="odsi-lms-locked__link odsi-lms-locked__link--login" href="%s">%s</a></p>',
+				esc_url( wp_login_url( (string) get_permalink( $object_id ) ) ),
+				esc_html__( 'Log in', 'odsi-lms' )
+			);
+		}
+
 		if ( $course_id > 0 ) {
 			$html .= sprintf(
-				'<p><a class="odsi-lms-locked__link" href="%s">%s</a></p>',
+				'<p><a class="odsi-lms-locked__link odsi-lms-locked__link--course" href="%s">%s</a></p>',
 				esc_url( (string) get_permalink( $course_id ) ),
 				esc_html__( 'Back to the course', 'odsi-lms' )
 			);

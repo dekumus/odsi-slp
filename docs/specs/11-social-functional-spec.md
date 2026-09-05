@@ -673,9 +673,20 @@ group, site feed, notifications, messages — are PHP templates under
 `templates/`, overridable at `wp-content/themes/{theme}/odsi-social/`.
 
 **SOC-IF-002** Each renders its complete first page without JavaScript;
-lists (directories, inbox, notifications) carry pagination links. JavaScript
-adds in-page posting, commenting, reacting, "load more" (which appends items
-rendered by the same template as the first page) and unread badges.
+lists (directories, inbox, notifications) carry pagination links inside a
+`<nav>` landmark. JavaScript is progressive enhancement bound to elements PHP
+rendered: in-page posting and commenting (`POST /activity` and
+`POST /activity/{id}/comments` accept `render=1` and return the new item or
+comment as `html` from the same `parts/` template the page used, so nothing
+is rebuilt client-side), reacting, follow / connect / membership / block,
+reporting, per-item and bulk notification read state, message sending (the
+reply is appended to the thread's log from the `message` the REST response
+carries), and cursor "load more" (`GET /activity?render=1`; every appended
+item is byte-for-byte what the first page rendered). Every request failure is
+shown next to the control that caused it (`role="alert"`), a control with a
+request in flight ignores a second activation (`aria-busy`), reactions and
+follows are optimistic and revert on failure, and every visible string the
+script shows comes from `odsiSocial.i18n`. No jQuery.
 
 **SOC-IF-004** Blocks `odsi-social/activity-feed`, `member-directory` and
 `group-directory` are dynamic and render through the matching shortcode code
@@ -684,13 +695,72 @@ front-end assets load on any singular post containing one of them.
 
 **SOC-IF-003** Routing uses rewrite rules for `/members/`, `/members/{nicename}/`,
 `/groups/`, `/groups/{slug}/`, `/activity/`, `/notifications/`, `/messages/`,
-each mapped to a virtual page rendered through the theme's page template. The
-base slugs are admin settings; templates obtain section URLs through
-`odsi_social_page_url` rather than hard-coding a slug. Whether the routed
-object exists for the viewer (member, visible group, visible item, own
-thread) is resolved through `odsi_social_page_exists` before any output, so a
-missing or invisible page is served with HTTP 404 and no-cache headers, never
-a 200 carrying a "not found" message.
+each mapped to a virtual page. The router flags the main query as a singular
+page while it is parsed and supplies a stand-in post in place of a database
+query, so core's own template hierarchy resolves the **page** template on
+block and classic themes alike (a block theme's `page.html`, never the blog
+index); `page-odsi-social-{section}` and `page-odsi-social` are tried first
+so a theme can supply community-specific templates. The base slugs are admin
+settings; templates obtain section URLs through `odsi_social_page_url` rather
+than hard-coding a slug. Whether the routed object exists for the viewer
+(member, visible group, visible item, own thread) is resolved through
+`odsi_social_page_exists` before any output; a missing or invisible page is an
+ordinary core 404 — HTTP 404, no-cache headers, the theme's 404 template —
+never a 200 carrying a "not found" message. There is no canonical redirect
+and no "Edit page" link for a virtual page.
+
+**SOC-IF-005** The page title, printed by the theme as the page's `h1` and
+used as the document title, names the routed object — the member, the group,
+"Edit profile", "Manage {group}", "Post by {member}", "Conversation with
+{member}" — through `odsi_social_page_title`. Templates never print an `h1`;
+their sections start at `h2`.
+
+**SOC-IF-006** Markup is a contract a theme can rely on:
+
+- The feed is a `<ul>` of `<li>`, each holding an `<article>` labelled by its
+  action sentence (`aria-labelledby`), with the author's name linked to
+  their profile, a `<time datetime>` for the date, and a `<ul>` of comments.
+  Like, follow and connect buttons carry `aria-pressed`; the comment toggle
+  carries `aria-expanded` / `aria-controls`. Counts are numbers for members
+  and words ("3 likes") for visitors.
+- Every form control has a label (visually hidden where the placeholder
+  already says it); the post form states its limit (`maxlength`) and
+  announces the remaining characters near the limit through a live region;
+  the privacy select is labelled and shows translated levels.
+- Reporting is a native `<dialog>` (modal, Escape closes, focus returns to
+  the control that opened it); the outcome is announced beside that control.
+- Unread notifications are said ("Unread:" for assistive technology) and
+  marked by weight and a dot, never by colour alone, and each carries its
+  own "Mark read" control next to "Mark all read".
+- The thread page is two panes — the conversation list (`<aside>`) and the
+  conversation (`role="log"`, `aria-live="polite"`) — side by side from
+  768px and stacked below; a blocked pair keeps a readable thread with no
+  reply form (SOC-MOD-005).
+- Every empty state (feed per scope, members, groups, notifications, inbox,
+  blocked list) says what is missing and offers a next action; a locked
+  private group says why (join, pending, invited, banned); a logged-out
+  visitor is given the way in.
+- Directories render their filters as `role="search"` forms and their pages
+  inside `<nav aria-label>`. Group visibilities, roles and privacy levels are
+  translated labels (`Support\Labels`), never capitalised keys.
+- Every interactive control is at least 40px tall; focus is visible on every
+  control; motion respects `prefers-reduced-motion`; no page scrolls
+  horizontally at 360px.
+
+Class names are BEM, `odsi-social-{block}__{element}--{modifier}`, plus the
+state classes `is-active`, `is-busy`, `is-new`, `is-unread`, `is-mine`,
+`is-current`, `is-low`. Blocks: `feed`, `item`, `comment`, `comment-list`,
+`post-form`, `comment-form`, `report-dialog`, `hero` (profile and group
+header), `profile`, `group`, `directory`, `cards`, `card`, `create-group`,
+`member-list`, `reactors`, `notifications`, `notification`, `messages`,
+`threads`, `thread`, `conversation`, `message`, `message-form`, `settings`,
+`pagination`, `notice`, `empty`, `error`, `status`, `button`, `avatar`,
+`badge`, and the utility `odsi-social-visually-hidden`; the router adds
+`odsi-social`, `odsi-social-page-{section}` and
+`odsi-social-page-{section}-single` body classes. Every class the templates
+and script emit has a stylesheet rule or is a documented hook, and the
+stylesheet reads plugin tokens (`--odsi-social-*`) only, each defaulting to
+the shared `--odsi-*` set; a test enforces both.
 
 ---
 

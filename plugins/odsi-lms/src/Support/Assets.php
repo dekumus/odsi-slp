@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace ODSI\LMS\Support;
 
+use ODSI\LMS\Assignments\Assignments;
 use ODSI\LMS\Contracts\Bootable;
 use ODSI\LMS\Plugin;
 use ODSI\LMS\PostTypes\PostTypes;
@@ -45,13 +46,25 @@ final class Assets implements Bootable {
 			VERSION
 		);
 
+		// Both scripts translate through wp.i18n, so their strings live in
+		// the same POT as the PHP and ship as JSON next to it.
 		wp_register_script(
 			self::FRONTEND_SCRIPT,
 			Plugin::url() . 'assets/js/frontend.js',
-			array( 'wp-api-fetch' ),
+			array( 'wp-i18n' ),
 			VERSION,
 			true
 		);
+		wp_set_script_translations( self::FRONTEND_SCRIPT, 'odsi-lms', Plugin::path() . 'languages' );
+
+		wp_register_script(
+			self::QUIZ_SCRIPT,
+			Plugin::url() . 'assets/js/quiz-player.js',
+			array( self::FRONTEND_SCRIPT, 'wp-i18n' ),
+			VERSION,
+			true
+		);
+		wp_set_script_translations( self::QUIZ_SCRIPT, 'odsi-lms', Plugin::path() . 'languages' );
 
 		if ( ! $this->is_lms_screen() ) {
 			return;
@@ -60,35 +73,26 @@ final class Assets implements Bootable {
 		wp_enqueue_style( self::FRONTEND_STYLE );
 		wp_enqueue_script( self::FRONTEND_SCRIPT );
 
+		$max_bytes = Assignments::max_bytes();
+
 		wp_localize_script(
 			self::FRONTEND_SCRIPT,
 			'odsiLms',
 			array(
-				'restUrl' => esc_url_raw( rest_url( 'odsi-lms/v1' ) ),
-				'nonce'   => wp_create_nonce( 'wp_rest' ),
-				'userId'  => get_current_user_id(),
-				'i18n'    => array(
-					'markingComplete'   => __( 'Saving…', 'odsi-lms' ),
-					'completed'         => __( 'Completed', 'odsi-lms' ),
-					'error'             => __( 'Something went wrong. Please try again.', 'odsi-lms' ),
-					'start'             => __( 'Start quiz', 'odsi-lms' ),
-					'submit'            => __( 'Submit answers', 'odsi-lms' ),
-					'tryAgain'          => __( 'Back to the quiz', 'odsi-lms' ),
-					'passed'            => __( 'You passed!', 'odsi-lms' ),
-					'failed'            => __( 'Not this time.', 'odsi-lms' ),
-					'needsGrading'      => __( 'Awaiting grading', 'odsi-lms' ),
-					'correct'           => __( 'Correct', 'odsi-lms' ),
-					'incorrect'         => __( 'Incorrect', 'odsi-lms' ),
-					'minutes'           => __( 'minutes', 'odsi-lms' ),
-					'attemptsRemaining' => __( 'Attempts remaining:', 'odsi-lms' ),
-					'passMark'          => __( 'Pass mark:', 'odsi-lms' ),
-					'timeLeft'          => __( 'Time left:', 'odsi-lms' ),
+				'restUrl'    => esc_url_raw( rest_url( 'odsi-lms/v1' ) ),
+				'nonce'      => wp_create_nonce( 'wp_rest' ),
+				'userId'     => get_current_user_id(),
+				// The same limit the server enforces, so the pre-flight check
+				// in the browser never disagrees with the upload handler.
+				'assignment' => array(
+					'maxBytes' => $max_bytes,
+					'maxLabel' => (string) size_format( $max_bytes ),
 				),
 			)
 		);
 
 		if ( is_singular( PostTypes::QUIZ ) ) {
-			wp_enqueue_script( self::QUIZ_SCRIPT, Plugin::url() . 'assets/js/quiz-player.js', array( self::FRONTEND_SCRIPT ), VERSION, true );
+			wp_enqueue_script( self::QUIZ_SCRIPT );
 		}
 	}
 

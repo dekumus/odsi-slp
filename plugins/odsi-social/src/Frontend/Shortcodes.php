@@ -51,6 +51,65 @@ final class Shortcodes implements Bootable {
 		add_shortcode( 'odsi_member_directory', array( $this, 'render_directory' ) );
 		add_shortcode( 'odsi_group_directory', array( $this, 'render_groups' ) );
 		add_filter( 'odsi_social_page_exists', array( $this, 'page_exists' ), 10, 5 );
+		add_filter( 'odsi_social_page_title', array( $this, 'page_title' ), 10, 5 );
+	}
+
+	/**
+	 * The title of a routed page: what the object is called, so the theme's
+	 * page heading and the document title name the member, group or
+	 * conversation rather than the section. Only asked for pages that exist.
+	 *
+	 * @param string $title       Section title.
+	 * @param string $section     Section.
+	 * @param string $object_slug Object slug.
+	 * @param string $action      Sub-action.
+	 * @param int    $viewer      Viewer.
+	 */
+	public function page_title( string $title, string $section, string $object_slug, string $action, int $viewer ): string {
+		if ( '' === $object_slug ) {
+			return $title;
+		}
+
+		switch ( $section ) {
+			case 'members':
+				$user = get_user_by( 'slug', $object_slug );
+
+				if ( ! $user ) {
+					return $title;
+				}
+
+				return 'edit' === $action ? __( 'Edit profile', 'odsi-social' ) : $user->display_name;
+
+			case 'groups':
+				$row  = $this->container->get( GroupRepository::class )->find_by_slug( $object_slug );
+				$post = $row ? get_post( (int) $row->post_id ) : null;
+
+				if ( ! $post ) {
+					return $title;
+				}
+
+				$name = html_entity_decode( $post->post_title, ENT_QUOTES, 'UTF-8' );
+
+				/* translators: %s: group name. */
+				return 'manage' === $action ? sprintf( __( 'Manage %s', 'odsi-social' ), $name ) : $name;
+
+			case 'activity':
+				$item   = $this->container->get( Activity::class )->get( (int) $object_slug );
+				$author = $item ? get_userdata( (int) $item->user_id ) : null;
+
+				/* translators: %s: member name. */
+				return sprintf( __( 'Post by %s', 'odsi-social' ), $author ? $author->display_name : __( 'a former member', 'odsi-social' ) );
+
+			case 'messages':
+				$thread = $viewer > 0 ? $this->container->get( Messages::class )->other_participant( $viewer, (int) $object_slug ) : null;
+				$other  = $thread ? get_userdata( $thread ) : null;
+
+				/* translators: %s: member name. */
+				return sprintf( __( 'Conversation with %s', 'odsi-social' ), $other ? $other->display_name : __( 'a former member', 'odsi-social' ) );
+
+			default:
+				return $title;
+		}//end switch
 	}
 
 	/**
@@ -200,6 +259,8 @@ final class Shortcodes implements Bootable {
 			)
 		);
 
+		$can_post = $viewer > 0 && in_array( $scope, array( Feed::SCOPE_SITE, Feed::SCOPE_PERSONAL, Feed::SCOPE_GROUP ), true );
+
 		return $this->templates()->render(
 			'activity/feed',
 			array(
@@ -210,11 +271,71 @@ final class Shortcodes implements Bootable {
 				'next_cursor'     => $page['next_cursor'],
 				'viewer_id'       => $viewer,
 				'show_tabs'       => (bool) $atts['show_tabs'],
-				'can_post'        => $viewer > 0 && in_array( $scope, array( Feed::SCOPE_SITE, Feed::SCOPE_PERSONAL, Feed::SCOPE_GROUP ), true ),
+				'can_post'        => $can_post,
 				'privacy_choices' => $viewer > 0 ? $writer->privacy_choices( $viewer ) : array(),
 				'default_privacy' => $viewer > 0 ? $writer->default_privacy( $viewer ) : '',
+				'max_length'      => $this->activity_max_length(),
+				'empty'           => $this->feed_empty_state( $scope, $viewer, $can_post ),
 			)
 		);
+	}
+
+	/**
+	 * The longest update a member may post, for the form's limit and counter.
+	 */
+	private function activity_max_length(): int {
+		return max( 1, (int) apply_filters( 'odsi_social_activity_max_length', $this->container->get( \ODSI\Social\Support\Settings::class )->int( 'activity_max_length' ) ) );
+	}
+
+	/**
+	 * What an empty feed says and what it offers next, per scope and viewer.
+	 *
+	 * @param string $scope    Scope.
+	 * @param int    $viewer   Viewer.
+	 * @param bool   $can_post Whether the post form is on the page.
+	 *
+	 * @return array{text: string, url: string, label: string}
+	 */
+	private function feed_empty_state( string $scope, int $viewer, bool $can_post ): array {
+		$members = (string) apply_filters( 'odsi_social_page_url', '', 'members', '', '' );
+
+		switch ( $scope ) {
+			case Feed::SCOPE_PERSONAL:
+				return array(
+					'text'  => __( 'Nothing from the people and groups you follow yet.', 'odsi-social' ),
+					'url'   => $members,
+					'label' => __( 'Find members to follow', 'odsi-social' ),
+				);
+
+			case Feed::SCOPE_GROUP:
+				return array(
+					'text'  => $can_post ? __( 'This group has no activity yet. Start the conversation above.', 'odsi-social' ) : __( 'This group has no activity yet.', 'odsi-social' ),
+					'url'   => '',
+					'label' => '',
+				);
+
+			case Feed::SCOPE_PROFILE:
+				return array(
+					'text'  => __( 'No updates yet.', 'odsi-social' ),
+					'url'   => '',
+					'label' => '',
+				);
+
+			default:
+				if ( $can_post ) {
+					return array(
+						'text'  => __( 'No updates yet. Share the first one above.', 'odsi-social' ),
+						'url'   => '',
+						'label' => '',
+					);
+				}
+
+				return array(
+					'text'  => __( 'No updates yet.', 'odsi-social' ),
+					'url'   => $viewer > 0 ? '' : wp_login_url( (string) apply_filters( 'odsi_social_page_url', '', 'activity', '', '' ) ),
+					'label' => $viewer > 0 ? '' : __( 'Log in to post', 'odsi-social' ),
+				);
+		}//end switch
 	}
 
 	/**
@@ -308,10 +429,10 @@ final class Shortcodes implements Bootable {
 				'message_setting'     => $profiles->message_setting( (int) $user->ID ),
 				'email_notifications' => \ODSI\Social\Notifications\Emails::wants_email( (int) $user->ID ),
 				'visibilities'        => array(
-					'public'      => __( 'Everyone', 'odsi-social' ),
-					'members'     => __( 'Members', 'odsi-social' ),
-					'connections' => __( 'My connections', 'odsi-social' ),
-					'only_me'     => __( 'Only me', 'odsi-social' ),
+					'public'      => \ODSI\Social\Support\Labels::privacy( 'public' ),
+					'members'     => \ODSI\Social\Support\Labels::privacy( 'members' ),
+					'connections' => \ODSI\Social\Support\Labels::privacy( 'connections' ),
+					'only_me'     => \ODSI\Social\Support\Labels::privacy( 'only_me' ),
 				),
 				'accept'              => $this->image_accept(),
 				'notice'              => $this->notice(),
@@ -553,6 +674,8 @@ final class Shortcodes implements Bootable {
 		$messages = $this->container->get( Messages::class );
 		$page     = max( 1, (int) get_query_var( 'paged', 1 ) );
 		$per_page = 20;
+		$to       = absint( $_GET['to'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- prefill only.
+		$to_user  = $to > 0 && $to !== $viewer ? get_userdata( $to ) : false;
 
 		return $this->templates()->render(
 			'messages/inbox',
@@ -562,6 +685,12 @@ final class Shortcodes implements Bootable {
 				'total'        => $messages->inbox_count( $viewer ),
 				'page'         => $page,
 				'per_page'     => $per_page,
+				'compose'      => $to_user ? array(
+					'id'      => (int) $to_user->ID,
+					'name'    => $to_user->display_name,
+					'allowed' => $messages->can_message( $viewer, (int) $to_user->ID ),
+				) : null,
+				'max_length'   => max( 1, $this->container->get( \ODSI\Social\Support\Settings::class )->int( 'message_max_length' ) ),
 			)
 		);
 	}
@@ -577,17 +706,24 @@ final class Shortcodes implements Bootable {
 			return $this->templates()->render( 'parts/login-required' );
 		}
 
-		$thread = $this->container->get( Messages::class )->thread( $viewer, $thread_id );
+		$messages = $this->container->get( Messages::class );
+		$thread   = $messages->thread( $viewer, $thread_id );
 
 		if ( $thread instanceof \WP_Error ) {
 			return $this->not_found();
 		}
 
+		$other = get_userdata( (int) $thread['other'] );
+
 		return $this->templates()->render(
 			'messages/thread',
 			array(
-				'thread'    => $thread,
-				'viewer_id' => $viewer,
+				'thread'     => $thread,
+				'viewer_id'  => $viewer,
+				'other_name' => $other ? $other->display_name : __( 'A former member', 'odsi-social' ),
+				'can_reply'  => (int) $thread['other'] > 0 && $messages->can_message( $viewer, (int) $thread['other'] ),
+				'threads'    => $messages->inbox( $viewer, 1, 20 ),
+				'max_length' => max( 1, $this->container->get( \ODSI\Social\Support\Settings::class )->int( 'message_max_length' ) ),
 			)
 		);
 	}

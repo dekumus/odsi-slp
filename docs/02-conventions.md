@@ -93,6 +93,8 @@ one.
   | `--odsi-border` | Hairlines and input borders | `#d9dce1` |
   | `--odsi-muted` | Secondary text | `#5b6470` |
   | `--odsi-radius` | Corner radius of buttons, cards and inputs | `8px` |
+  | `--odsi-success` | Passed, complete, approved | `#15803d` |
+  | `--odsi-danger` | Failed, error, expired | `#b91c1c` |
 
   A plugin never reads a shared token directly in a rule; it reads its own
   token, whose default is the shared one. Adding a token means adding it to

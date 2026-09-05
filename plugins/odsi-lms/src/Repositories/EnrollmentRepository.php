@@ -316,6 +316,55 @@ final class EnrollmentRepository extends AbstractRepository {
 	}
 
 	/**
+	 * Every enrollment row of a user, newest first, optionally by status.
+	 *
+	 * @param int         $user_id User id.
+	 * @param string|null $status  Optional status filter.
+	 *
+	 * @return object[]
+	 */
+	public function for_user( int $user_id, ?string $status = null ): array {
+		$table = $this->table();
+
+		if ( null === $status ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$rows = $this->db->get_results(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$this->db->prepare( "SELECT * FROM {$table} WHERE user_id = %d ORDER BY enrolled_at DESC, id DESC", $user_id )
+			);
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$rows = $this->db->get_results(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$this->db->prepare(
+					"SELECT * FROM {$table} WHERE user_id = %d AND status = %s ORDER BY enrolled_at DESC, id DESC",
+					$user_id,
+					$status
+				)
+			);
+		}
+
+		return (array) $rows;
+	}
+
+	/**
+	 * The status a row behaves as right now: an `active` row past its
+	 * `expires_at` is `expired` before the maintenance job persists it
+	 * (LMS-ENR-010).
+	 *
+	 * @param object $row Enrollment row.
+	 */
+	public static function effective_status( object $row ): string {
+		$status = (string) $row->status;
+
+		if ( self::STATUS_ACTIVE === $status && ! empty( $row->expires_at ) && strtotime( (string) $row->expires_at ) < time() ) {
+			return self::STATUS_EXPIRED;
+		}
+
+		return $status;
+	}
+
+	/**
 	 * Number of users enrolled on a course.
 	 *
 	 * @param int         $course_id Course post id.

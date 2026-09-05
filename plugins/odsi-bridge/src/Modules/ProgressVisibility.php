@@ -30,6 +30,11 @@ final class ProgressVisibility implements Bootable {
 	public const NAMESPACE = 'odsi-bridge/v1';
 
 	/**
+	 * The LMS front-end stylesheet handle the shortcode's markup relies on.
+	 */
+	public const LMS_STYLE = 'odsi-lms';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LinkRepository $links    Links.
@@ -54,6 +59,30 @@ final class ProgressVisibility implements Bootable {
 		}
 
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'register_styles' ), 20 );
+	}
+
+	/**
+	 * The shortcode reuses the LMS progress bar markup, so it borrows the LMS
+	 * stylesheet (and with it the shared design tokens) and adds only the
+	 * layout of the member list. Attached to the registered handle here, the
+	 * rules print whenever the shortcode enqueues it, head or footer.
+	 */
+	public function register_styles(): void {
+		if ( ! wp_style_is( self::LMS_STYLE, 'registered' ) ) {
+			return;
+		}
+
+		wp_add_inline_style(
+			self::LMS_STYLE,
+			'.odsi-bridge-progress__list{list-style:none;margin:0;padding:0}'
+			. '.odsi-bridge-progress__member{align-items:center;border-bottom:1px solid var(--odsi-lms-border,#d9dce1);display:grid;gap:.5rem .75rem;grid-template-columns:2rem minmax(0,1fr) auto;padding:.5rem 0}'
+			. '.odsi-bridge-progress__avatar{border-radius:50%;display:block;height:2rem;width:2rem}'
+			. '.odsi-bridge-progress__name{overflow-wrap:anywhere}'
+			. '.odsi-bridge-progress__bar{grid-column:2/-1;margin:0}'
+			. '.odsi-bridge-progress__percentage{color:var(--odsi-lms-muted,#5b6470);font-size:.875rem;text-align:right}'
+			. '.odsi-bridge-progress__empty{color:var(--odsi-lms-muted,#5b6470)}'
+		);
 	}
 
 	/**
@@ -169,17 +198,37 @@ final class ProgressVisibility implements Bootable {
 			return '';
 		}
 
-		$html = '<div class="odsi-bridge-progress"><h3>' . esc_html( sprintf( /* translators: %s: course title. */ __( 'Progress on %s', 'odsi-bridge' ), $result['course'] ) ) . '</h3><ul>';
+		wp_enqueue_style( self::LMS_STYLE );
+
+		$heading_id = 'odsi-bridge-progress-heading-' . $group_id;
+		$html       = sprintf(
+			'<section class="odsi-bridge-progress" aria-labelledby="%1$s"><h2 class="odsi-bridge-progress__heading" id="%1$s">%2$s</h2>',
+			esc_attr( $heading_id ),
+			esc_html( sprintf( /* translators: %s: course title. */ __( 'Progress on %s', 'odsi-bridge' ), $result['course'] ) )
+		);
+
+		if ( array() === $result['members'] ) {
+			return $html . '<p class="odsi-bridge-progress__empty">' . esc_html__( 'No members yet.', 'odsi-bridge' ) . '</p></section>';
+		}
+
+		$html .= '<ul class="odsi-bridge-progress__list">';
 
 		foreach ( $result['members'] as $member ) {
 			$html .= sprintf(
-				'<li><img src="%1$s" alt="" width="32" height="32" /> <span>%2$s</span> <progress max="100" value="%3$s"></progress> <span>%3$s%%</span></li>',
+				'<li class="odsi-bridge-progress__member">'
+				. '<img class="odsi-bridge-progress__avatar" src="%1$s" alt="" width="32" height="32" loading="lazy" />'
+				. '<span class="odsi-bridge-progress__name">%2$s</span>'
+				. '<span class="odsi-bridge-progress__percentage">%3$s%%</span>'
+				. '<div class="odsi-lms-progress odsi-bridge-progress__bar"><div class="odsi-lms-progress__track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="%3$s" aria-label="%4$s"><div class="odsi-lms-progress__fill" style="width: %3$s%%"></div></div></div>'
+				. '</li>',
 				esc_url( (string) $member['avatar'] ),
 				esc_html( (string) $member['name'] ),
-				esc_html( (string) $member['percentage'] )
+				esc_attr( (string) $member['percentage'] ),
+				/* translators: %s: member name. */
+				esc_attr( sprintf( __( 'Progress of %s', 'odsi-bridge' ), (string) $member['name'] ) )
 			);
 		}
 
-		return $html . '</ul></div>';
+		return $html . '</ul></section>';
 	}
 }

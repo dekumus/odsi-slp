@@ -11,12 +11,22 @@ namespace ODSI\Social\Frontend;
 
 use ODSI\Social\Contracts\Bootable;
 use ODSI\Social\Support\Settings;
+use WP_Post;
+use WP_Query;
 
 defined( 'ABSPATH' ) || exit;
 
 /**
  * Maps /members/, /groups/, /activity/, /notifications/ and /messages/ to
  * virtual pages rendered through the theme's page template (SOC-IF-003).
+ *
+ * The virtual page is installed into the main query itself, before core
+ * resolves a template: the query is flagged as a singular page while it is
+ * parsed, and a stand-in post is handed back in place of a database query.
+ * Core then does everything a real page gets — the theme's page template
+ * (block or classic), the document title, body classes, the loop — and a
+ * page that does not exist for the viewer is an ordinary core 404 rendered
+ * by the theme's own 404 template.
  */
 final class Router implements Bootable {
 
@@ -49,7 +59,11 @@ final class Router implements Bootable {
 		add_action( 'init', array( $this, 'register_rewrites' ), 10 );
 		add_filter( 'query_vars', array( $this, 'register_query_vars' ) );
 		add_action( 'parse_request', array( $this, 'on_parse_request' ) );
-		add_filter( 'template_include', array( $this, 'filter_template' ), 99 );
+		add_action( 'parse_query', array( $this, 'on_parse_query' ) );
+		add_filter( 'posts_pre_query', array( $this, 'supply_virtual_page' ), 10, 2 );
+		add_filter( 'redirect_canonical', array( $this, 'filter_canonical_redirect' ) );
+		add_filter( 'get_edit_post_link', array( $this, 'filter_edit_link' ), 10, 2 );
+		add_filter( 'page_template_hierarchy', array( $this, 'filter_template_hierarchy' ) );
 		add_filter( 'document_title_parts', array( $this, 'filter_title' ) );
 		add_filter( 'odsi_social_member_url', array( $this, 'member_url' ), 10, 2 );
 		add_filter( 'odsi_social_group_url', array( $this, 'group_url' ), 10, 2 );
@@ -108,6 +122,126 @@ final class Router implements Bootable {
 	}
 
 	/**
+	 * Flag the main query as a singular page while it is parsed, so core's
+	 * template hierarchy (block or classic) resolves the page template and
+	 * not the blog index it would otherwise pick for unknown query vars.
+	 *
+	 * @param WP_Query $query Query being parsed.
+	 */
+	public function on_parse_query( WP_Query $query ): void {
+		if ( ! $query->is_main_query() || '' === $this->section_of( $query ) ) {
+			return;
+		}
+
+		$query->is_home     = false;
+		$query->is_archive  = false;
+		$query->is_404      = false;
+		$query->is_page     = true;
+		$query->is_singular = true;
+
+		// The stand-in post has no terms or meta to warm.
+		$query->set( 'update_post_term_cache', false );
+		$query->set( 'update_post_meta_cache', false );
+		$query->set( 'cache_results', false );
+	}
+
+	/**
+	 * Hand the main query its stand-in post instead of running a database
+	 * query, or an empty result when the page does not exist for the viewer
+	 * so core issues its normal 404 (status, no-cache headers, 404 template).
+	 *
+	 * @param WP_Post[]|int[]|null $posts Posts, null to let core query.
+	 * @param WP_Query             $query Query.
+	 *
+	 * @return WP_Post[]|int[]|null
+	 */
+	public function supply_virtual_page( ?array $posts, WP_Query $query ): ?array {
+		$section = $this->section_of( $query );
+
+		if ( ! $query->is_main_query() || '' === $section ) {
+			return $posts;
+		}
+
+		$object_slug = sanitize_title( (string) $query->get( self::QV_OBJECT, '' ) );
+		$action      = sanitize_key( (string) $query->get( self::QV_ACTION, '' ) );
+		$viewer      = get_current_user_id();
+
+		if ( 404 === $this->status_for( $section, $object_slug, $action, $viewer ) ) {
+			$query->found_posts   = 0;
+			$query->max_num_pages = 0;
+
+			return array();
+		}
+
+		$query->found_posts   = 1;
+		$query->max_num_pages = 1;
+
+		return array( $this->virtual_post( $section, $object_slug, $action, $viewer ) );
+	}
+
+	/**
+	 * The HTTP status a community request deserves, decided before any output.
+	 *
+	 * The page renderer answers `odsi_social_page_exists` — does this member,
+	 * group, item or thread exist for this viewer — and the router turns a
+	 * "no" into a real 404. A private section a visitor reaches is
+	 * redirected earlier, so it is not a 404 here.
+	 *
+	 * @param string $section     Section.
+	 * @param string $object_slug Object slug.
+	 * @param string $action      Sub-action.
+	 * @param int    $viewer      Viewer.
+	 *
+	 * @return int 200 or 404.
+	 */
+	public function status_for( string $section, string $object_slug, string $action, int $viewer ): int {
+		/**
+		 * Filters whether a community page exists for the viewer (ADR-011:
+		 * "does not exist" and "may not see" are the same answer).
+		 *
+		 * @param bool   $exists  Whether the page exists.
+		 * @param string $section Section.
+		 * @param string $object  Object slug (nicename, group slug, activity id, thread id).
+		 * @param string $action  Sub-action (`edit`, `manage`).
+		 * @param int    $viewer  Viewer, 0 for a visitor.
+		 */
+		$exists = (bool) apply_filters( 'odsi_social_page_exists', true, $section, $object_slug, $action, $viewer );
+
+		return $exists ? 200 : 404;
+	}
+
+	/**
+	 * Title of a community page: the section name, or what the renderer
+	 * says the routed object is called (a member, a group, a conversation).
+	 *
+	 * @param string $section     Section.
+	 * @param string $object_slug Object slug.
+	 * @param string $action      Sub-action.
+	 * @param int    $viewer      Viewer.
+	 */
+	public function title_for( string $section, string $object_slug, string $action, int $viewer ): string {
+		$titles = array(
+			'members'       => __( 'Members', 'odsi-social' ),
+			'groups'        => __( 'Groups', 'odsi-social' ),
+			'activity'      => __( 'Activity', 'odsi-social' ),
+			'notifications' => __( 'Notifications', 'odsi-social' ),
+			'messages'      => __( 'Messages', 'odsi-social' ),
+		);
+
+		/**
+		 * Filters the title of a community page, used as the document title
+		 * and printed by the theme as the page's heading.
+		 *
+		 * @param string $title   Title.
+		 * @param string $section Section.
+		 * @param string $object  Object slug.
+		 * @param string $action  Sub-action.
+		 * @param int    $viewer  Viewer.
+		 */
+		return (string) apply_filters( 'odsi_social_page_title', $titles[ $section ] ?? ucfirst( $section ), $section, $object_slug, $action, $viewer );
+	}
+
+	/**
 	 * Whether the current request is a community virtual page.
 	 */
 	public function is_community_page(): bool {
@@ -136,126 +270,62 @@ final class Router implements Bootable {
 	}
 
 	/**
-	 * The HTTP status a community request deserves, decided before any output.
+	 * A virtual page has no canonical permalink, so core must not try to
+	 * redirect it to one (it would also rewrite `?paged=` pagination).
 	 *
-	 * The page renderer answers `odsi_social_page_exists` — does this member,
-	 * group, item or thread exist for this viewer — and the router turns a
-	 * "no" into a real 404 with no-cache headers. A private section a
-	 * visitor reaches is redirected earlier, so it is not a 404 here.
+	 * @param string|false $redirect Canonical URL, or false.
 	 *
-	 * @param string $section     Section.
-	 * @param string $object_slug Object slug.
-	 * @param string $action      Sub-action.
-	 * @param int    $viewer      Viewer.
-	 *
-	 * @return int 200 or 404.
+	 * @return string|false
 	 */
-	public function status_for( string $section, string $object_slug, string $action, int $viewer ): int {
-		/**
-		 * Filters whether a community page exists for the viewer (ADR-011:
-		 * "does not exist" and "may not see" are the same answer).
-		 *
-		 * @param bool   $exists  Whether the page exists.
-		 * @param string $section Section.
-		 * @param string $object  Object slug (nicename, group slug, activity id, thread id).
-		 * @param string $action  Sub-action (`edit`, `manage`).
-		 * @param int    $viewer  Viewer, 0 for a visitor.
-		 */
-		$exists = (bool) apply_filters( 'odsi_social_page_exists', true, $section, $object_slug, $action, $viewer );
-
-		return $exists ? 200 : 404;
+	public function filter_canonical_redirect( string|false $redirect ): string|false {
+		return $this->is_community_page() ? false : $redirect;
 	}
 
 	/**
-	 * Render the community template through the theme's page template.
+	 * The stand-in post has nothing to edit: without this, core offers
+	 * administrators an "Edit Page" admin-bar link to `post.php?post=0`.
 	 *
-	 * @param string $template Resolved template.
+	 * @param string $link    Edit link.
+	 * @param int    $post_id Post.
 	 */
-	public function filter_template( string $template ): string {
+	public function filter_edit_link( string $link, int $post_id ): string {
+		return 0 === $post_id && $this->is_community_page() ? '' : $link;
+	}
+
+	/**
+	 * Let a theme supply community-specific page templates: `page-odsi-social-{section}`
+	 * then `page-odsi-social` are tried before its plain page template, as
+	 * `.php` files in a classic theme or `.html` block templates in a block theme.
+	 *
+	 * @param string[] $templates Candidate templates, most specific first.
+	 *
+	 * @return string[]
+	 */
+	public function filter_template_hierarchy( array $templates ): array {
 		if ( ! $this->is_community_page() ) {
-			return $template;
+			return $templates;
 		}
 
-		global $wp_query;
-
-		$wp_query->is_404      = false;
-		$wp_query->is_page     = true;
-		$wp_query->is_singular = true;
-		$wp_query->is_home     = false;
-		$wp_query->is_archive  = false;
-
-		$status = $this->status_for( $this->section(), $this->object(), $this->action(), get_current_user_id() );
-
-		status_header( $status );
-
-		if ( 404 === $status ) {
-			nocache_headers();
-		}
-
-		$this->install_virtual_post();
-
-		$page = locate_template( array( 'page.php', 'singular.php', 'index.php' ) );
-
-		return $page ?: $template;
+		return array_merge(
+			array(
+				'page-odsi-social-' . $this->section() . '.php',
+				'page-odsi-social.php',
+			),
+			$templates
+		);
 	}
 
 	/**
-	 * Put a stand-in post into the loop so page templates have something to render,
-	 * with the community template as its content.
-	 */
-	private function install_virtual_post(): void {
-		global $wp_query, $post;
-
-		$section = $this->section();
-		$titles  = array(
-			'members'       => __( 'Members', 'odsi-social' ),
-			'groups'        => __( 'Groups', 'odsi-social' ),
-			'activity'      => __( 'Activity', 'odsi-social' ),
-			'notifications' => __( 'Notifications', 'odsi-social' ),
-			'messages'      => __( 'Messages', 'odsi-social' ),
-		);
-
-		$virtual = new \WP_Post(
-			(object) array(
-				'ID'                => 0,
-				'post_author'       => 0,
-				'post_date'         => current_time( 'mysql' ),
-				'post_date_gmt'     => current_time( 'mysql', true ),
-				'post_content'      => '[odsi_social_page]',
-				'post_title'        => $titles[ $section ] ?? ucfirst( $section ),
-				'post_excerpt'      => '',
-				'post_status'       => 'publish',
-				'comment_status'    => 'closed',
-				'ping_status'       => 'closed',
-				'post_name'         => $section,
-				'post_type'         => 'page',
-				'filter'            => 'raw',
-				'post_parent'       => 0,
-				'menu_order'        => 0,
-				'comment_count'     => 0,
-				'post_modified'     => current_time( 'mysql' ),
-				'post_modified_gmt' => current_time( 'mysql', true ),
-			)
-		);
-
-		$wp_query->posts          = array( $virtual );
-		$wp_query->post           = $virtual;
-		$wp_query->post_count     = 1;
-		$wp_query->found_posts    = 1;
-		$wp_query->max_num_pages  = 1;
-		$wp_query->queried_object = $virtual;
-		$post                     = $virtual; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- intentional virtual post.
-	}
-
-	/**
-	 * Document title for community pages.
+	 * Document title for community pages (core derives it from the stand-in
+	 * post already; this keeps classic themes that build their own
+	 * `wp_title()` honest).
 	 *
 	 * @param array<string, string> $parts Title parts.
 	 *
 	 * @return array<string, string>
 	 */
 	public function filter_title( array $parts ): array {
-		if ( $this->is_community_page() ) {
+		if ( $this->is_community_page() && ! is_404() ) {
 			$parts['title'] = get_the_title();
 		}
 
@@ -273,6 +343,10 @@ final class Router implements Bootable {
 		if ( $this->is_community_page() ) {
 			$classes[] = 'odsi-social';
 			$classes[] = 'odsi-social-page-' . $this->section();
+
+			if ( '' !== $this->object() ) {
+				$classes[] = 'odsi-social-page-' . $this->section() . '-single';
+			}
 		}
 
 		return $classes;
@@ -353,5 +427,51 @@ final class Router implements Bootable {
 	 */
 	public function thread_url( string $url, int $thread_id ): string {
 		return $thread_id > 0 ? $this->url( 'messages', (string) $thread_id ) : $url;
+	}
+
+	/**
+	 * Section a query asks for, or ''.
+	 *
+	 * @param WP_Query $query Query.
+	 */
+	private function section_of( WP_Query $query ): string {
+		return sanitize_key( (string) $query->get( self::QV_PAGE, '' ) );
+	}
+
+	/**
+	 * The stand-in post the theme's page template renders, with the
+	 * community template as its content.
+	 *
+	 * @param string $section     Section.
+	 * @param string $object_slug Object slug.
+	 * @param string $action      Sub-action.
+	 * @param int    $viewer      Viewer.
+	 */
+	private function virtual_post( string $section, string $object_slug, string $action, int $viewer ): WP_Post {
+		$now     = current_time( 'mysql' );
+		$now_gmt = current_time( 'mysql', true );
+
+		return new WP_Post(
+			(object) array(
+				'ID'                => 0,
+				'post_author'       => 0,
+				'post_date'         => $now,
+				'post_date_gmt'     => $now_gmt,
+				'post_content'      => '[odsi_social_page]',
+				'post_title'        => $this->title_for( $section, $object_slug, $action, $viewer ),
+				'post_excerpt'      => '',
+				'post_status'       => 'publish',
+				'comment_status'    => 'closed',
+				'ping_status'       => 'closed',
+				'post_name'         => '' !== $object_slug ? $object_slug : $section,
+				'post_type'         => 'page',
+				'filter'            => 'raw',
+				'post_parent'       => 0,
+				'menu_order'        => 0,
+				'comment_count'     => 0,
+				'post_modified'     => $now,
+				'post_modified_gmt' => $now_gmt,
+			)
+		);
 	}
 }

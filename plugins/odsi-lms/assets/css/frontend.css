@@ -6,6 +6,53 @@
  * the community plugin and its own blocks together by defining the shared
  * set once (on `:root` or `body`); the values below are only the fallback
  * when no theme does. The contract is documented in docs/02-conventions.md.
+ *
+ * Class names follow `odsi-lms-<block>__<element>--<modifier>`. Every class
+ * the plugin's markup emits either has a rule below or is listed here as a
+ * hook: emitted so a theme can target it, but styled by nothing in this file.
+ *
+ * Hooks without rules:
+ * odsi-lms-archive odsi-lms-archive__header odsi-lms-archive__title
+ * odsi-lms-course odsi-lms-course__article odsi-lms-course__header
+ * odsi-lms-course__title odsi-lms-course__content
+ * odsi-lms-lesson odsi-lms-lesson__article odsi-lms-lesson__title
+ * odsi-lms-lesson__content
+ * odsi-lms-quiz odsi-lms-quiz__article odsi-lms-quiz__title odsi-lms-quiz__intro
+ * odsi-lms-quiz__login odsi-lms-quiz__notice odsi-lms-quiz__intro-list
+ * odsi-lms-quiz__live odsi-lms-quiz__start odsi-lms-quiz__submit
+ * odsi-lms-quiz__best odsi-lms-quiz__result
+ * odsi-lms-quiz__again odsi-lms-quiz__next odsi-lms-quiz__course
+ * odsi-lms-quiz__breakdown-item odsi-lms-quiz__breakdown-title
+ * odsi-lms-locked--enroll odsi-lms-locked--drip odsi-lms-locked--progression
+ * odsi-lms-locked__message odsi-lms-locked__link--login odsi-lms-locked__link--course
+ * odsi-lms-outline-section--course odsi-lms-outline-section--step
+ * odsi-lms-outline__item--depth-0 odsi-lms-outline__item--lesson
+ * odsi-lms-outline__item--topic odsi-lms-outline__item--quiz
+ * odsi-lms-outline__item--complete odsi-lms-outline__item--locked
+ * odsi-lms-outline__empty
+ * odsi-lms-enroll__start odsi-lms-enroll__login odsi-lms-enroll__continue
+ * odsi-lms-enroll__button odsi-lms-enroll__buy odsi-lms-enroll__prerequisite
+ * odsi-lms-enroll__notice--prerequisites odsi-lms-enroll__notice--completed
+ * odsi-lms-enroll__notice--expired odsi-lms-enroll__notice--pending
+ * odsi-lms-enroll__notice--paid odsi-lms-enroll__notice--closed
+ * odsi-lms-step-nav__link--previous odsi-lms-complete
+ * odsi-lms-grid__empty
+ * odsi-lms-my-courses__empty odsi-lms-my-courses__item--active
+ * odsi-lms-my-courses__item--completed odsi-lms-my-courses__item--expired
+ * odsi-lms-my-courses__item--pending odsi-lms-my-courses__item--cancelled
+ * odsi-lms-my-courses__status--active odsi-lms-my-courses__status--pending
+ * odsi-lms-my-courses__status--cancelled
+ * odsi-lms-assignment__heading odsi-lms-assignment__status
+ * odsi-lms-assignment__status--pending
+ * odsi-lms-assignment__status-label odsi-lms-assignment__form
+ * odsi-lms-assignment__field
+ * odsi-lms-assignment__actions odsi-lms-assignment__submit
+ * odsi-lms-assignment__history-heading odsi-lms-assignment__item--pending
+ * odsi-lms-assignment__item--approved odsi-lms-assignment__item--rejected
+ * odsi-lms-assignment__badge--pending odsi-lms-assignment__content
+ * odsi-lms-verify odsi-lms-verify__submit odsi-lms-verify__result
+ * odsi-lms-my-certificates__empty odsi-lms-login-required
+ * odsi-lms-login-required__link
  */
 
 :root {
@@ -15,12 +62,123 @@
 	--odsi-lms-border: var(--odsi-border, #d9dce1);
 	--odsi-lms-muted: var(--odsi-muted, #5b6470);
 	--odsi-lms-radius: var(--odsi-radius, 8px);
+	--odsi-lms-success: var(--odsi-success, #15803d);
+	--odsi-lms-danger: var(--odsi-danger, #b91c1c);
+}
+
+/* Utilities ------------------------------------------------------------ */
+
+.odsi-lms-visually-hidden {
+	clip: rect(1px, 1px, 1px, 1px);
+	clip-path: inset(50%);
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	padding: 0;
+	position: absolute;
+	width: 1px;
+	word-wrap: normal;
+}
+
+.odsi-lms-button:focus-visible,
+.odsi-lms-outline__title:focus-visible,
+.odsi-lms-step-nav__link:focus-visible,
+.odsi-lms-card__link:focus-visible,
+.odsi-lms-my-courses__link:focus-visible,
+.odsi-lms-my-certificates__link:focus-visible,
+.odsi-lms-locked__link:focus-visible,
+.odsi-lms-assignment__attachment:focus-visible,
+.odsi-lms-assignment__textarea:focus-visible,
+.odsi-lms-assignment__file:focus-visible,
+.odsi-lms-quiz__field:focus-visible,
+.odsi-lms-verify__input:focus-visible,
+.odsi-lms-grid__pagination .page-numbers:focus-visible {
+	outline: 3px solid var(--odsi-lms-accent, #2563eb);
+	outline-offset: 2px;
+}
+
+/* Buttons -------------------------------------------------------------- */
+
+.odsi-lms-button {
+	align-items: center;
+	background: var(--odsi-lms-accent, #2563eb);
+	border: 0;
+	border-radius: var(--odsi-lms-radius, 8px);
+	color: var(--odsi-lms-accent-contrast, #fff);
+	cursor: pointer;
+	display: inline-flex;
+	font: inherit;
+	justify-content: center;
+	line-height: 1.25;
+	min-height: 2.75rem;
+	padding: 0.625rem 1.25rem;
+	text-decoration: none;
+}
+
+.odsi-lms-button:hover {
+	color: var(--odsi-lms-accent-contrast, #fff);
+	opacity: 0.9;
+	text-decoration: none;
+}
+
+.odsi-lms-button:disabled,
+.odsi-lms-button[aria-busy="true"] {
+	cursor: progress;
+	opacity: 0.6;
+}
+
+.odsi-lms-button--secondary {
+	background: transparent;
+	border: 1px solid var(--odsi-lms-border, #d9dce1);
+	color: inherit;
+}
+
+.odsi-lms-button--secondary:hover {
+	background: var(--odsi-lms-surface, #f5f6f8);
+	color: inherit;
+	opacity: 1;
+}
+
+/* Notices -------------------------------------------------------------- */
+
+.odsi-lms-notice {
+	background: var(--odsi-lms-surface, #f5f6f8);
+	border-left: 4px solid var(--odsi-lms-border, #d9dce1);
+	border-radius: var(--odsi-lms-radius, 8px);
+	margin: 1rem 0;
+	padding: 0.75rem 1rem;
+}
+
+.odsi-lms-notice--success {
+	border-left-color: var(--odsi-lms-success, #15803d);
+}
+
+.odsi-lms-notice--error {
+	border-left-color: var(--odsi-lms-danger, #b91c1c);
+}
+
+.odsi-lms-locked {
+	background: var(--odsi-lms-surface, #f5f6f8);
+	border-left: 4px solid var(--odsi-lms-muted, #5b6470);
+	border-radius: var(--odsi-lms-radius, 8px);
+	padding: 1.5rem;
+}
+
+.odsi-lms-locked__link {
+	font-weight: 600;
+}
+
+/* Progress ------------------------------------------------------------- */
+
+.odsi-lms-progress {
+	margin: 1rem 0;
 }
 
 .odsi-lms-progress__track {
 	background: var(--odsi-lms-surface, #f5f6f8);
+	border: 1px solid var(--odsi-lms-border, #d9dce1);
 	border-radius: 999px;
-	height: 8px;
+	height: 0.75rem;
 	overflow: hidden;
 	width: 100%;
 }
@@ -31,10 +189,26 @@
 	transition: width 200ms ease-out;
 }
 
+@media (prefers-reduced-motion: reduce) {
+	.odsi-lms-progress__fill {
+		transition: none;
+	}
+}
+
 .odsi-lms-progress__label {
 	color: var(--odsi-lms-muted, #5b6470);
 	font-size: 0.875rem;
 	margin: 0.5rem 0 0;
+}
+
+/* Outline -------------------------------------------------------------- */
+
+.odsi-lms-outline-section {
+	margin: 2rem 0;
+}
+
+.odsi-lms-outline-section__heading {
+	margin: 0 0 0.75rem;
 }
 
 .odsi-lms-outline {
@@ -47,9 +221,10 @@
 	align-items: center;
 	border-bottom: 1px solid var(--odsi-lms-border, #d9dce1);
 	display: flex;
-	gap: 0.75rem;
+	flex-wrap: wrap;
+	gap: 0.25rem 0.75rem;
 	justify-content: space-between;
-	padding: 0.75rem 0;
+	padding: 0.25rem 0;
 }
 
 .odsi-lms-outline__item--depth-1 {
@@ -60,49 +235,203 @@
 	padding-left: 3rem;
 }
 
-.odsi-lms-outline__item.is-locked .odsi-lms-outline__title {
-	color: var(--odsi-lms-muted, #5b6470);
-	cursor: not-allowed;
+.odsi-lms-outline__item--section > .odsi-lms-outline__title {
+	font-weight: 600;
 }
 
-.odsi-lms-outline__status {
-	color: var(--odsi-lms-accent, #2563eb);
-	font-size: 0.8125rem;
-	white-space: nowrap;
-}
-
-.odsi-lms-button {
-	background: var(--odsi-lms-accent, #2563eb);
-	border: 0;
-	border-radius: var(--odsi-lms-radius, 8px);
-	color: var(--odsi-lms-accent-contrast, #fff);
-	cursor: pointer;
-	display: inline-block;
-	font: inherit;
-	padding: 0.625rem 1.25rem;
+.odsi-lms-outline__title {
+	align-items: center;
+	display: inline-flex;
+	flex: 1 1 12rem;
+	min-height: 2.5rem;
+	padding: 0.25rem 0;
 	text-decoration: none;
 }
 
-.odsi-lms-button:disabled {
-	cursor: progress;
-	opacity: 0.6;
+a.odsi-lms-outline__title:hover {
+	text-decoration: underline;
 }
+
+.odsi-lms-outline__title--locked {
+	color: var(--odsi-lms-muted, #5b6470);
+}
+
+.odsi-lms-outline__item--current > .odsi-lms-outline__title {
+	box-shadow: inset 3px 0 0 var(--odsi-lms-accent, #2563eb);
+	font-weight: 600;
+	padding-left: 0.5rem;
+}
+
+.odsi-lms-outline__status {
+	border: 1px solid var(--odsi-lms-border, #d9dce1);
+	border-radius: 999px;
+	color: var(--odsi-lms-muted, #5b6470);
+	font-size: 0.8125rem;
+	line-height: 1.4;
+	padding: 0.125rem 0.625rem;
+	white-space: nowrap;
+}
+
+.odsi-lms-outline__status--complete {
+	border-color: var(--odsi-lms-success, #15803d);
+	color: var(--odsi-lms-success, #15803d);
+}
+
+.odsi-lms-outline__status--locked {
+	border-style: dashed;
+}
+
+/* Enroll --------------------------------------------------------------- */
+
+.odsi-lms-enroll {
+	margin: 1.5rem 0;
+}
+
+.odsi-lms-enroll__notice {
+	margin: 0 0 0.75rem;
+}
+
+.odsi-lms-enroll__prerequisites {
+	margin: 0 0 1rem 1.25rem;
+}
+
+.odsi-lms-enroll__price {
+	font-size: 1.25rem;
+	font-weight: 600;
+	margin: 0 0 0.5rem;
+}
+
+.odsi-lms-enroll__error {
+	color: var(--odsi-lms-danger, #b91c1c);
+	margin: 0.5rem 0 0;
+}
+
+/* Step navigation and completion --------------------------------------- */
+
+.odsi-lms-lesson__footer {
+	margin: 1.5rem 0;
+}
+
+.odsi-lms-lesson__status {
+	color: var(--odsi-lms-muted, #5b6470);
+	margin: 0.5rem 0 0;
+}
+
+.odsi-lms-lesson__status:empty {
+	display: none;
+}
+
+.odsi-lms-lesson__error {
+	color: var(--odsi-lms-danger, #b91c1c);
+	margin: 0.5rem 0 0;
+}
+
+.odsi-lms-complete--done {
+	background: var(--odsi-lms-success, #15803d);
+	cursor: default;
+	opacity: 1;
+}
+
+.odsi-lms-step-nav {
+	border-top: 1px solid var(--odsi-lms-border, #d9dce1);
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem 1.5rem;
+	margin: 2rem 0;
+	padding-top: 1rem;
+}
+
+.odsi-lms-step-nav__link {
+	display: inline-flex;
+	flex-direction: column;
+	justify-content: center;
+	min-height: 2.5rem;
+	padding: 0.25rem 0;
+	text-decoration: none;
+}
+
+a.odsi-lms-step-nav__link:hover .odsi-lms-step-nav__title {
+	text-decoration: underline;
+}
+
+.odsi-lms-step-nav__link--course {
+	flex-basis: 100%;
+}
+
+.odsi-lms-step-nav__link--next {
+	align-items: flex-end;
+	margin-left: auto;
+	text-align: right;
+}
+
+.odsi-lms-step-nav__link--locked {
+	color: var(--odsi-lms-muted, #5b6470);
+}
+
+.odsi-lms-step-nav__label,
+.odsi-lms-step-nav__lock {
+	color: var(--odsi-lms-muted, #5b6470);
+	font-size: 0.8125rem;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+/* Course grid ---------------------------------------------------------- */
 
 .odsi-lms-grid {
 	display: grid;
 	gap: 1.5rem;
-	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+	margin: 1.5rem 0;
 }
 
 .odsi-lms-card {
 	border: 1px solid var(--odsi-lms-border, #d9dce1);
 	border-radius: var(--odsi-lms-radius, 8px);
+	display: flex;
+	flex-direction: column;
 	overflow: hidden;
 	padding-bottom: 1rem;
+	position: relative;
+}
+
+.odsi-lms-card:focus-within {
+	outline: 3px solid var(--odsi-lms-accent, #2563eb);
+	outline-offset: 2px;
+}
+
+.odsi-lms-card__media {
+	margin: 0;
+}
+
+.odsi-lms-card__image,
+.odsi-lms-card__media img {
+	aspect-ratio: 16 / 9;
+	display: block;
+	height: auto;
+	object-fit: cover;
+	width: 100%;
 }
 
 .odsi-lms-card__title {
+	font-size: 1.125rem;
 	margin: 1rem 1rem 0.5rem;
+}
+
+.odsi-lms-card__link {
+	color: inherit;
+	text-decoration: none;
+}
+
+/* The one link per card covers the whole card. */
+.odsi-lms-card__link::after {
+	content: "";
+	inset: 0;
+	position: absolute;
+}
+
+.odsi-lms-card__link:focus-visible {
+	outline: none;
 }
 
 .odsi-lms-card__excerpt {
@@ -110,11 +439,32 @@
 	margin: 0 1rem;
 }
 
-.odsi-lms-locked {
-	background: var(--odsi-lms-surface, #f5f6f8);
-	border-radius: var(--odsi-lms-radius, 8px);
-	padding: 1.5rem;
+.odsi-lms-grid__pagination {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin: 1.5rem 0;
 }
+
+.odsi-lms-grid__pagination .page-numbers {
+	align-items: center;
+	border: 1px solid var(--odsi-lms-border, #d9dce1);
+	border-radius: var(--odsi-lms-radius, 8px);
+	display: inline-flex;
+	justify-content: center;
+	min-height: 2.5rem;
+	min-width: 2.5rem;
+	padding: 0 0.5rem;
+	text-decoration: none;
+}
+
+.odsi-lms-grid__pagination .page-numbers.current {
+	background: var(--odsi-lms-accent, #2563eb);
+	border-color: var(--odsi-lms-accent, #2563eb);
+	color: var(--odsi-lms-accent-contrast, #fff);
+}
+
+/* My courses ----------------------------------------------------------- */
 
 .odsi-lms-my-courses {
 	list-style: none;
@@ -123,72 +473,351 @@
 }
 
 .odsi-lms-my-courses__item {
+	align-items: center;
 	border-bottom: 1px solid var(--odsi-lms-border, #d9dce1);
-	padding: 1rem 0;
+	display: grid;
+	gap: 0.25rem 0.75rem;
+	grid-template-columns: 1fr auto;
+	padding: 0.75rem 0;
+}
+
+.odsi-lms-my-courses__link {
+	align-items: center;
+	display: inline-flex;
+	font-weight: 600;
+	min-height: 2.5rem;
+}
+
+.odsi-lms-my-courses__status {
+	border: 1px solid var(--odsi-lms-border, #d9dce1);
+	border-radius: 999px;
+	color: var(--odsi-lms-muted, #5b6470);
+	font-size: 0.8125rem;
+	justify-self: end;
+	line-height: 1.4;
+	padding: 0.125rem 0.625rem;
+	white-space: nowrap;
+}
+
+.odsi-lms-my-courses__status--completed {
+	border-color: var(--odsi-lms-success, #15803d);
+	color: var(--odsi-lms-success, #15803d);
+}
+
+.odsi-lms-my-courses__status--expired {
+	border-color: var(--odsi-lms-danger, #b91c1c);
+	color: var(--odsi-lms-danger, #b91c1c);
+}
+
+.odsi-lms-my-courses__progress {
+	align-items: center;
+	display: flex;
+	gap: 0.75rem;
+	grid-column: 1 / -1;
+	margin: 0;
+}
+
+.odsi-lms-my-courses__progress .odsi-lms-progress__track {
+	flex: 1;
+}
+
+.odsi-lms-my-courses__percentage {
+	margin: 0;
+	min-width: 4ch;
+	text-align: right;
+}
+
+/* Quiz player ---------------------------------------------------------- */
+
+.odsi-lms-quiz__player {
+	margin: 1.5rem 0;
+}
+
+.odsi-lms-quiz__player:focus {
+	outline: none;
+}
+
+.odsi-lms-quiz__info {
+	color: var(--odsi-lms-muted, #5b6470);
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem 1.5rem;
+	list-style: none;
+	margin: 0 0 1rem;
+	padding: 0;
+}
+
+.odsi-lms-quiz__form {
+	min-width: 0;
 }
 
 .odsi-lms-quiz__question {
 	border: 1px solid var(--odsi-lms-border, #d9dce1);
 	border-radius: var(--odsi-lms-radius, 8px);
-	margin-bottom: 1rem;
+	margin: 0 0 1rem;
+	min-width: 0;
 	padding: 1rem;
 }
 
-.odsi-lms-quiz__option { margin: 0.25rem 0; }
-.odsi-lms-quiz__status { font-size: 1.25rem; font-weight: 600; }
-.odsi-lms-quiz__status.is-passed { color: #15803d; }
-.odsi-lms-quiz__status.is-failed { color: #b91c1c; }
-.odsi-lms-quiz__breakdown .is-correct { color: #15803d; }
-.odsi-lms-quiz__breakdown .is-incorrect { color: #b91c1c; }
-.odsi-lms-quiz__clock { font-variant-numeric: tabular-nums; font-weight: 600; }
-.odsi-lms-quiz__error { color: #b91c1c; }
-
-/* Assignments */
-.odsi-lms-assignment {
-	margin: 1.5em 0;
+.odsi-lms-quiz__legend {
+	font-weight: 600;
+	padding: 0 0.25rem;
 }
 
-.odsi-lms-assignment__status {
-	padding: 0.75em 1em;
-	border-left: 4px solid var(--odsi-lms-border, #d9dce1);
-	background: var(--odsi-lms-surface, #f5f6f8);
-	border-radius: var(--odsi-lms-radius, 8px);
-	margin-bottom: 1em;
+.odsi-lms-quiz__points {
+	color: var(--odsi-lms-muted, #5b6470);
+	font-size: 0.875rem;
+	font-weight: normal;
 }
 
-.odsi-lms-assignment__status--approved {
-	border-left-color: #16a34a;
-}
-
-.odsi-lms-assignment__status--rejected {
-	border-left-color: #dc2626;
-}
-
-.odsi-lms-assignment__form textarea,
-.odsi-lms-assignment__form input[type="file"] {
-	display: block;
-	width: 100%;
+.odsi-lms-quiz__prompt img {
+	height: auto;
 	max-width: 100%;
 }
 
+.odsi-lms-quiz__option {
+	margin: 0.25rem 0;
+}
+
+.odsi-lms-quiz__option-label {
+	align-items: center;
+	border: 1px solid var(--odsi-lms-border, #d9dce1);
+	border-radius: var(--odsi-lms-radius, 8px);
+	cursor: pointer;
+	display: flex;
+	gap: 0.75rem;
+	min-height: 2.75rem;
+	padding: 0.5rem 0.75rem;
+}
+
+.odsi-lms-quiz__option-label:hover {
+	background: var(--odsi-lms-surface, #f5f6f8);
+}
+
+.odsi-lms-quiz__option-label:focus-within {
+	outline: 3px solid var(--odsi-lms-accent, #2563eb);
+	outline-offset: 2px;
+}
+
+.odsi-lms-quiz__option-input {
+	flex: none;
+	height: 1.25rem;
+	margin: 0;
+	width: 1.25rem;
+}
+
+.odsi-lms-quiz__field,
+.odsi-lms-assignment__textarea,
+.odsi-lms-assignment__file,
+.odsi-lms-verify__input {
+	background: transparent;
+	border: 1px solid var(--odsi-lms-border, #d9dce1);
+	border-radius: var(--odsi-lms-radius, 8px);
+	box-sizing: border-box;
+	color: inherit;
+	display: block;
+	font: inherit;
+	max-width: 100%;
+	min-height: 2.75rem;
+	padding: 0.5rem 0.75rem;
+	width: 100%;
+}
+
+.odsi-lms-quiz__clock {
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+	margin: 0 0 1rem;
+}
+
+.odsi-lms-quiz__clock--urgent {
+	color: var(--odsi-lms-danger, #b91c1c);
+}
+
+.odsi-lms-quiz__error {
+	color: var(--odsi-lms-danger, #b91c1c);
+	margin: 0.75rem 0;
+}
+
+.odsi-lms-quiz__status {
+	font-size: 1.25rem;
+	font-weight: 600;
+	margin: 0 0 0.5rem;
+}
+
+.odsi-lms-quiz__status--passed {
+	color: var(--odsi-lms-success, #15803d);
+}
+
+.odsi-lms-quiz__status--failed {
+	color: var(--odsi-lms-danger, #b91c1c);
+}
+
+.odsi-lms-quiz__status--pending {
+	color: var(--odsi-lms-muted, #5b6470);
+}
+
+.odsi-lms-quiz__score {
+	margin: 0 0 1rem;
+}
+
+.odsi-lms-quiz__breakdown {
+	margin: 0 0 1.5rem;
+	padding-left: 1.25rem;
+}
+
+.odsi-lms-quiz__verdict {
+	font-weight: 600;
+}
+
+.odsi-lms-quiz__verdict--correct {
+	color: var(--odsi-lms-success, #15803d);
+}
+
+.odsi-lms-quiz__verdict--incorrect {
+	color: var(--odsi-lms-danger, #b91c1c);
+}
+
+.odsi-lms-quiz__verdict--pending {
+	color: var(--odsi-lms-muted, #5b6470);
+}
+
+.odsi-lms-quiz__actions,
+.odsi-lms-quiz__intro-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+}
+
+/* Assignments ---------------------------------------------------------- */
+
+.odsi-lms-assignment {
+	margin: 1.5rem 0;
+}
+
+.odsi-lms-assignment__status--approved {
+	border-left-color: var(--odsi-lms-success, #15803d);
+}
+
+.odsi-lms-assignment__status--rejected {
+	border-left-color: var(--odsi-lms-danger, #b91c1c);
+}
+
+.odsi-lms-assignment__points {
+	margin-left: 0.5rem;
+}
+
+.odsi-lms-assignment__feedback {
+	border-left: 2px solid var(--odsi-lms-border, #d9dce1);
+	margin: 0.5rem 0 0;
+	padding-left: 0.75rem;
+}
+
+.odsi-lms-assignment__label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 0.25rem;
+}
+
+.odsi-lms-assignment__hint {
+	color: var(--odsi-lms-muted, #5b6470);
+	display: block;
+	font-size: 0.875rem;
+	margin-top: 0.25rem;
+}
+
 .odsi-lms-assignment__error {
-	color: #dc2626;
+	color: var(--odsi-lms-danger, #b91c1c);
+}
+
+.odsi-lms-assignment__textarea[aria-invalid="true"],
+.odsi-lms-assignment__file[aria-invalid="true"] {
+	border-color: var(--odsi-lms-danger, #b91c1c);
 }
 
 .odsi-lms-assignment__history {
 	list-style: none;
+	margin: 1rem 0 0;
 	padding: 0;
-	margin: 1em 0 0;
 }
 
 .odsi-lms-assignment__item {
-	padding: 0.75em 0;
 	border-top: 1px solid var(--odsi-lms-border, #d9dce1);
+	padding: 0.75rem 0;
 }
 
 .odsi-lms-assignment__date,
 .odsi-lms-assignment__badge {
-	font-size: 0.875em;
 	color: var(--odsi-lms-muted, #5b6470);
-	margin-right: 0.75em;
+	font-size: 0.875rem;
+	margin-right: 0.75rem;
+}
+
+.odsi-lms-assignment__badge--approved {
+	color: var(--odsi-lms-success, #15803d);
+}
+
+.odsi-lms-assignment__badge--rejected {
+	color: var(--odsi-lms-danger, #b91c1c);
+}
+
+.odsi-lms-assignment__attachment {
+	align-items: center;
+	display: inline-flex;
+	min-height: 2.5rem;
+	overflow-wrap: anywhere;
+}
+
+/* Certificate verification --------------------------------------------- */
+
+.odsi-lms-verify__form {
+	align-items: flex-end;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.odsi-lms-verify__label {
+	flex-basis: 100%;
+	font-weight: 600;
+}
+
+.odsi-lms-verify__input {
+	flex: 1 1 12rem;
+	width: auto;
+}
+
+.odsi-lms-verify__result--valid a {
+	margin-left: 0.25rem;
+}
+
+.odsi-lms-verify__result--invalid {
+	color: var(--odsi-lms-danger, #b91c1c);
+}
+
+/* My certificates ------------------------------------------------------ */
+
+.odsi-lms-my-certificates {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.odsi-lms-my-certificates__item {
+	align-items: center;
+	border-bottom: 1px solid var(--odsi-lms-border, #d9dce1);
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem 1rem;
+	justify-content: space-between;
+	padding: 0.5rem 0;
+}
+
+.odsi-lms-my-certificates__link {
+	align-items: center;
+	display: inline-flex;
+	min-height: 2.5rem;
+}
+
+.odsi-lms-my-certificates__date {
+	color: var(--odsi-lms-muted, #5b6470);
 }
