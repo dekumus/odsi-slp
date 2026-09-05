@@ -194,6 +194,7 @@ final class Cloner {
 				'orderby'                => array(
 					'menu_order' => 'ASC',
 					'date'       => 'ASC',
+					'ID'         => 'ASC',
 				),
 				'no_found_rows'          => true,
 				'update_post_term_cache' => false,
