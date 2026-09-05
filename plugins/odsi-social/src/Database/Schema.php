@@ -22,7 +22,7 @@ final class Schema {
 	/**
 	 * Bumped whenever any definition below changes.
 	 */
-	public const DB_VERSION = '1.1.0';
+	public const DB_VERSION = '1.1.1';
 
 	/**
 	 * Option holding the installed schema version.
@@ -223,7 +223,7 @@ final class Schema {
 			KEY user_feed (user_id,parent_id,status,date_recorded,id),
 			KEY comments (parent_id,date_recorded,id),
 			KEY type_feed (type,parent_id,date_recorded,id),
-			UNIQUE KEY external (component,external_id),
+			UNIQUE KEY component_external (component,external_id),
 			KEY item (component,primary_item_id)
 		) {$collate};";
 
