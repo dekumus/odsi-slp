@@ -106,8 +106,10 @@ test.describe( 'Social accessibility and layout', () => {
 				const overflow = await page.evaluate( () => document.documentElement.scrollWidth - document.documentElement.clientWidth );
 				expect( overflow, `${ path } overflows at ${ width }px` ).toBeLessThanOrEqual( 0 );
 
+				// Scoped to plugin roots, not the `odsi-social` body class: the theme's own
+				// icon buttons (a mobile menu toggle) are not the plugin's to size.
 				const small = await page.evaluate( () => {
-					return Array.from( document.querySelectorAll( '[class*="odsi-social"] button, [class*="odsi-social"] a.odsi-social-button, .odsi-social-feed__tab' ) )
+					return Array.from( document.querySelectorAll( ':not(body)[class*="odsi-social"] button, [class*="odsi-social"] a.odsi-social-button, .odsi-social-feed__tab' ) )
 						.filter( ( el ) => el.offsetParent !== null )
 						.map( ( el ) => ( { label: el.textContent.trim(), height: el.getBoundingClientRect().height } ) )
 						.filter( ( el ) => el.height < 40 );

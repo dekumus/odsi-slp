@@ -179,10 +179,12 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npx wp-env start
-      - name: Permalinks and E2E flag
+      - name: Permalinks, E2E flag and the bundled theme
         run: |
           npx wp-env run tests-cli wp rewrite structure '/%postname%/' --hard
           npx wp-env run tests-cli wp config set ODSI_E2E true --raw
+          npx wp-env run tests-cli wp theme activate odsi-learn
+          npx wp-env run tests-cli wp theme list --format=csv | grep -q "^odsi-learn,active" || { echo "theme is not active"; exit 1; }
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4
         if: failure()
