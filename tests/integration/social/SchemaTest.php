@@ -55,7 +55,7 @@ final class SchemaTest extends TestCase {
 			array( 'activity', 'group_feed', false ),
 			array( 'activity', 'user_feed', false ),
 			array( 'activity', 'comments', false ),
-			array( 'activity', 'external', true ),
+			array( 'activity', 'component_external', true ),
 			array( 'reactions', 'activity_user', true ),
 			array( 'connections', 'pair', true ),
 			array( 'follows', 'edge', true ),
